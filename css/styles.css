@@ -483,6 +483,37 @@ select:focus,
     box-shadow: 0 0 0 2px rgba(var(--v-accent-rgb), 0.2) !important;
 }
 
+.fp-language-field {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.5rem;
+    max-width: 100%;
+    color: var(--v-fg);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.fp-language-field select {
+    min-height: 44px;
+    max-width: 100%;
+    padding-left: 0.75rem;
+    background-color: var(--v-bg0);
+    border: 1px solid var(--v-bdr2);
+    color: var(--v-fg);
+    cursor: pointer;
+}
+
+.fp-language-field select:hover,
+.fp-language-field select:active {
+    box-shadow: 0 0 0 1px var(--v-accent);
+}
+
+.fp-language-field select:focus-visible {
+    outline: 2px solid var(--v-accent) !important;
+    outline-offset: 2px;
+}
+
 .fp-selection-card {
     border-radius: 20px;
     border: 1.5px solid var(--v-bdr2);
