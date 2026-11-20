@@ -1,12 +1,10 @@
 // ==========================================
-// FocusPulse - Firebase Auth, Device Google Chooser, EXE Browser Auth & Cloud Sync (firebase.js)
+// FocusPulse - Firebase email authentication and per-user Firestore sync.
 // ==========================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import {
     getAuth,
-    signInWithPopup,
-    signInWithCredential,
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     sendPasswordResetEmail,
@@ -15,16 +13,16 @@ import {
     updateProfile,
     deleteUser
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, doc, getDocFromServer, runTransaction, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 const defaultFirebaseConfig = {
-    apiKey: "AIzaSyBuj-VMtRbGBF8GHgSLPmbG44I5UiaMoYY",
-    authDomain: "focuspulse-3fbdd.firebaseapp.com",
-    projectId: "focuspulse-3fbdd",
-    storageBucket: "focuspulse-3fbdd.firebasestorage.app",
-    messagingSenderId: "515313105970",
-    appId: "1:515313105970:web:e07ecf985ca985eb99902b",
-    measurementId: "G-MZN9BNN0KP"
+    apiKey: "AIzaSyABJAHp1a-uSWSbEQR_82QbOExZH89tvyk",
+    authDomain: "focusth3-182d0.firebaseapp.com",
+    projectId: "focusth3-182d0",
+    storageBucket: "focusth3-182d0.firebasestorage.app",
+    messagingSenderId: "700986236401",
+    appId: "1:700986236401:web:ddfcd372aef4f2bdbdb850",
+    measurementId: "G-256Z6HNH75"
 };
 
 const firebaseConfig = (
@@ -39,7 +37,7 @@ let app = null;
 let auth = null;
 let db = null;
 
-let pendingAuthIntent = null; // { mode: 'signin' | 'signup', name: '' }
+let signupName = null;
 window._guestLoginWarningAcknowledged = false;
 
 try {
@@ -47,9 +45,7 @@ try {
         app = initializeApp(firebaseConfig);
         auth = getAuth(app);
         db = getFirestore(app);
-        
-        // Always prompt the Google Account Chooser listing accounts signed into the device
-        
+
     }
 } catch (initErr) {
     console.warn("Firebase initialization warning:", initErr);
@@ -79,44 +75,19 @@ function showError(msg) {
 window.showError = showError;
 
 
-// Persistent Accounts Store (Ensures strict account-only login & registration checks)
-function getRegisteredAccounts() {
-    try {
-        const raw = localStorage.getItem('focuspulse_registered_accounts');
-        return raw ? JSON.parse(raw) : {};
-    } catch (e) {
-        return {};
+// Remove only obsolete password fields left by earlier builds. Keep profile metadata and workspace caches.
+try {
+    const key = 'focuspulse_registered_accounts';
+    const records = JSON.parse(localStorage.getItem(key) || '{}');
+    let changed = false;
+    for (const record of Object.values(records)) {
+        if (record && Object.hasOwn(record, 'password')) {
+            delete record.password;
+            changed = true;
+        }
     }
-}
-window.getRegisteredAccounts = getRegisteredAccounts;
-
-function saveRegisteredAccount(name, email, password) {
-    if (!email) return;
-    const accounts = getRegisteredAccounts();
-    const key = normalizeEmailKey(email);
-    accounts[key] = {
-        name: String(name || '').trim() || 'Scholar',
-        email: String(email).trim().toLowerCase(),
-        password: String(password || ''),
-        createdAt: accounts[key]?.createdAt || Date.now()
-    };
-    try {
-        localStorage.setItem('focuspulse_registered_accounts', JSON.stringify(accounts));
-    } catch (e) {}
-}
-window.saveRegisteredAccount = saveRegisteredAccount;
-
-function findRegisteredAccount(email) {
-    if (!email) return null;
-    const accounts = getRegisteredAccounts();
-    const key = normalizeEmailKey(email);
-    return accounts[key] || null;
-}
-window.findRegisteredAccount = findRegisteredAccount;
-
-function normalizeEmailKey(email) {
-    return String(email || '').trim().toLowerCase().replace(/[^a-z0-9@._-]/g, '_');
-}
+    if (changed) localStorage.setItem(key, JSON.stringify(records));
+} catch { /* Storage may be disabled. */ }
 
 // Helper to detect if user is currently on an already used profile or guest workspace with data
 window.hasExistingGuestData = function() { return false; };
@@ -134,137 +105,111 @@ window.confirmProceedGuestToLogin = function() {
     window.closeGuestBackupPromptModal();
 };
 
-function mergeGuestAndCloudState(localState, cloudState) {
-    if (!cloudState) return localState;
-    const merged = {
-        ...localState,
-        ...cloudState,
-        user: {
-            ...(localState.user || {}),
-            ...(cloudState.user || {}),
-            avatarDataUrl: (cloudState.user && cloudState.user.avatarDataUrl) || (localState.user && localState.user.avatarDataUrl) || ''
-        },
-        timerSettings: { ...(localState.timerSettings || {}), ...(cloudState.timerSettings || {}) }
-    };
+let session = null;
+let opening = null;
+let signedOutDefaults;
+const cacheKey = uid => 'focuspulse_account_uid_' + uid;
+const baselineKey = uid => 'focuspulse_cloud_base_' + firebaseConfig.projectId + '_' + uid;
 
-    const courseMap = new Map();
-    [...(cloudState.courses || []), ...(localState.courses || [])].forEach(c => {
-        if (c && c.name) {
-            const key = c.name.trim().toLowerCase();
-            if (!courseMap.has(key)) courseMap.set(key, c);
-        }
-    });
-    if (courseMap.size > 0) {
-        merged.courses = Array.from(courseMap.values());
-        merged.user.subjects = merged.courses.map(c => c.name).join(', ');
-    }
-
-    const taskMap = new Map();
-    [...(cloudState.tasks || []), ...(localState.tasks || [])].forEach(t => {
-        if (t && t.title) {
-            const key = `${t.title.trim().toLowerCase()}__${t.dueDate || ''}`;
-            if (!taskMap.has(key)) taskMap.set(key, t);
-        }
-    });
-    if (taskMap.size > 0) {
-        merged.tasks = Array.from(taskMap.values());
-    }
-
-    const habitMap = new Map();
-    [...(cloudState.habits || []), ...(localState.habits || [])].forEach(h => {
-        if (h && h.name) {
-            const key = h.name.trim().toLowerCase();
-            if (!habitMap.has(key)) habitMap.set(key, h);
-        }
-    });
-    if (habitMap.size > 0) {
-        merged.habits = Array.from(habitMap.values());
-    }
-
-    return merged;
+function readCache(key) {
+    try { return JSON.parse(localStorage.getItem(key)); } catch { return null; }
 }
 
-// Restore cloud state authoritatively when signing into an existing account
-function restoreAccountCloudState(localState, cloudState) {
-    if (!cloudState) return localState;
-    const restored = {
-        ...localState,
-        ...cloudState,
-        user: {
-            ...(localState.user || {}),
-            ...(cloudState.user || {}),
-            avatarDataUrl: (cloudState.user && cloudState.user.avatarDataUrl) || (localState.user && localState.user.avatarDataUrl) || ''
-        },
-        timerSettings: { ...(localState.timerSettings || {}), ...(cloudState.timerSettings || {}) },
-        timer: { ...(localState.timer || {}), ...(cloudState.timer || {}), isRunning: false },
-        notificationChannels: {
-            pomodoro: true,
-            tasks: true,
-            habits: true,
-            hydration: true,
-            ...(localState.notificationChannels || {}),
-            ...(cloudState.notificationChannels || {})
-        },
-        hasCompletedOnboarding: true,
-        onboardingStep: 'done',
-        userType: 'authenticated'
-    };
-    if (Array.isArray(cloudState.courses)) {
-        restored.courses = cloudState.courses;
-        restored.user.subjects = restored.courses.map(c => c.name).join(', ');
-    }
-    if (Array.isArray(cloudState.tasks)) {
-        restored.tasks = cloudState.tasks;
-    }
-    if (Array.isArray(cloudState.taskHistory)) {
-        restored.taskHistory = cloudState.taskHistory;
-    }
-    if (Array.isArray(cloudState.habits) && cloudState.habits.length > 0) {
-        restored.habits = cloudState.habits;
-    }
-    if (Array.isArray(cloudState.schedules) && cloudState.schedules.length > 0) {
-        restored.schedules = cloudState.schedules;
-    }
-    return restored;
+function cloudState(state) {
+    // Credentials and device-specific navigation are kept out of the Firestore document.
+    const {geminiApiKey, activeSection, authUid, authEmail, userType, updatedAt, ...data} = state;
+    return JSON.parse(JSON.stringify(data));
 }
 
-window.firebaseSyncToCloud = async (state) => {
-    if (!state) return;
-    const uid = (window.currentFirebaseUser && window.currentFirebaseUser.uid) || state.authUid;
-    const email = (window.currentFirebaseUser && window.currentFirebaseUser.email) || state.authEmail;
+function isActive(s) {
+    return Boolean(s && s === session && auth?.currentUser?.uid === s.uid && window.appState.authUid === s.uid);
+}
 
-    // Always save per-account local cache so cross-session logins on the device restore immediately
-    try {
-        if (email) {
-            localStorage.setItem(`focuspulse_account_cache_${email.trim().toLowerCase()}`, JSON.stringify(state));
-        }
-        if (uid) {
-            localStorage.setItem(`focuspulse_account_uid_${uid}`, JSON.stringify(state));
-        }
-    } catch (e) {}
+function isMap(value) {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
 
-    if (!db || !uid) return;
-    const payload = {
-        focuspulse_data: state,
-        customName: state.user?.name || '',
-        avatarDataUrl: state.user?.avatarDataUrl || '',
-        isCustomName: Boolean(state.user?.isCustomName),
-        email: email || '',
-        hasCompletedOnboarding: Boolean(state.hasCompletedOnboarding),
-        onboardingStep: state.onboardingStep || 'done',
-        updatedAt: state.updatedAt || Date.now()
-    };
+function equalData(a, b) {
+    if (a === b) return true;
+    if (!a || !b || typeof a !== 'object' || typeof b !== 'object' || Array.isArray(a) !== Array.isArray(b)) return false;
+    const keys = Object.keys(a);
+    return keys.length === Object.keys(b).length && keys.every(key => Object.hasOwn(b, key) && equalData(a[key], b[key]));
+}
+
+// Apply local edits to the latest server document. Lists of workspace records use their existing IDs.
+function reconcile(base, local, remote) {
+    if (equalData(local, base)) return remote;
+    if (equalData(remote, base) || equalData(local, remote)) return local;
+    if (isMap(local) && isMap(remote) && (isMap(base) || base === undefined)) {
+        const entries = [];
+        for (const key of new Set([...Object.keys(local), ...Object.keys(remote)])) {
+            const value = reconcile(base?.[key], local[key], remote[key]);
+            if (value !== undefined) entries.push([key, value]);
+        }
+        return Object.fromEntries(entries);
+    }
+    if (Array.isArray(base) && Array.isArray(local) && Array.isArray(remote) &&
+        [base, local, remote].every(rows => rows.every(row => isMap(row) && row.id != null))) {
+        const byId = rows => new Map(rows.map(row => [row.id, row]));
+        const before = byId(base), here = byId(local), there = byId(remote);
+        const result = [];
+        for (const id of new Set([...here.keys(), ...there.keys()])) {
+            const row = reconcile(before.get(id), here.get(id), there.get(id));
+            if (row !== undefined) result.push(row);
+        }
+        return result;
+    }
+    return local;
+}
+
+async function syncWorkspace(refresh = false) {
+    const s = session;
+    if (!isActive(s) || s.closing) return false;
+    const operation = s.queue.then(async () => {
+        if (!isActive(s) || s.closing) return false;
+        const local = cloudState(window.appState);
+        if (!refresh && s.exists && equalData(local, s.base)) return true;
+        const ref = doc(db, 'users', s.uid);
+        const saved = await runTransaction(db, async tx => {
+            const snap = await tx.get(ref);
+            if (!isActive(s)) throw new Error('Session changed');
+            const remote = snap.exists() ? cloudState(snap.data().focuspulse_data || {}) : {};
+            const next = snap.exists() ? reconcile(s.base, local, remote) : local;
+            if (!snap.exists() || !equalData(next, remote)) {
+                tx.set(ref, {focuspulse_data: next, email: auth.currentUser.email, updatedAt: Date.now()}, {mergeFields: ['focuspulse_data', 'email', 'updatedAt']});
+            }
+            return next;
+        });
+        if (!isActive(s)) return false;
+        // Keep edits made while the transaction was in flight.
+        const current = cloudState(window.appState);
+        const result = reconcile(local, current, saved);
+        s.base = structuredClone(saved);
+        s.exists = true;
+        localStorage.setItem(baselineKey(s.uid), JSON.stringify(saved));
+        if (!equalData(current, result)) {
+            Object.assign(window.appState, result);
+            saveState();
+            window.updateUI?.();
+        }
+        s.warned = false;
+        return true;
+    });
+    s.queue = operation.catch(() => false);
     try {
-        await setDoc(doc(db, "users", uid), payload, { merge: true });
-    } catch (e) {
-        console.warn("Firestore uid sync note:", e);
+        return await operation;
+    } catch (err) {
+        if (isActive(s) && !s.warned && !refresh) {
+            s.warned = true;
+            showNotification(FPi18n.message('auth.syncNotice'), FPi18n.message('auth.cloudUnavailable'), 'warning');
+        }
+        console.warn('Firestore sync:', err.code || err.message);
+        return false;
     }
-    if (email) {
-        try {
-            await setDoc(doc(db, "users_by_email", normalizeEmailKey(email)), payload, { merge: true });
-        } catch (e) {}
-    }
-};
+}
+
+window.firebaseSyncToCloud = () => syncWorkspace();
+
 
 window.firebaseUpdateProfileName = async (newName, newSubjects) => {
     if (newName && newName.trim() && newName.trim() !== 'Guest' && newName.trim() !== 'Student Scholar') {
@@ -291,562 +236,166 @@ window.firebaseUpdateProfileAvatar = async (avatarDataUrl) => {
     await window.firebaseSyncToCloud(window.appState);
 };
 
-// Fetch cloud or cached account state by UID and/or Email
-async function fetchAccountCloudData(uid, email) {
-    let cloudData = null;
-    if (db && uid) {
-        try {
-            const snap = await getDoc(doc(db, "users", uid));
-            if (snap.exists()) {
-                cloudData = snap.data();
-            }
-        } catch (e) {}
+const pageReady = document.readyState === 'complete' ? Promise.resolve()
+    : new Promise(resolve => window.addEventListener('DOMContentLoaded', resolve, {once: true}));
+
+function clearSession() {
+    session = null;
+    opening = null;
+    window.currentFirebaseUser = null;
+    clearTimeout(window.syncTimeout);
+    if (signedOutDefaults) window.appState = structuredClone(signedOutDefaults);
+    for (const key of ['focuspulse_has_authed_account', 'focuspulse_auth_uid', 'focuspulse_auth_email',
+        'focuspulse_custom_user', 'focuspulse_guest_name', 'focuspulse_guest_profile_name', 'focuspulse_guest_avatar']) {
+        localStorage.removeItem(key);
     }
-    if (!cloudData && db && email) {
-        try {
-            const emailSnap = await getDoc(doc(db, "users_by_email", normalizeEmailKey(email)));
-            if (emailSnap.exists()) {
-                cloudData = emailSnap.data();
-            }
-        } catch (e) {}
-    }
-    if (!cloudData) {
-        try {
-            if (email) {
-                const rawEmailCache = localStorage.getItem(`focuspulse_account_cache_${email.trim().toLowerCase()}`);
-                if (rawEmailCache) {
-                    const parsed = JSON.parse(rawEmailCache);
-                    cloudData = {
-                        focuspulse_data: parsed,
-                        customName: parsed.user?.name || '',
-                        avatarDataUrl: parsed.user?.avatarDataUrl || '',
-                        hasCompletedOnboarding: true,
-                        updatedAt: parsed.updatedAt || Date.now()
-                    };
-                }
-            }
-            if (!cloudData && uid) {
-                const rawUidCache = localStorage.getItem(`focuspulse_account_uid_${uid}`);
-                if (rawUidCache) {
-                    const parsed = JSON.parse(rawUidCache);
-                    cloudData = {
-                        focuspulse_data: parsed,
-                        customName: parsed.user?.name || '',
-                        avatarDataUrl: parsed.user?.avatarDataUrl || '',
-                        hasCompletedOnboarding: true,
-                        updatedAt: parsed.updatedAt || Date.now()
-                    };
-                }
-            }
-        } catch (e) {}
-    }
-    return cloudData;
+    window.updateOnboardingAccountStatusUI?.();
+    window.updateUI?.();
+    window.openOnboardingAuthScreen?.('signin');
 }
 
-// Unified handler when any user (Firebase Auth or Device Google/Email Account) authenticates
-async function applyAuthenticatedUserSession(userObj, intentMeta = null) {
-    const uid = userObj.uid || ('user_' + normalizeEmailKey(userObj.email || 'local'));
-    const email = (userObj.email || '').trim();
-    const isNewSignup = Boolean(intentMeta && intentMeta.mode === 'signup');
-    const signupProvidedName = (intentMeta && intentMeta.name) ? intentMeta.name.trim() : '';
-    const wasGuestWithData = window.hasExistingGuestData();
-
-    window.appState.userType = 'authenticated';
-    window.appState.authUid = uid;
-    window.appState.authEmail = email;
-
-    const cloudDoc = await fetchAccountCloudData(uid, email);
-
-    if (cloudDoc && cloudDoc.focuspulse_data) {
-        // Returning User Login: restore existing account state authoritatively
-        const cloudState = cloudDoc.focuspulse_data;
-        if (isNewSignup && wasGuestWithData) {
-            window.appState = mergeGuestAndCloudState(window.appState, cloudState);
-        } else {
-            window.appState = restoreAccountCloudState(window.appState, cloudState);
-        }
-
-        // Section 5: Preserve existing custom profile name (gname); do NOT overwrite with Google name
-        const existingCustomName = (cloudDoc.customName || cloudDoc.focuspulse_data?.user?.name || '').trim();
-        if (existingCustomName && existingCustomName !== 'Guest' && existingCustomName !== 'Student Scholar') {
-            window.appState.user.name = existingCustomName;
-            window.appState.user.isCustomName = true;
-        } else if (userObj.displayName && userObj.displayName.trim()) {
-            window.appState.user.name = userObj.displayName.trim();
-        }
-
-        // Refresh photo and email if available
-        if (cloudDoc.avatarDataUrl || userObj.photoURL) {
-            window.appState.user.avatarDataUrl = cloudDoc.avatarDataUrl || userObj.photoURL || '';
-        }
-    } else {
-        // Section 4: New User Registration from Google Authentication
-        const gName = (userObj.displayName || '').trim();
-        if (signupProvidedName) {
-            window.appState.user.name = signupProvidedName;
-            window.appState.user.isCustomName = true;
-        } else if (gName) {
-            window.appState.user.name = gName;
-            window.appState.user.isCustomName = false;
-        } else if (email) {
-            const prefix = email.split('@')[0].replace(/[._-]+/g, ' ');
-            window.appState.user.name = prefix.charAt(0).toUpperCase() + prefix.slice(1);
-        }
-
-        if (userObj.photoURL) {
-            window.appState.user.avatarDataUrl = userObj.photoURL;
-        }
-
-        window.appState.hasCompletedOnboarding = true;
-        window.appState.onboardingStep = 'done';
+async function restoreSession(user, request) {
+    await pageReady;
+    signedOutDefaults ??= structuredClone(window.appState);
+    const uid = user.uid;
+    const cached = readCache(cacheKey(uid));
+    const base = readCache(baselineKey(uid));
+    let remote;
+    try {
+        const snap = await getDocFromServer(doc(db, 'users', uid));
+        remote = snap.exists() ? cloudState(snap.data().focuspulse_data || {}) : null;
+    } catch (err) {
+        // Only a previously verified account on this device can resume during an outage.
+        if (err.code !== 'unavailable' || !cached || !base) throw err;
+        remote = base;
     }
-
-    // Save account to device list
-    if (email) {
-        saveDeviceGoogleAccountEntry({
-            uid,
-            email,
-            name: window.appState.user.name,
-            photoURL: window.appState.user.avatarDataUrl || userObj.photoURL || ''
-        });
-        localStorage.setItem(`focuspulse_custom_name_${normalizeEmailKey(email)}`, window.appState.user.name);
+    if (opening !== request || auth.currentUser?.uid !== uid) return false;
+    const state = structuredClone(signedOutDefaults);
+    if (cached?.authUid === uid) Object.assign(state, cached);
+    if (remote) {
+        const data = base && cached?.authUid === uid ? reconcile(base, cloudState(cached), remote) : remote;
+        Object.assign(state, data);
     }
-
-    // Section 6: Automatic Profile Navigation & Session Persistence
+    state.authUid = uid;
+    state.authEmail = user.email;
+    state.userType = 'authenticated';
+    if (!remote && !cached) {
+        state.user = {...state.user, name: signupName || user.displayName || user.email.split('@')[0]};
+        state.hasCompletedOnboarding = signupName === null;
+        state.onboardingStep = state.hasCompletedOnboarding ? 'done' : 'step_a';
+    }
+    window.appState = state;
+    window.currentFirebaseUser = user;
+    session = {uid, base: structuredClone(remote || base || cloudState(state)), exists: Boolean(remote),
+        queue: Promise.resolve(), closing: false, warned: false};
+    localStorage.setItem(baselineKey(uid), JSON.stringify(session.base));
     localStorage.setItem('focuspulse_has_authed_account', 'true');
     localStorage.setItem('focuspulse_auth_uid', uid);
-    localStorage.setItem('focuspulse_auth_email', email);
-    localStorage.setItem('focuspulse_custom_user', JSON.stringify(window.appState.user));
-
-    const authSection = document.getElementById('auth-section-view');
-    const profileSection = document.getElementById('profile-section-view');
-    if (authSection) authSection.classList.add('hidden');
-    if (profileSection) profileSection.classList.remove('hidden');
-
-    if (typeof applyLiquidGlass === 'function') applyLiquidGlass(window.appState.liquidEffect === true);
+    localStorage.setItem('focuspulse_auth_email', user.email);
+    saveState();
     if (typeof applyThemeVariables === 'function') applyThemeVariables();
+    if (state.timer?.isRunning && typeof resumeRunningTimerFromState === 'function') resumeRunningTimerFromState();
+    window.closeAccountModal?.();
+    window.updateUI?.();
+    window.handlePostAuthRouting?.(user, !state.hasCompletedOnboarding);
+    return true;
+}
 
-    saveState(true);
-
-    if (typeof closeOnboardingShell === 'function') closeOnboardingShell();
-    if (typeof closeAccountModal === 'function') closeAccountModal();
-    if (typeof window.updateUI === 'function') window.updateUI();
-
-    // Automatically redirect directly to their authenticated profile page
-    if (typeof switchAppView === 'function') {
-        switchAppView('account', false);
-    }
-
-    if (typeof window.handlePostAuthRouting === 'function') {
-        window.handlePostAuthRouting(userObj, isNewSignup && !window.appState.hasCompletedOnboarding);
-    }
-
-    showNotification(
-        FPi18n.message("auth.welcome", { name: window.appState.user.name }),
-        FPi18n.message("auth.signedInBody"),
-        "success"
-    );
+function openSession(user) {
+    if (isActive(session) && session.uid === user.uid) return Promise.resolve(true);
+    if (opening?.uid === user.uid) return opening.promise;
+    const request = {uid: user.uid};
+    opening = request;
+    request.promise = restoreSession(user, request).catch(() => {
+        if (opening === request) {
+            clearSession();
+            showError(FPi18n.message('auth.cloudUnavailable'));
+        }
+        return false;
+    }).finally(() => { if (opening === request) opening = null; });
+    return request.promise;
 }
 
 if (auth) {
-    onAuthStateChanged(auth, async (user) => {
-        window.currentFirebaseUser = user;
-        const authSection = document.getElementById('auth-section-view');
-        const profileSection = document.getElementById('profile-section-view');
-
-        if (user) {
-            const intent = pendingAuthIntent;
-            pendingAuthIntent = null;
-            await applyAuthenticatedUserSession(user, intent);
-        } else if (window.appState && window.appState.userType !== 'authenticated') {
-            if (authSection) authSection.classList.remove('hidden');
-            if (profileSection) profileSection.classList.add('hidden');
-            if (typeof window.updateOnboardingAccountStatusUI === 'function') {
-                window.updateOnboardingAccountStatusUI();
-            }
-        }
+    onAuthStateChanged(auth, user => {
+        if (session && user && session.uid !== user.uid) clearSession();
+        if (user) openSession(user);
+        else if (session || opening) clearSession();
     });
 }
 
-window.firebaseLoginEmail = async (emailArg, passArg, fromOnboarding = false) => {
-    const email = (emailArg !== undefined ? emailArg : (document.getElementById('ob-signin-email')?.value || document.getElementById('auth-email-input')?.value || '')).trim();
-    const pass = passArg !== undefined ? passArg : (document.getElementById('ob-signin-password')?.value || document.getElementById('auth-password-input')?.value || '');
-    if (!email || !pass) {
-        showError(FPi18n.message("auth.credentialsRequired"));
+function authError(err) {
+    const errors = {
+        'auth/email-already-in-use': 'auth.emailInUse',
+        'auth/invalid-email': 'auth.pleaseEnterAValidEmailAddress',
+        'auth/weak-password': 'auth.providerWeakPassword',
+        'auth/invalid-credential': 'auth.invalidCredentials',
+        'auth/user-not-found': 'auth.invalidCredentials',
+        'auth/wrong-password': 'auth.invalidCredentials',
+        'auth/network-request-failed': 'auth.cloudUnavailable'
+    };
+    showError(FPi18n.message(errors[err.code] || 'auth.genericError'));
+}
+
+window.firebaseLoginEmail = async (emailArg, passArg) => {
+    const email = (emailArg ?? document.getElementById('auth-email-input')?.value ?? '').trim();
+    const password = passArg ?? document.getElementById('auth-password-input')?.value;
+    if (!email || !password || !auth) {
+        showError(FPi18n.message(auth ? 'auth.credentialsRequired' : 'auth.cloudUnavailable'));
         return false;
     }
-
-    const normEmail = email.toLowerCase();
-    let authUserObj = null;
-
-    if (typeof window.setOnboardingAuthLoading === 'function') {
-        window.setOnboardingAuthLoading(true, FPi18n.message("auth.verifyingCredentialsRestoringData"));
-    }
-
-    // 1. Check persistent Registered Accounts registry first
-    const existingAcc = findRegisteredAccount(normEmail);
-
-    // 2. Try Firebase Auth if configured
-    if (auth) {
-        try {
-            const cred = await signInWithEmailAndPassword(auth, normEmail, pass);
-            if (cred && cred.user) {
-                authUserObj = cred.user;
-                window.currentFirebaseUser = cred.user;
-            }
-        } catch (e) {
-            // If Firebase fails (e.g. offline or user registered locally), verify against local registry
-            if (!existingAcc) {
-                if (typeof window.setOnboardingAuthLoading === 'function') window.setOnboardingAuthLoading(false);
-                showError(FPi18n.message("auth.accountNotFound"));
-                return false;
-            } else if (existingAcc.password && existingAcc.password !== pass) {
-                if (typeof window.setOnboardingAuthLoading === 'function') window.setOnboardingAuthLoading(false);
-                showError(FPi18n.message("auth.invalidCredentials"));
-                return false;
-            }
-        }
-    } else {
-        // Firebase Auth not initialized: strictly check local accounts registry
-        if (!existingAcc) {
-            if (typeof window.setOnboardingAuthLoading === 'function') window.setOnboardingAuthLoading(false);
-            showError(FPi18n.message("auth.accountNotFound"));
-            return false;
-        }
-        if (existingAcc.password && existingAcc.password !== pass) {
-            if (typeof window.setOnboardingAuthLoading === 'function') window.setOnboardingAuthLoading(false);
-            showError(FPi18n.message("auth.invalidCredentials"));
-            return false;
-        }
-    }
-
-    if (!authUserObj && !existingAcc) {
-        if (typeof window.setOnboardingAuthLoading === 'function') window.setOnboardingAuthLoading(false);
-        showError(FPi18n.message("auth.accountNotFound"));
-        return false;
-    }
-
-    if (!authUserObj && existingAcc && existingAcc.password && existingAcc.password !== pass) {
-        if (typeof window.setOnboardingAuthLoading === 'function') window.setOnboardingAuthLoading(false);
-        showError(FPi18n.message("auth.invalidCredentials"));
-        return false;
-    }
-
-    // 3. CREDENTIALS ARE 100% CORRECT & VERIFIED!
-    const effectiveUid = (authUserObj && authUserObj.uid) ? authUserObj.uid : ('user_' + normalizeEmailKey(normEmail));
-    const effectiveName = (authUserObj && authUserObj.displayName) ? authUserObj.displayName : (existingAcc?.name || normEmail.split('@')[0]);
-
-    // Keep registry updated
-    saveRegisteredAccount(effectiveName, normEmail, pass);
-
-    // Set authenticated session in appState
-    window.appState.userType = 'authenticated';
-    window.appState.authUid = effectiveUid;
-    window.appState.authEmail = normEmail;
-    window.appState.hasCompletedOnboarding = true;
-    window.appState.onboardingStep = 'done';
-
-    // Set persistent session in localStorage
-    localStorage.setItem('focuspulse_has_authed_account', 'true');
-    localStorage.setItem('focuspulse_auth_uid', effectiveUid);
-    localStorage.setItem('focuspulse_auth_email', normEmail);
-
-    // 4. RESTORE USER'S DATA AUTHORITATIVELY FROM CACHE & CLOUD!
-    const rawCache = localStorage.getItem(`focuspulse_account_cache_${normEmail}`);
-    if (rawCache) {
-        try {
-            const parsed = JSON.parse(rawCache);
-            if (parsed) {
-                window.appState = restoreAccountCloudState(window.appState, parsed);
-            }
-        } catch(e) {}
-    }
-
-    // Attempt cloud restore if online
+    window.setOnboardingAuthLoading?.(true, FPi18n.message('auth.verifyingCredentialsRestoringData'));
     try {
-        const cloudDoc = await fetchAccountCloudData(effectiveUid, normEmail);
-        if (cloudDoc && cloudDoc.focuspulse_data) {
-            window.appState = restoreAccountCloudState(window.appState, cloudDoc.focuspulse_data);
-        }
-    } catch(e) {}
-
-    // Ensure name is properly restored
-    if (effectiveName) {
-        window.appState.user.name = effectiveName;
-        window.appState.user.isCustomName = true;
-    }
-    localStorage.setItem('focuspulse_custom_user', JSON.stringify(window.appState.user));
-
-    // Save restored state to active launch state
-    saveState(false);
-
-    if (typeof window.setOnboardingAuthLoading === 'function') {
-        window.setOnboardingAuthLoading(false);
-    }
-
-    // 5. UNLOCK DASHBOARD AND RENDER PERSONALIZED DATA
-    if (typeof closeAccountModal === 'function') closeAccountModal();
-    if (typeof closeOnboardingShell === 'function') closeOnboardingShell();
-    if (typeof updateOnboardingAccountStatusUI === 'function') updateOnboardingAccountStatusUI();
-    if (typeof window.updateUI === 'function') window.updateUI();
-    if (typeof switchAppView === 'function') switchAppView('home', false);
-
-    showNotification(FPi18n.message("auth.welcomeBack2"), FPi18n.message("auth.signedInAsAllDataRestored", { account: window.appState.user.name || normEmail }), "success");
-    return true;
+        const {user} = await signInWithEmailAndPassword(auth, email, password);
+        const ok = await openSession(user);
+        if (ok) showNotification(FPi18n.message('auth.welcome', {name: window.appState.user.name}), FPi18n.message('auth.signedInBody'), 'success');
+        return ok;
+    } catch (err) { authError(err); return false; }
+    finally { window.setOnboardingAuthLoading?.(false); }
 };
 
-window.firebaseSignupEmail = async (nameArg, emailArg, passArg, fromOnboarding = false) => {
-    const name = (nameArg !== undefined ? String(nameArg) : '').trim();
-    const email = (emailArg !== undefined ? emailArg : (document.getElementById('auth-email-input')?.value || '')).trim();
-    const pass = passArg !== undefined ? passArg : (document.getElementById('auth-password-input')?.value || '');
-
-    if (!email || !pass) {
-        showError(FPi18n.message("auth.signUpCredentialsRequired"));
+window.firebaseSignupEmail = async (nameArg, emailArg, passArg) => {
+    const email = (emailArg ?? document.getElementById('auth-email-input')?.value ?? '').trim();
+    const password = passArg ?? document.getElementById('auth-password-input')?.value;
+    if (!email || !password || !auth) {
+        showError(FPi18n.message(auth ? 'auth.signUpCredentialsRequired' : 'auth.cloudUnavailable'));
         return false;
     }
-    if (pass.length < 6) {
-        showError(FPi18n.message("auth.passwordTooShort"));
-        return false;
-    }
-
-    const normEmail = email.toLowerCase();
-
-    // Strict Account Registry check: prevent registering duplicate existing accounts
-    const existingAcc = findRegisteredAccount(normEmail);
-    if (existingAcc) {
-        showError(FPi18n.message("auth.emailInUse"));
-        return false;
-    }
-
-    // Immediate button loading feedback on first click
-    if (typeof window.setOnboardingAuthLoading === 'function') {
-        window.setOnboardingAuthLoading(true, FPi18n.message("auth.settingUpYourSpace"));
-    }
-
-    if (auth) {
-        try {
-            const cred = await createUserWithEmailAndPassword(auth, normEmail, pass);
-            if (name && cred && cred.user) {
-                try { await updateProfile(cred.user, { displayName: name }); } catch (e) {}
-            }
-        } catch (e) {
-            const code = e?.code || '';
-            if (code.includes('email-already-in-use')) {
-                showError(FPi18n.message("auth.emailInUse"));
-                return false;
-            } else if (code.includes('weak-password')) {
-                showError(FPi18n.message("auth.providerWeakPassword"));
-                return false;
-            } else if (code.includes('invalid-email')) {
-                showError(FPi18n.message("auth.pleaseEnterAValidEmailAddress"));
-                return false;
-            } else {
-                showError(FPi18n.message("auth.signUpFailed"));
-                return false;
-            }
-        } finally {
-            if (typeof window.setOnboardingAuthLoading === 'function') window.setOnboardingAuthLoading(false);
-        }
-    }
-
-    // Save newly created account into persistent registry
-    saveRegisteredAccount(name || 'Scholar', normEmail, pass);
-
-    // Set authenticated session variables
-    window.appState.userType = 'authenticated';
-    window.appState.authEmail = normEmail;
-    window.appState.authUid = 'user_' + normalizeEmailKey(normEmail);
-    window.appState.user.name = name || 'Scholar';
-    window.appState.user.isCustomName = Boolean(name);
-    window.appState.hasCompletedOnboarding = false;
-    window.appState.onboardingStep = 'step_a';
-
-    localStorage.setItem('focuspulse_has_authed_account', 'true');
-    localStorage.setItem('focuspulse_auth_uid', window.appState.authUid);
-    localStorage.setItem('focuspulse_auth_email', normEmail);
-    localStorage.setItem('focuspulse_custom_user', JSON.stringify(window.appState.user));
-    saveState(false);
-
-    if (typeof window.setOnboardingAuthLoading === 'function') {
-        window.setOnboardingAuthLoading(false);
-    }
-    if (typeof closeAccountModal === 'function') closeAccountModal();
-    if (typeof updateOnboardingAccountStatusUI === 'function') updateOnboardingAccountStatusUI();
-
-    // Direct transition to Welcome Wizard & Preferences!
-    showNotification(FPi18n.message("auth.accountCreated"), FPi18n.message("auth.welcomeLetSSetUpYourPreferences", { name: window.appState.user.name }), "success");
-    if (typeof openOnboardingWizard === 'function') {
-        openOnboardingWizard('step_a', false);
-    }
-
-    return true;
+    signupName = (nameArg ?? document.getElementById('auth-name-input')?.value ?? '').trim();
+    window.setOnboardingAuthLoading?.(true, FPi18n.message('auth.settingUpYourSpace'));
+    try {
+        const {user} = await createUserWithEmailAndPassword(auth, email, password);
+        if (signupName) await updateProfile(user, {displayName: signupName});
+        return await openSession(user);
+    } catch (err) { authError(err); return false; }
+    finally { signupName = null; window.setOnboardingAuthLoading?.(false); }
 };
 
-window.firebaseResetPassword = async (emailArg) => {
+window.firebaseResetPassword = async emailArg => {
     const email = (emailArg || '').trim();
-    if (!email || !email.includes('@')) {
-        showError(FPi18n.message("auth.resetEmailRequired"));
+    if (!auth || !email.includes('@')) {
+        showError(FPi18n.message(auth ? 'auth.resetEmailRequired' : 'auth.cloudUnavailable'));
         return false;
     }
-    const normEmail = email.toLowerCase();
-    
-    // Find account in registered accounts registry
-    const accounts = (typeof getRegisteredAccounts === 'function') ? getRegisteredAccounts() : {};
-    const key = normalizeEmailKey(normEmail);
-    const existingAcc = accounts[key] || accounts[normEmail];
-
-    if (!existingAcc) {
-        showError(FPi18n.message("auth.resetAccountNotFound"));
-        return false;
-    }
-
-    // Determine the user's name
-    const rawName = (existingAcc.name && existingAcc.name.trim()) ? existingAcc.name.trim() : normEmail.split('@')[0];
-    const cleanName = rawName.replace(/[^a-zA-Z0-9]/g, '');
-    const formattedName = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
-    
-    // Generate new password: [Name]@123
-    const newPassword = `${formattedName}@123`;
-
-    // Save new password in registered accounts store
-    existingAcc.password = newPassword;
-    accounts[key] = existingAcc;
     try {
-        localStorage.setItem('focuspulse_registered_accounts', JSON.stringify(accounts));
-    } catch(e) {}
-
-    // Update in Firestore if db is active
-    if (db) {
-        try {
-            await setDoc(doc(db, "users_by_email", key), {
-                password: newPassword,
-                name: rawName,
-                updatedAt: Date.now()
-            }, { merge: true });
-        } catch(e) {}
-    }
-
-    // Display the newly generated password with a 1-click "Sign In With New Password" action!
-    const errEl = document.getElementById('ob-auth-error-banner');
-    if (errEl) {
-        errEl.className = "p-4 rounded-2xl text-xs border bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-200 space-y-2.5 shadow-sm";
-        errEl.innerHTML = `
-            <div class="flex items-center gap-2 font-black text-sm text-emerald-700 dark:text-emerald-300">
-                <i class="fa-solid fa-circle-check text-base"></i>
-                <span data-i18n="auth.passwordResetSuccessful">Password Reset Successful!</span>
-            </div>
-            <p class="text-xs font-semibold"><span data-i18n="auth.yourPasswordHasBeenResetTo">Your password has been reset to:</span></p>
-            <div class="p-2.5 rounded-xl bg-white/80 dark:bg-black/50 border border-emerald-500/40 text-center font-mono font-black text-base text-emerald-600 dark:text-emerald-300 select-all tracking-wider">
-                ${escapeHtml(newPassword)}
-            </div>
-            <p class="text-[11px] font-medium text-slate-600 dark:text-slate-400">
-                <span data-i18n="auth.format2">Format:</span> <strong><span data-i18n="auth.name123">[Name]@123</span></strong><span data-i18n="auth.resetSignInHint">. Click below to sign in immediately with this password.</span>
-            </p>
-            <button type="button" onclick="autoFillAndOpenSignIn('${escapeHtml(normEmail)}', '${escapeHtml(newPassword)}')" class="v-accent-btn w-full py-2.5 rounded-xl font-extrabold text-xs shadow-md transition flex items-center justify-center gap-1.5">
-                <span data-i18n="auth.signInWithNewPassword">Sign In With New Password →</span>
-            </button>
-        `;
-        errEl.classList.remove('hidden');
-        errEl.style.display = 'block';
-    }
-
-    const submitBtn = document.getElementById('ob-auth-submit-btn');
-    if (submitBtn) {
-        submitBtn.classList.add('hidden');
-    }
-
-    showNotification(FPi18n.message("auth.passwordReset2"), FPi18n.message("auth.newPassword", { newPassword }), "success");
-    return true;
-};
-
-window.autoFillAndOpenSignIn = function(email, password) {
-    openOnboardingAuthScreen('signin');
-    setTimeout(() => {
-        const emailInput = document.getElementById('ob-signin-email');
-        const passInput = document.getElementById('ob-signin-password');
-        if (emailInput) emailInput.value = email;
-        if (passInput) passInput.value = password;
-    }, 50);
+        auth.languageCode = FPi18n.getCurrentLanguage();
+        await sendPasswordResetEmail(auth, email);
+        return true;
+    } catch (err) { authError(err); return false; }
 };
 
 window.firebaseLogout = async () => {
-    // 1. Sync latest state to cloud and per-account cache BEFORE logging out
-    if (window.appState && window.appState.authEmail) {
-        const emailKey = window.appState.authEmail.trim().toLowerCase();
-        try {
-            localStorage.setItem(`focuspulse_account_cache_${emailKey}`, JSON.stringify(window.appState));
-        } catch(e) {}
-        if (window.firebaseSyncToCloud) {
-            try { await window.firebaseSyncToCloud(window.appState); } catch (e) {}
-        }
-    }
-
-    // 2. Sign out of Firebase Auth if active
     try {
-        if (auth && window.currentFirebaseUser) {
-            await signOut(auth);
+        if (isActive(session)) {
+            saveState();
+            await syncWorkspace();
         }
-    } catch (e) {}
-    window.currentFirebaseUser = null;
-    window._guestLoginWarningAcknowledged = false;
-
-    // 3. Reset EVERY single piece of workspace data in memory to clean empty state (NO GUEST DATA!)
-    window.appState.userType = null;
-    window.appState.authUid = null;
-    window.appState.authEmail = '';
-    window.appState.hasCompletedOnboarding = false;
-    window.appState.onboardingStep = 'welcome';
-    window.appState.user = { name: '', subjects: '', isCustomName: false, avatarDataUrl: '' };
-    window.appState.tasks = [];
-    window.appState.taskHistory = [];
-    window.appState.courses = [];
-    window.appState.habits = [];
-    window.appState.waterIntakeMl = 0;
-    window.appState.streakCount = 0;
-    window.appState.bestStreak = 0;
-    window.appState.previousStreakCount = 0;
-    window.appState.lastActiveDate = null;
-    window.appState.lastCreditedStreakDate = null;
-    window.appState.streakRestoredThisWeek = false;
-    window.appState.timer = {
-        mode: 'pomodoro',
-        secondsLeft: 25 * 60,
-        isRunning: false,
-        targetEndTimeMs: null,
-        lastTickTimestampMs: null,
-        sessionCount: 0,
-        totalFocusSecs: 0
-    };
-    window.appState.activeSection = 'home';
-
-    // 4. Wipe active session tokens from localStorage
-    // (Preserve focuspulse_account_cache_* and focuspulse_registered_accounts for next sign in!)
-    localStorage.removeItem('focuspulse_has_authed_account');
-    localStorage.removeItem('focuspulse_auth_uid');
-    localStorage.removeItem('focuspulse_auth_email');
-    localStorage.removeItem('focuspulse_custom_user');
-    localStorage.removeItem('focuspulse_guest_name');
-    localStorage.removeItem('focuspulse_guest_profile_name');
-    localStorage.removeItem('focuspulse_guest_avatar');
-    localStorage.removeItem('focuspulse_state');
-    localStorage.removeItem('focuspulse_launch_state');
-    localStorage.removeItem('focuspulse_onboarding_v1');
-
-    saveState(false);
-
-    // 5. Update UI to blank state
-    if (typeof closeAccountModal === 'function') closeAccountModal();
-    if (typeof closeDeleteAccountModal === 'function') closeDeleteAccountModal();
-    if (typeof window.updateOnboardingAccountStatusUI === 'function') window.updateOnboardingAccountStatusUI();
-    if (typeof window.updateUI === 'function') window.updateUI();
-
-    // 6. Return strictly to Sign In screen and keep dashboard locked
-    if (typeof openOnboardingAuthScreen === 'function') {
-        openOnboardingAuthScreen('signin');
-    }
-
-    showNotification(FPi18n.message("auth.loggedOut"), FPi18n.message("auth.signedOutBody"), "info");
+        if (auth) await signOut(auth);
+        clearSession();
+        showNotification(FPi18n.message('auth.loggedOut'), FPi18n.message('auth.signedOutBody'), 'info');
+    } catch (err) { authError(err); }
 };
+
 
 window.switchToSignUpFromBackupModal = function() {
     window.closeGuestBackupPromptModal();
@@ -880,68 +429,30 @@ window.executeDeleteAccountAction = async function() {
         btn.innerHTML = "<i class=\"fa-solid fa-circle-notch fa-spin mr-1.5\"></i><span><span data-i18n=\"auth.deleting\">Deleting...</span></span>";
     }
     try {
-        const email = (window.appState && window.appState.authEmail) || (auth && auth.currentUser ? auth.currentUser.email : '') || '';
-        const uid = (window.appState && window.appState.authUid) || (auth && auth.currentUser ? auth.currentUser.uid : '') || '';
-        const emailKey = normalizeEmailKey(email);
-
-        // 1. Delete Firestore cloud docs if db is active
-        if (db) {
-            try { if (uid) await deleteDoc(doc(db, "users", uid)); } catch (e) { console.warn("Firestore user doc delete:", e); }
-            try { if (emailKey) await deleteDoc(doc(db, "users_by_email", emailKey)); } catch (e) { console.warn("Firestore email index delete:", e); }
-        }
-
-        // 2. Delete Firebase Authentication user
-        if (auth && auth.currentUser) {
-            try {
-                await deleteUser(auth.currentUser);
-            } catch (authDelErr) {
-                console.warn("deleteUser auth error (may require recent login):", authDelErr);
-                try { await signOut(auth); } catch (soErr) {}
+        const user = auth?.currentUser;
+        if (!user || !isActive(session)) throw new Error('No active session');
+        const email = user.email;
+        const closing = session;
+        closing.closing = true;
+        clearTimeout(window.syncTimeout);
+        await closing.queue;
+        const ref = doc(db, 'users', user.uid);
+        const previous = await getDocFromServer(ref);
+        if (previous.exists()) await deleteDoc(ref);
+        try {
+            await deleteUser(user);
+        } catch (err) {
+            // Both services are independent. Restore the workspace if Auth rejects deletion.
+            if (previous.exists()) {
+                await runTransaction(db, async tx => {
+                    if (!(await tx.get(ref)).exists()) tx.set(ref, previous.data());
+                });
             }
+            throw err;
         }
-
-        // 3. Clear cloud caching in localStorage
-        if (emailKey) {
-            localStorage.removeItem('focuspulse_cloud_user_' + emailKey);
-            localStorage.removeItem('focuspulse_cloud_user_user_' + emailKey);
-        }
-        if (uid) {
-            localStorage.removeItem('focuspulse_cloud_user_' + uid);
-        }
-
-        // 4. Wipe authenticated session and local state
-        window.appState.userType = null;
-        window.appState.authEmail = null;
-        window.appState.authUid = null;
-        window.currentFirebaseUser = null;
-        window._guestLoginWarningAcknowledged = false;
-
-        localStorage.removeItem('fp_has_authed_account');
-        localStorage.removeItem('focuspulse_guest_name');
-        localStorage.removeItem('focuspulse_guest_profile_name');
-        localStorage.removeItem('focuspulse_custom_user');
-        localStorage.removeItem('focuspulse_state');
-        localStorage.removeItem('focuspulse_onboarding_v1');
-
-        // Reset user state to clean defaults
-        if (typeof getDefaultCourses === 'function') {
-            window.appState.courses = getDefaultCourses();
-        }
-        if (typeof generateSampleHabits === 'function') {
-            window.appState.habits = generateSampleHabits();
-        }
-        if (typeof generateInitialTasks === 'function') {
-            window.appState.tasks = generateInitialTasks();
-        }
-        window.appState.user = {
-            name: 'Scholar',
-            avatar: 'fa-user-astronaut',
-            avatarDataUrl: '',
-            isCustomName: false
-        };
-        window.appState.hasCompletedOnboarding = false;
-
-        saveState();
+        localStorage.removeItem(cacheKey(user.uid));
+        localStorage.removeItem(baselineKey(user.uid));
+        clearSession();
         window.closeDeleteAccountModal();
         if (typeof updateOnboardingAccountStatusUI === 'function') updateOnboardingAccountStatusUI();
         if (typeof window.updateUI === 'function') window.updateUI();
@@ -957,8 +468,9 @@ window.executeDeleteAccountAction = async function() {
         }
     } catch (err) {
         console.error("Account deletion failed:", err);
-        showError(FPi18n.message("auth.accountDeletionNote"));
+        showError(FPi18n.message(err.code === 'auth/requires-recent-login' ? 'auth.recentLogin' : 'auth.accountDeletionNote'));
     } finally {
+        if (session) session.closing = false;
         if (btn) {
             btn.disabled = false;
             btn.innerHTML = "<span><span data-i18n=\"account.yesDeleteAccount\">Yes, Delete Account</span></span>";
@@ -967,109 +479,30 @@ window.executeDeleteAccountAction = async function() {
 };
 
 
-// Cross-tab / Cross-window account deletion sync
-window.addEventListener('storage', (event) => {
-    if (event.key === 'focuspulse_account_deleted_broadcast' && event.newValue) {
-        try {
-            const data = JSON.parse(event.newValue);
-            const currentEmail = (window.appState && window.appState.authEmail) ? window.appState.authEmail.toLowerCase() : '';
-            if (!currentEmail || currentEmail === (data.email || '').toLowerCase()) {
-                window.appState.userType = null;
-                window.appState.authEmail = '';
-                window.appState.authUid = null;
-                window.appState.tasks = [];
-                window.appState.courses = [];
-                window.appState.habits = [];
-                window.appState.waterIntakeMl = 0;
-                window.appState.user = { name: '', subjects: '', isCustomName: false, avatarDataUrl: '' };
-                saveState(false);
-                if (typeof closeAccountModal === 'function') closeAccountModal();
-                if (typeof window.updateUI === 'function') window.updateUI();
-                if (typeof openOnboardingAuthScreen === 'function') openOnboardingAuthScreen('signin');
-                if (typeof showNotification === 'function') {
-                    showNotification(FPi18n.message("auth.sessionExpired"), FPi18n.message("auth.sessionExpiredBody"), "info");
-                }
-            }
-        } catch(e) {}
-    }
-});
-
-
-// =========================================================================
-// REALTIME DATA SYNC & MANUAL "SYNC NOW" ENGINE
-// =========================================================================
+// Firebase Auth also delivers sign-out events from other tabs.
 window.syncNowFromProfile = async function() {
-    const btn = document.getElementById('profile-sync-now-btn');
-    const origHtml = btn ? btn.innerHTML : '';
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = "<i class=\"fa-solid fa-rotate fa-spin mr-1\"></i> <span><span data-i18n=\"auth.syncing\">Syncing...</span></span>";
+    if (!isActive(session)) {
+        showNotification(FPi18n.message('auth.syncNotice'), FPi18n.message('auth.syncRequiresSignIn'), 'info');
+        return;
+    }
+    const button = document.getElementById('profile-sync-now-btn');
+    const original = button?.innerHTML;
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = FPi18n.markup('auth.syncing');
     }
     try {
-        if (!window.appState || window.appState.userType !== 'authenticated') {
-            showNotification(FPi18n.message("auth.syncNotice"), FPi18n.message("auth.syncRequiresSignIn"), "info");
-            return;
-        }
-
-        // 1. Sync local state to Cloud Firestore & device cache
-        if (typeof window.firebaseSyncToCloud === 'function') {
-            await window.firebaseSyncToCloud(window.appState);
-        }
-
-        // 2. Fetch latest cloud state to reconcile any remote updates
-        const uid = window.appState.authUid;
-        const email = window.appState.authEmail;
-        if (typeof fetchAccountCloudData === 'function') {
-            const cloudDoc = await fetchAccountCloudData(uid, email);
-            if (cloudDoc && cloudDoc.focuspulse_data) {
-                const cloudState = cloudDoc.focuspulse_data;
-                if ((cloudState.updatedAt || 0) > (window.appState.updatedAt || 0)) {
-                    window.appState = restoreAccountCloudState(window.appState, cloudState);
-                    saveState(false);
-                }
-            }
-        }
-
-        // 3. Broadcast sync event across open tabs & windows in realtime
-        try {
-            localStorage.setItem('focuspulse_realtime_sync_event', JSON.stringify({
-                email: (window.appState.authEmail || '').toLowerCase(),
-                timestamp: Date.now()
-            }));
-        } catch(e) {}
-
-        // 4. Update UI
-        if (typeof window.updateUI === 'function') window.updateUI();
-        if (typeof updateOnboardingAccountStatusUI === 'function') updateOnboardingAccountStatusUI();
-
-        showNotification(FPi18n.message("auth.syncComplete"), FPi18n.message("auth.syncCompleteBody"), "success");
-    } catch (err) {
-        console.error("Sync error:", err);
-        showNotification(FPi18n.message("auth.syncNotice"), FPi18n.message("auth.syncQueued"), "info");
+        const ok = await syncWorkspace(true);
+        showNotification(FPi18n.message('auth.syncNotice'), FPi18n.message(ok ? 'auth.syncCompleteBody' : 'auth.cloudUnavailable'), ok ? 'success' : 'warning');
     } finally {
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = origHtml;
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = original;
         }
     }
 };
 
-// Cross-tab / Cross-window realtime data change listener
-window.addEventListener('storage', (event) => {
-    if (event.key === 'focuspulse_realtime_sync_event' && event.newValue) {
-        try {
-            const data = JSON.parse(event.newValue);
-            const myEmail = (window.appState && window.appState.authEmail) ? window.appState.authEmail.toLowerCase() : '';
-            if (myEmail && myEmail === (data.email || '').toLowerCase()) {
-                const rawCache = localStorage.getItem(`focuspulse_account_cache_${myEmail}`);
-                if (rawCache) {
-                    const parsed = JSON.parse(rawCache);
-                    if (parsed && (parsed.updatedAt || 0) > (window.appState.updatedAt || 0)) {
-                        window.appState = restoreAccountCloudState(window.appState, parsed);
-                        if (typeof window.updateUI === 'function') window.updateUI();
-                    }
-                }
-            }
-        } catch(e) {}
-    }
+window.addEventListener('online', () => syncWorkspace(true));
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') syncWorkspace(true);
 });

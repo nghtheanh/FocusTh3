@@ -528,74 +528,21 @@ function applyThemeVariables() {
 
 function loadState() {
     try {
-        const hasAuthed = localStorage.getItem('focuspulse_has_authed_account') === 'true';
-        const savedAuthEmail = (localStorage.getItem('focuspulse_auth_email') || '').trim().toLowerCase();
-        const savedAuthUid = localStorage.getItem('focuspulse_auth_uid');
-
-        if (hasAuthed && savedAuthEmail) {
-            // User is authenticated: authoritatively restore account state
-            window.appState.userType = 'authenticated';
-            window.appState.authEmail = savedAuthEmail;
-            window.appState.authUid = savedAuthUid || ('user_' + savedAuthEmail.replace(/[^a-zA-Z0-9]/g, '_'));
-            window.appState.hasCompletedOnboarding = true;
-            window.appState.onboardingStep = 'done';
-
-            const emailKey = savedAuthEmail;
-            const rawCache = localStorage.getItem(`focuspulse_account_cache_${emailKey}`);
-            if (rawCache) {
-                try {
-                    const cachedState = JSON.parse(rawCache);
-                    if (cachedState) {
-                        window.appState = {
-                            ...window.appState,
-                            ...cachedState,
-                            userType: 'authenticated',
-                            authEmail: emailKey,
-                            hasCompletedOnboarding: true,
-                            onboardingStep: 'done',
-                            user: {
-                                ...(window.appState.user || {}),
-                                ...(cachedState.user || {})
-                            }
-                        };
-                        if (Array.isArray(cachedState.courses)) window.appState.courses = cachedState.courses;
-                        if (Array.isArray(cachedState.tasks)) window.appState.tasks = cachedState.tasks;
-                        if (Array.isArray(cachedState.taskHistory)) window.appState.taskHistory = cachedState.taskHistory;
-                        if (Array.isArray(cachedState.habits)) window.appState.habits = cachedState.habits;
-                        if (typeof cachedState.waterIntakeMl === 'number') window.appState.waterIntakeMl = cachedState.waterIntakeMl;
-                    }
-                } catch(e) {}
-            }
-
-            // Ensure name is set from registered accounts registry if missing
-            if (!window.appState.user.name || window.appState.user.name === 'Guest' || window.appState.user.name === 'Scholar' || window.appState.user.name === 'Student Scholar') {
-                const accounts = (typeof getRegisteredAccounts === 'function') ? getRegisteredAccounts() : {};
-                const acc = accounts[savedAuthEmail.replace(/[^a-z0-9@._-]/g, '_')];
-                if (acc && acc.name) {
-                    window.appState.user.name = acc.name;
-                    window.appState.user.isCustomName = true;
-                } else {
-                    const prefix = savedAuthEmail.split('@')[0];
-                    window.appState.user.name = prefix.charAt(0).toUpperCase() + prefix.slice(1);
-                }
-            }
-        } else {
-            // User is logged out: DO NOT LOAD ANY DATA OR GUEST PROFILE!
-            window.appState.userType = null;
-            window.appState.authEmail = '';
-            window.appState.authUid = null;
-            window.appState.hasCompletedOnboarding = false;
-            window.appState.onboardingStep = 'welcome';
-            window.appState.user = { name: '', subjects: '', isCustomName: false, avatarDataUrl: '' };
-            window.appState.tasks = [];
-            window.appState.taskHistory = [];
-            window.appState.courses = [];
-            window.appState.habits = [];
-            window.appState.waterIntakeMl = 0;
-            window.appState.streakCount = 0;
-            window.appState.bestStreak = 0;
-            window.appState.previousStreakCount = 0;
-        }
+        // The Firebase auth observer restores the workspace only after it verifies the user.
+        window.appState.userType = null;
+        window.appState.authEmail = '';
+        window.appState.authUid = null;
+        window.appState.hasCompletedOnboarding = false;
+        window.appState.onboardingStep = 'welcome';
+        window.appState.user = { name: '', subjects: '', isCustomName: false, avatarDataUrl: '' };
+        window.appState.tasks = [];
+        window.appState.taskHistory = [];
+        window.appState.courses = [];
+        window.appState.habits = [];
+        window.appState.waterIntakeMl = 0;
+        window.appState.streakCount = 0;
+        window.appState.bestStreak = 0;
+        window.appState.previousStreakCount = 0;
 
         // Check hydration daily reset
         if (typeof checkDailyHydrationReset === 'function') {
@@ -692,11 +639,7 @@ function saveState(immediateCloudSync = false) {
             userType: window.appState.userType || null,
             updatedAt: window.appState.updatedAt
         }));
-        // Per-account local backup snapshot for instant restore on re-login
-        if (window.appState.userType === 'authenticated' && window.appState.authEmail) {
-            const emailKey = window.appState.authEmail.trim().toLowerCase();
-            localStorage.setItem(`focuspulse_account_cache_${emailKey}`, JSON.stringify(window.appState));
-        }
+        // Leave legacy email caches untouched. New sessions restore only the verified UID's cache.
         if (window.appState.userType === 'authenticated' && window.appState.authUid) {
             localStorage.setItem(`focuspulse_account_uid_${window.appState.authUid}`, JSON.stringify(window.appState));
         }

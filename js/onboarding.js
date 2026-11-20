@@ -216,12 +216,6 @@ function updateReturningUserHomeGreeting() {
 
 function updateOnboardingAccountStatusUI() {
     if (!window.appState) return;
-    const hasAuthed = localStorage.getItem('focuspulse_has_authed_account') === 'true';
-    const savedEmail = localStorage.getItem('focuspulse_auth_email');
-    if (hasAuthed && savedEmail && window.appState.userType !== 'authenticated') {
-        window.appState.userType = 'authenticated';
-        window.appState.authEmail = savedEmail;
-    }
     const isLoggedIn = Boolean(window.currentFirebaseUser || window.appState.userType === 'authenticated');
     const badgeEl = document.getElementById('account-mode-pill-badge');
     if (badgeEl) {
@@ -576,7 +570,7 @@ function renderOnboardingAuthView(mode = 'welcome') {
     }
 
     // -------------------------------------------------------------------------
-    // 3. FORGOT PASSWORD SCREEN (Sets new password to [Name]@123)
+    // 3. FORGOT PASSWORD SCREEN
     // -------------------------------------------------------------------------
     if (mode === 'forgot') {
         stage.innerHTML = `
@@ -591,7 +585,7 @@ function renderOnboardingAuthView(mode = 'welcome') {
 
                 <div class="space-y-1.5">
                     <h2 class="text-2xl font-black tracking-tight" style="color:var(--v-fg)"><span data-i18n="auth.resetYourPassword">Reset your password 🔑</span></h2>
-                    <p class="text-xs sm:text-sm font-medium leading-relaxed" style="color:var(--v-fg2)"><span data-i18n="auth.resetFormatIntro">Enter your account email to reset your password to the secure</span> <strong><span data-i18n="auth.name123">[Name]@123</span></strong> <span data-i18n="auth.format">format.</span></p>
+                    <p class="text-xs sm:text-sm font-medium leading-relaxed" style="color:var(--v-fg2)"><span data-i18n="auth.resetEmailHint">Enter your email to receive a password reset link.</span></p>
                 </div>
 
                 <form onsubmit="handleOnboardingForgotSubmit(event)" class="space-y-3.5 text-xs">
