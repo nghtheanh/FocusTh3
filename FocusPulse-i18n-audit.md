@@ -1,0 +1,2634 @@
+# FocusPulse · Báo cáo audit cho Tiếng Việt và English
+
+**Phạm vi** — Bản nguồn trong thư mục gốc của workspace. Đã so sánh tên, đường dẫn tương đối và SHA-256 của 76 tệp với bản sao lồng bên trong. Cả 76 cặp trùng khớp. Cả hai thư mục đều thiếu lịch sử Git. Phụ lục chỉ đếm bản gốc một lần.
+
+**Quyết định đề xuất** — Dùng từ điển JavaScript cục bộ và cập nhật nhãn ngay tại nơi hiển thị. Điểm cần tránh là gọi `window.updateUI()` hoặc điều hướng lại khi đổi tiếng. Hai thao tác này có thể làm thay đổi trạng thái ứng dụng.
+
+## A. Kiến trúc hiện tại
+
+- **Điểm vào web.** `index.html` chứa app shell, bảy view, điều hướng desktop/mobile và modal. Trình duyệt nạp script thường theo thứ tự config cục bộ, state, notifications, habits, ui, ai, onboarding và script chính. Firebase là ES module riêng. Phần giao diện dùng HTML, JavaScript thao tác DOM trực tiếp, inline handler, Tailwind CDN, Font Awesome 6.4 và CSS tùy biến. Vite 5 là công cụ dev/build. Không thấy component framework hay i18n engine sẵn có.
+- **Đóng gói.** `vite.config.js` chép lại HTML gốc, thư mục js/css/assets, manifest và service worker vào dist. `src-tauri/src/main.rs` gọi thư viện Rust cho Tauri 2, bao gồm menu khay hệ thống, cửa sổ và thông báo Windows. Tauri và cấu hình Capacitor 6 cùng trỏ tới dist. Service worker xử lý vòng đời và nhấp thông báo. Trong bản nguồn này chưa có cache offline cho tài nguyên. CI có workflow tạo bộ cài Windows khi phát hành.
+- **Khởi tạo.** Trong `js/script.js:295`, DOMContentLoaded gọi loadState, nhận diện nền tảng, kiểm tra streak, cập nhật UI và khởi chạy luồng startup. Bộ định thời đang chạy được nối lại từ targetEndTimeMs. `js/onboarding.js:134` phân luồng welcome hoặc dashboard theo trạng thái xác thực. Đăng ký mới có wizard sáu bước. Luồng đăng nhập hiện hành có kiểm tra xác thực dù README còn mô tả Guest Mode.
+- **Render.** `js/ui.js:37` khai báo bảy view home, tasks, habits, plans, ai, account, settings. Pomodoro nằm ở Home, Study Plans và Hydration chung một view, Statistics xuất hiện ở nhiều view. switchAppView ẩn/hiện DOM. Các renderer ghi innerText, textContent, innerHTML và dựng lại danh sách, select tùy biến, wizard và popup. Dashboard tự xoay thẻ, timer cập nhật theo nhịp và thông báo có thể xuất hiện khi ứng dụng trở lại foreground.
+- **State.** `js/state.js:172` khởi tạo window.appState. loadState đọc thông tin phiên và cache tài khoản từ localStorage. saveState ghi các snapshot và có thể kích hoạt đồng bộ Firestore. Import/export JSON sử dụng appState. Filter, lịch sử điều hướng, bước tương tác AI, lịch sử thông báo và một phần bản nháp nằm trong biến runtime hoặc DOM. Riêng form chưa submit có thể chỉ tồn tại trong input.
+- **Tài nguyên.** assets chứa ảnh, biểu tượng, screenshot và branding. css chứa styles.css cùng cấu hình Tailwind. src-tauri có icon nhiều nền tảng, manifest quyền và mã Rust. Bản sao lồng, README, ảnh minh họa và tài liệu phát hành được nhận diện riêng với giao diện chạy thực tế.
+
+## B. Tệp dự kiến cần chỉnh sửa
+
+Danh mục dưới đây dành cho các giai đoạn sau khi duyệt. Đợt audit chỉ tạo báo cáo này.
+
+- **Nền tảng i18n** — thêm `js/i18n.js`, `js/locales/en.js`, `js/locales/vi.js`. Hai catalog dùng cùng nhóm khóa nghiệp vụ. Chức năng tự chép thư mục js của Vite đã bao phủ các tệp mới.
+- **Khung ứng dụng và nút đổi tiếng** — `index.html` cho thứ tự nạp, nhãn, placeholder, title, alt và ARIA. `js/ui.js` cho điều hướng, hai dạng Settings, danh sách và tìm kiếm. `js/onboarding.js` cho quyền tiếp cận trước đăng nhập, wizard và bản nháp.
+- **Module nghiệp vụ** — `js/script.js` cho timer, Media Session và streak. `js/habits.js` cho lịch, KPI, card mobile và tooltip. `js/notifications.js` cho toast, trung tâm thông báo, quyền và cầu nối native. `js/ai.js` cho popup, lệnh, câu trả lời offline và yêu cầu online.
+- **State và xác thực** — `js/state.js` có nhãn màu/avatar, thông điệp backup, dữ liệu mẫu và kiểm tra giá trị đặc biệt. `js/firebase.js` có lỗi đăng nhập, khôi phục, đồng bộ và thông báo tài khoản. Chỉ thay nơi tạo thông điệp hoặc ánh xạ nhãn. Bảo toàn cấu trúc bản ghi, khóa tài khoản và payload.
+- **Nền tảng** — `src-tauri/src/lib.rs` cho menu và tooltip khay Windows. `manifest.json` chứa tên/mô tả cài đặt PWA, `src-tauri/tauri.conf.json` chứa tiêu đề cửa sổ mặc định. Xử lý metadata cài đặt như phần việc nền tảng riêng. `css/styles.css` chỉ cần sửa nơi có lỗi bố cục tái hiện được. Chưa thấy nhu cầu sửa package, config Vite, Capacitor hoặc service worker để nạp bản dịch.
+
+## C. Các module và bề mặt cần Việt hóa
+
+1. **Dashboard** — Điều hướng, breadcrumb, lời chào theo giờ, workspace, thẻ việc/thói quen tiếp theo, thẻ trống, trích dẫn động và phản hồi sao chép.
+2. **Pomodoro** — Preset, nhãn chế độ, nút bắt đầu/tạm dừng, trạng thái màn hình tắt, phiên hiện tại/tổng số, form thời lượng, cảnh báo kết thúc và metadata Media Session.
+3. **Tasks** — Tìm kiếm, lọc, danh mục con, chọn môn, form thêm/sửa, lịch sử, khôi phục, modal chi tiết và thông báo hạn. Bao phủ Today, quá hạn và còn một hoặc nhiều ngày.
+4. **Habits** — Tạo/xóa, chọn nhóm, biểu tượng, mục tiêu tuần, ngày tương lai, đánh dấu, lịch sử, tooltip, trạng thái trống. Có cả ma trận desktop và card mobile.
+5. **Study Plans** — Danh sách kế hoạch, tên preset, giờ/phiên, các thứ trong tuần, modal thêm/sửa, hành động xóa và trạng thái “No active plans.”.
+6. **Hydration** — Mục tiêu ngày, kích cỡ ly, lượng nước đã uống, chu kỳ nhắc, tỷ lệ, thao tác ghi nhận và đặt lại. Số liệu gốc lưu bằng ml.
+7. **Zenith AI** — Quick prompt, nhập tự do, popup xác nhận, lựa chọn nhiều bước, trả lời offline, trạng thái đang trả lời/lỗi và bảng ghi chú. Có parser tiếng Anh, Gemini, Pollinations và Wikipedia trỏ bản tiếng Anh. Bản dịch nút, ngôn ngữ phản hồi và khả năng nhận lệnh là ba yêu cầu phải kiểm thử riêng.
+8. **Account** — Welcome, sign-in/up, reset mật khẩu, backup trước đăng nhập, hồ sơ/avatar, môn học, đồng bộ, đăng xuất và hộp thoại xóa tài khoản. Có cả lỗi do ứng dụng tạo và lỗi trả về từ SDK.
+9. **Statistics** — Tổng thời gian tập trung, số phiên, tiến độ nhiệm vụ/thói quen, tỷ lệ ngày/tuần, xếp hạng streak và các nhãn thời gian ngắn. Phân bố trong Home, Account và Habits.
+10. **Settings** — Tìm kiếm, bảy nhóm Appearance, Courses, Focus, Notifications, Cloud, Storage và Updates, modal Quick Settings, chủ đề/màu, chế độ hiệu năng, lưu trữ, credit và trạng thái kiểm tra phiên bản.
+11. **Dùng chung** — Startup, wizard sáu bước, release overview, hướng dẫn, cài đặt PWA/EXE/APK, sidebar/dock, trung tâm thông báo, tiêu đề cửa sổ, menu khay, nhãn cho trình đọc màn hình và tooltip. Phụ lục có các vị trí cho nội dung tĩnh, mẫu nội suy và trạng thái phát sinh. Thông báo native đã được hệ điều hành giao và nội dung do dịch vụ bên ngoài trả về có vòng đời riêng.
+
+## D. Phương án triển khai i18n
+
+- **Hợp đồng bản dịch.** Nạp catalog dạng script thường với đường dẫn tương đối trước các module nghiệp vụ. Khởi tạo locale trước khi hiện welcome. Dùng một API nhỏ như `FPi18n.t('tasks.dueToday', {date})` và khóa có namespace. Với DOM tĩnh, gắn data-i18n trên nút văn bản lá hoặc span con; gắn khóa riêng cho placeholder, title, alt, aria-label. Giữ icon, listener, input và nút con khi cập nhật. Dùng textContent cho text và escape tham số khi renderer hiện tại cần HTML. Catalog không chứa handler hoặc HTML tùy ý.
+- **Chuyển ngôn ngữ.** Một thao tác setLocale cập nhật document.documentElement.lang, lưu lựa chọn và phát sự kiện. Patch nhãn hiện có, gọi phần trình bày thuần của từng module, render text mới theo locale ngay khi tạo. Tách tối thiểu phần cập nhật nhãn khỏi các hàm có tác dụng phụ. Không gọi lại startup, loadState, saveState, switchAppView, submit hoặc toàn bộ updateUI. Đặc biệt tránh dựng lại form đang nhập hoặc phát lại thông báo, âm thanh, yêu cầu AI và lịch nhắc. Có thể đổi tiếng tại welcome/đăng nhập và Settings với cùng một điều khiển logic.
+- **Lưu lựa chọn.** Đề xuất một khóa mới `focuspulse_locale` ở localStorage, giá trị en hoặc vi. Đọc được trước xác thực. Nếu chưa chọn, đề xuất mặc định English để người dùng hiện hữu tiếp tục trải nghiệm hiện tại. Khi storage bị chặn, dùng locale trong bộ nhớ. Khóa thiếu dịch fallback sang English. Đợt này không yêu cầu migrate, export hoặc đồng bộ lựa chọn ngôn ngữ qua tài khoản.
+- **Ngày, giờ và số.** Ánh xạ en/vi sang en-US/vi-VN. Dùng Intl.DateTimeFormat cho nhãn, NumberFormat cho số, phần trăm và đơn vị, PluralRules cho số lượng trong câu. Bảng dịch chứa cả câu với tham số có tên. Khóa ngày local YYYY-MM-DD, timestamp, giá trị date input, timer mm:ss, ml và giá trị checkbox Mon–Sun vẫn theo hợp đồng hiện có. Parse ngày lịch theo thành phần local để tránh lệch ngày do UTC. Với cột habit hẹp, đặt nhãn ngắn T2…T7, CN và nhãn đầy đủ cho tooltip/trình đọc màn hình.
+- **Bảo toàn dữ liệu.** ID, tên khóa JSON/Firestore, mã lỗi SDK, tên event/command native, enum timer/filter và giá trị Studies/All có logic phụ thuộc. Tên môn, tên task/habit/plan, danh mục tự đặt, email, nickname, ghi chú, transcript và bài trả lời đã lưu thuộc người dùng. Dịch nhãn hệ thống qua ID ở nơi biết nguồn gốc. Nếu bản ghi cũ không phân biệt được preset với tên do người dùng đặt, hiển thị nguyên văn. Không suy đoán bằng so khớp chữ rồi ghi ngược vào state.
+- **AI và notification.** Quick prompt dùng intent ổn định hoặc câu kích hoạt đã được parser hỗ trợ, có alias en/vi và xác nhận/hủy theo cả hai tiếng. Khi phân tích lệnh, giữ chuỗi gốc có dấu cho tên cần lưu. Hướng dẫn dịch vụ online trả lời theo locale, chọn nguồn Wikipedia tương ứng và xử lý fallback. Không gửi lại transcript khi đổi tiếng. Thông báo do ứng dụng tạo có thể giữ key, params và timestamp trong bộ nhớ để vẽ lại lịch sử; thông báo đã giao cho hệ điều hành chỉ đổi ở lần phát sau.
+- **Rủi ro cụ thể.** updateUI quét lưu trữ lịch sử, tính bestStreak và đồng bộ trường subjects. switchAppView có kiểm tra reset nước và làm thay đổi view. Lịch có token Mon, Tue hoặc chuỗi Mon - Fri. Lọc Tasks kiểm tra Studies, lọc Habits kiểm tra All, một số tên tài khoản mặc định được so sánh trực tiếp. Settings search đọc innerText, còn Task search đọc dữ liệu gốc. Tìm kiếm cần xét cả nhãn bản địa hóa của danh mục hệ thống. Giữ nguyên giá trị option khi làm mới custom select.
+- **Bố cục và quyền sở hữu chuỗi.** Habit mobile đang dùng dayName.slice(0, 3), có thể gây nhầm giữa các thứ tiếng Việt. Dock di động, sidebar, chip, nút timer, card KPI, toast có truncate, wizard và nút xác nhận là các điểm cần kiểm tra khi chữ dài. Trình duyệt/WebView tự cung cấp một phần validation cho required, email, min/max, date picker và hộp quyền. Với lỗi biểu mẫu phải khớp locale ứng dụng, ánh xạ ValidityState sang thông điệp i18n, giữ các quy tắc kiểm tra cũ. Hộp thoại hệ điều hành và metadata PWA đã cài có thể theo ngôn ngữ hệ thống.
+
+## E. Lộ trình và điều kiện duyệt
+
+1. **Audit hiện tại.** Đối chiếu hai bản nguồn, kiểm kê chuỗi, ghi baseline và rủi ro. Chỉ đọc tệp ứng dụng.
+2. **Thiết kế và nền tảng.** Xác định checkout chuẩn trước khi sửa mã. Ưu tiên checkout có lịch sử; nếu lấy bản hiện tại làm mốc, cần người dùng duyệt tạo Git baseline. Tạo nhánh riêng, ví dụ feature/i18n-vi-en. Chốt khóa, locale mặc định, fallback và tiêu chí bảo toàn dữ liệu. Tệp dự kiến là index.html và ba tệp i18n mới. Rủi ro chính là thứ tự nạp và thiếu khóa.
+3. **Language Switcher.** Thêm vào welcome và Settings. Kiểm tra lần đầu, tải lại, đổi nhiều lần, bàn phím và focus. Tệp chính là index.html, js/ui.js, js/onboarding.js và bộ i18n. Rủi ro chính là làm mất form hoặc tạo listener trùng.
+4. **Việt hóa theo đợt.** Khung, Account/onboarding và Settings trước. Tiếp đến Dashboard/Pomodoro/Statistics, Tasks/Habits, Study Plans/Hydration và notifications. Cuối cùng Zenith AI, menu native và metadata cài đặt. Từng đợt chỉ sửa tệp sở hữu nhãn và hai catalog, kèm kế hoạch, danh mục tệp và rủi ro riêng trước khi xin duyệt.
+5. **Kiểm thử và sửa lỗi.** So khóa catalog, quét lại phụ lục, kiểm thử hành vi với dữ liệu giả, build web rồi chạy trên trình duyệt, WebView Windows và Android có sẵn. Ghi rõ môi trường nào thực sự chạy. Mỗi đợt có kết quả lệnh, lỗi, cách sửa, tệp đã sửa và commit để rollback riêng. Chờ duyệt giữa các giai đoạn.
+
+## F. Test case nghiệm thu
+
+Dùng profile trình duyệt, dữ liệu fixture và backend giả hoặc tài khoản kiểm thử. Các mục dưới đây là test dự kiến cho tính năng sau triển khai.
+
+1. **Lần mở đầu.** Kiểm tra người chưa đăng nhập, tài khoản cũ và không có khóa locale. Welcome, wizard, dashboard hiển thị đúng locale theo quy tắc mặc định, không nháy lẫn ngôn ngữ.
+2. **Lưu lựa chọn.** Chọn VI rồi tải lại, đăng xuất, đăng nhập hoặc import backup cũ. Locale vẫn đúng. Với storage lỗi hoặc giá trị lạ, UI tiếp tục hoạt động và fallback.
+3. **Nội dung catalog.** Hai catalog có cùng khóa và tham số; chạy 0/1/2/nhiều cho câu số lượng. Khóa thiếu quay về English. Soát lại chuỗi tiếng Anh còn sót, đối chiếu tên riêng, dữ liệu người dùng và nguồn ngoài.
+4. **Không thay state.** Cố định đồng hồ, chụp appState, khóa localStorage, payload đồng bộ trước/sau đổi EN → VI → EN. Chỉ khóa locale thay đổi, không có ghi cloud, chuyển lịch sử, reset nước hoặc tăng streak do thao tác đổi tiếng.
+5. **Điều hướng và bản nháp.** Đổi tiếng khi mở modal, lọc danh sách, ở bước wizard giữa chừng hoặc nhập form chưa lưu. Kiểm tra focus, con trỏ, giá trị input, checkbox, modal, scroll và back/forward.
+6. **Dashboard/Pomodoro.** Đổi tiếng khi chạy, tạm dừng, nghỉ ngắn và nghỉ dài. Kiểm tra targetEndTimeMs, số phiên, âm báo duy nhất, metadata media và nhãn trên thẻ tự xoay.
+7. **Tasks.** Dùng task chứa dấu tiếng Việt và tên danh mục tự tạo trùng nhãn hệ thống. Tạo/sửa, lọc môn Studies, tìm kiếm nhãn Anh/Việt, kiểm tra quá hạn/hôm nay/ngày mai, lưu trữ và khôi phục. Tiêu đề và liên kết môn giữ nguyên.
+8. **Habits.** Kiểm tra đủ bảy thứ trên desktop/mobile, lọc All, tuần trước/sau, check-in và giới hạn ngày tương lai. So sánh date key trước/sau, streak và tỉ lệ tuần.
+9. **Study Plans.** Mở dữ liệu cũ có Mon, Tue, dải Mon - Fri hoặc trường tùy chỉnh. Đổi tiếng ngay trong modal chỉnh sửa. Chọn ngày và lưu trên fixture; giá trị ngày, tên và số phiên đúng.
+10. **Hydration/Statistics.** Đối chiếu ml, mục tiêu, %, giờ/phút và số lượng ở 0/1/nhiều. Kiểm tra ngay trước/sau nửa đêm. Lịch nhắc và reset chỉ xảy ra theo quy tắc nghiệp vụ.
+11. **Account và validation.** Kiểm tra đăng nhập sai, mật khẩu quá ngắn/không khớp, khôi phục, lỗi đồng bộ, form trống, onboarding và cảnh báo xóa/backup bằng mock. Nội dung nút nguy hiểm và nút hủy phân biệt rõ.
+12. **Notifications.** Bật/tắt sound, toast, quyền native và từng kênh. Tạo thông báo bằng fixture, đổi tiếng khi center đang mở, so giờ và thứ tự. Không phát lại thông báo hoặc âm thanh.
+13. **Zenith AI.** Quick prompt lẫn lệnh nhập tay ở hai tiếng, từ có dấu, xác nhận/hủy, tên riêng trong lệnh, fallback offline, lỗi mạng, reply online giả lập và đổi locale khi chờ. Mỗi hành động chỉ thực hiện một lần, nội dung chat đã nhập vẫn nguyên văn.
+14. **Settings, trợ giúp và đóng gói.** Kiểm tra search, select tùy biến, quick settings, hướng dẫn, update, install prompt, backup JSON cũ, bản build dist và đường dẫn locale tương đối trong WebView. Xác minh riêng menu khay và tiêu đề Windows.
+15. **Hiển thị và tiếp cận.** Test chiều rộng 320/360/390 px, desktop, UI scale lớn, sáng/tối. Dùng bàn phím và trình đọc màn hình để kiểm tra lang, nhãn icon, tooltip, lỗi form, tiêu đề modal, dock, chip, toast và nút lưu/hủy.
+
+### Kiểm tra đã thực sự chạy trong audit
+
+- Node 24.15.0 kiểm tra cú pháp 12 tệp JavaScript bằng node --check. Cả 12 đạt.
+- Python phân tích cả 5 tệp JSON cấu hình của cây gốc. Cả 5 hợp lệ.
+- Chạy 11 assertion với các hàm gốc trong Node VM cô lập: khóa ngày nhuận, tuần bảy ngày thứ Hai đến Chủ nhật, duy nhất một ngày hiện tại, ba trường hợp hạn task, lọc Studies và so snapshot appState trước/sau. Cả 11 đạt. Bộ kiểm tra không dùng storage thật hay kết nối mạng.
+- Đối chiếu tham chiếu tài nguyên cục bộ từ index.html: thiếu css/tailwind.min.css và js/config.local.js. HTML có Tailwind CDN; config.local là tệp cấu hình riêng đã được gitignore. Hai kết quả này là baseline có trước i18n. Sẽ đánh giá giao diện thiếu mạng trên bản build, dùng cấu hình kiểm thử khi cần, và không đưa khóa thật vào catalog.
+- Không có npm test, không thấy bộ test ứng dụng hoặc node_modules trong bản nguồn. Build Vite ghi dist và có thao tác trên tài nguyên Android nếu đã sinh. Chưa chạy build, kiểm thử trình duyệt, EXE/APK hoặc thử với tài khoản thật. Đây là kết quả audit mã nguồn và hàm cô lập.
+
+## Phụ lục · Đối chiếu chuỗi tiếng Anh theo vị trí
+
+Đọc text node và thuộc tính của HTML, phân tích cây cú pháp JavaScript, rồi đọc HTML trong template. Mỗi mục ghi tệp, dòng nguồn, loại và nội dung. Dòng lặp ở màn hình khác được giữ lại. Dòng của template là vị trí nguồn gần nhãn. {argN} đại diện cho biểu thức nội suy, các nhánh chuỗi bên trong cũng được xét riêng. Khoảng trắng trình bày đã được thu gọn.
+
+Nhóm module chỉ nơi sử dụng chính. Onboarding, thông báo và trợ giúp là các bề mặt dùng chung. Nhãn phân loại JS được suy ra từ ngữ cảnh cú pháp. Các mục điều kiện, alias, đối số handler, giá trị mẫu và literal cần đối chiếu có thể chứa từ khóa lệnh, dữ liệu mẫu hoặc tên riêng. Số mục là vị trí ứng viên sau khi gộp trùng, không phải số khóa dịch. Nội dung sinh từ tài khoản, trình duyệt hoặc dịch vụ online cần xác minh bằng kiểm thử runtime.
+
+### Dashboard · 128 mục
+
+
+**index.html**
+
+- L100 · aria-label · <code>History Navigation</code>
+- L101 · title · <code>Back (Alt+Left)</code>
+- L101 · aria-label · <code>Navigate Back</code>
+- L104 · title · <code>Forward (Alt+Right)</code>
+- L104 · aria-label · <code>Navigate Forward</code>
+- L107 · title · <code>Reload Current View</code>
+- L107 · aria-label · <code>Reload Current View</code>
+- L117 · alt · <code>FocusPulse Logo</code>
+- L121 · HTML · <code>FocusPulse</code>
+- L122 · title · <code>FocusPulse v1.0 Release &amp; Features Overview</code>
+- L122 · HTML · <code>v1.0</code>
+- L130 · HTML · <code>Home &amp; Focus</code>
+- L140 · title · <code>Low-Spec / Performance Mode Active (Click to manage)</code>
+- L140 · aria-label · <code>Manage Eco Mode</code>
+- L142 · HTML · <code>Eco</code>
+- L145 · title · <code>Active Streak</code>
+- L145 · aria-label · <code>Active Streak</code>
+- L146 · HTML · <code>0</code>
+- L146 · HTML · <code>d</code>
+- L150 · title · <code>Notifications</code>
+- L150 · aria-label · <code>Open Notifications</code>
+- L156 · title · <code>Complete Guide</code>
+- L156 · aria-label · <code>Open Complete Guide</code>
+- L161 · title · <code>Download &amp; Install FocusPulse for Windows or Android</code>
+- L161 · aria-label · <code>Install FocusPulse</code>
+- L163 · HTML · <code>Install FocusPulse</code>
+- L167 · title · <code>Settings</code>
+- L167 · aria-label · <code>Open Settings</code>
+- L172 · title · <code>Account &amp; Stats</code>
+- L172 · aria-label · <code>Account and Stats</code>
+- L176 · HTML · <code>Scholar</code>
+- L180 · aria-label · <code>Window Controls</code>
+- L181 · title · <code>Minimize</code>
+- L181 · aria-label · <code>Minimize Window</code>
+- L184 · title · <code>Maximize / Restore</code>
+- L184 · aria-label · <code>Maximize Window</code>
+- L187 · title · <code>Toggle Fullscreen (F11)</code>
+- L187 · aria-label · <code>Toggle Fullscreen</code>
+- L190 · title · <code>Close</code>
+- L190 · aria-label · <code>Close Window</code>
+- L207 · title · <code>Low-Spec Eco Mode Active</code>
+- L209 · HTML · <code>Eco Mode</code>
+- L212 · HTML · <code>Navigation</code>
+- L216 · HTML · <code>Home &amp; Focus</code>
+- L222 · HTML · <code>Tasks Feed</code>
+- L224 · HTML · <code>2</code>
+- L229 · HTML · <code>Habit Flow</code>
+- L234 · HTML · <code>Plans &amp; Hydration</code>
+- L240 · HTML · <code>Zenith AI Coach</code>
+- L247 · HTML · <code>Account &amp; Stats</code>
+- L252 · HTML · <code>Settings</code>
+- L257 · HTML · <code>Workspace</code>
+- L264 · HTML · <code>Active Courses</code>
+- L265 · title · <code>Manage Courses &amp; 2-Letter Badges</code>
+- L265 · HTML · <code>+ Manage</code>
+- L274 · HTML · <code>Liquid: OFF</code>
+- L278 · HTML · <code>Quick Settings</code>
+- L294 · HTML · <code>FocusPulse Studio</code>
+- L296 · HTML · <code>Welcome back,</code>
+- L296 · HTML · <code>Scholar</code>
+- L298 · HTML · <code>Ready to pick up where you left off? Start a deep focus session, check off daily habits, or customize your space.</code>
+- L434 · HTML · <code>Motivation Hub</code>
+- L437 · title · <code>Copy quote</code>
+- L438 · HTML · <code>Copy</code>
+- L441 · HTML · <code>New Spark</code>
+- L446 · HTML · <code>&quot;Focus is a muscle. The more you practice eliminating distractions, the easier deep work becomes.&quot;</code>
+- L1773 · HTML · <code>Home</code>
+- L1777 · HTML · <code>Tasks</code>
+- L1781 · HTML · <code>Habits</code>
+- L1785 · HTML · <code>Water</code>
+- L1789 · HTML · <code>AI Coach</code>
+- L1795 · HTML · <code>Profile</code>
+- L1802 · HTML · <code>FocusPulse by</code>
+- L1802 · HTML · <code>Foc-It</code>
+- L1804 · HTML · <code>Rate 5 star on GitHub:</code>
+- L1805 · HTML · <code>github.com/foc-it</code>
+- L1807 · HTML · <code>info.focit@gmail.com</code>
+
+**js/ui.js**
+
+- L6 · literal cần đối chiếu · <code>Focus is a muscle. The more you practice eliminating distractions, the easier deep work becomes.</code>
+- L7 · literal cần đối chiếu · <code>Success is the sum of small efforts, repeated day in and day out.</code>
+- L8 · literal cần đối chiếu · <code>Don&#x27;t watch the clock; do what it does. Keep going.</code>
+- L9 · literal cần đối chiếu · <code>The secret of getting ahead is getting started.</code>
+- L10 · literal cần đối chiếu · <code>Deep work is the superpower of the 21st century.</code>
+- L11 · literal cần đối chiếu · <code>We are what we repeatedly do. Excellence, then, is not an act, but a habit.</code>
+- L39 · literal cần đối chiếu · <code>Home &amp; Focus</code>
+- L40 · literal cần đối chiếu · <code>Tasks Feed</code>
+- L41 · literal cần đối chiếu · <code>Habit Flow</code>
+- L42 · literal cần đối chiếu · <code>Plans &amp; Hydration</code>
+- L43 · literal cần đối chiếu · <code>Zenith AI Coach</code>
+- L44 · literal cần đối chiếu · <code>Account &amp; Stats</code>
+- L45 · literal cần đối chiếu · <code>Settings</code>
+- L46 · literal cần đối chiếu · <code>All-in-One Overview</code>
+- L75 · gán DOM · <code>Home &amp; Focus</code>
+- L81 · literal cần đối chiếu · <code>rgba(var(--v-accent-rgb), 0.16)</code>
+- L360 · literal cần đối chiếu · <code>{dueDateStr} ({arg2}d overdue)</code>
+- L361 · literal cần đối chiếu · <code>{dueDateStr} (Today)</code>
+- L362 · literal cần đối chiếu · <code>{dueDateStr} (1d left)</code>
+- L363 · literal cần đối chiếu · <code>{dueDateStr} ({diffDays}d left)</code>
+- L449 · literal cần đối chiếu · <code>All</code>
+- L476 · template DOM · <code>Next Task to Check</code>
+- L478 · template DOM · <code>All Done 🎉</code>
+- L485 · template DOM · <code>All tasks completed for today!</code>
+- L486 · template DOM · <code>Click to open Tasks &amp; add a new goal →</code>
+- L502 · template DOM · <code>Next Task to Check</code>
+- L504 · template DOM · <code>{arg1} / {length}</code>
+- L507 · template DOM · <code>Go to Tasks</code>
+- L511 · gán DOM · <code>next-up-slide-anim</code>
+- L518 · template DOM · <code>{arg4} • {arg5}</code>
+- L518 · gán DOM · <code>General</code>
+- L520 · gán DOM · <code>Due Today ⚡</code>
+- L527 · template DOM · <code>Click card to open in Tasks section (won&#x27;t mark directly)</code>
+- L533 · title · <code>Task {arg3}</code>
+- L552 · template DOM · <code>Next Habit to Check</code>
+- L554 · template DOM · <code>100% Today 🔥</code>
+- L561 · template DOM · <code>All daily habits completed!</code>
+- L562 · template DOM · <code>Click to view your 7-day Habit Flow grid →</code>
+- L578 · template DOM · <code>Next Habit to Check</code>
+- L580 · template DOM · <code>{arg1} / {length}</code>
+- L583 · template DOM · <code>Go to Habits</code>
+- L587 · gán DOM · <code>next-up-slide-anim</code>
+- L595 · template DOM · <code>{streak}d streak • Target {arg7}d/wk</code>
+- L601 · template DOM · <code>Click card to open in Habit Flow (won&#x27;t mark directly)</code>
+- L607 · title · <code>Habit {arg3}</code>
+- L1152 · gán DOM · <code>{taskRatePct}% ({doneTasksCount} of {length} completed)</code>
+- L1154 · gán DOM · <code>{pct}% ({arg2} / {arg3} ml)</code>
+- L1719 · gán DOM · <code>&quot;{arg1}&quot;</code>
+- L1739 · gán DOM · <code>Copied...</code>
+- L1743 · thông điệp · <code>Quote Copied</code>
+- L1743 · thông điệp · <code>Motivational quote copied to clipboard!</code>
+
+### Pomodoro · 67 mục
+
+
+**index.html**
+
+- L310 · HTML · <code>Deep Focus</code>
+- L311 · HTML · <code>Session 1 of 4</code>
+- L312 · title · <code>Wall-clock + Web Audio Keep-Alive + WakeLock active: Pomodoro continues running even with screen off or minimized to tray</code>
+- L313 · HTML · <code>Screen-Off Active</code>
+- L316 · HTML · <code>25:00</code>
+- L320 · HTML · <code>Pomodoro</code>
+- L321 · HTML · <code>Short</code>
+- L322 · HTML · <code>Long</code>
+- L329 · HTML · <code>Start Focus</code>
+- L331 · title · <code>Skip Session</code>
+- L334 · title · <code>Settings &amp; Presets</code>
+- L344 · HTML · <code>Pomodoro Settings &amp; Presets</code>
+- L347 · HTML · <code>Back</code>
+- L352 · HTML · <code>Select Preset:</code>
+- L354 · đối số trong handler · <code>Normal</code>
+- L355 · HTML · <code>Normal</code>
+- L356 · HTML · <code>25m f / 5m b</code>
+- L358 · đối số trong handler · <code>Blitz</code>
+- L359 · HTML · <code>Blitz</code>
+- L360 · HTML · <code>15m f / 3m b</code>
+- L362 · đối số trong handler · <code>Quick Rev</code>
+- L363 · HTML · <code>Quick Rev</code>
+- L364 · HTML · <code>45m f / 10m b</code>
+- L366 · đối số trong handler · <code>Extra+</code>
+- L367 · HTML · <code>Extra+</code>
+- L368 · HTML · <code>60m f / 15m b</code>
+- L375 · HTML · <code>Focus Min</code>
+- L376 · HTML · <code>Short Min</code>
+- L377 · HTML · <code>Long Min</code>
+- L378 · HTML · <code>Sessions</code>
+- L380 · HTML · <code>Save Settings</code>
+
+**js/script.js**
+
+- L21 · điều kiện / alias · <code>I</code>
+- L21 · điều kiện / alias · <code>J</code>
+- L21 · điều kiện / alias · <code>C</code>
+- L21 · điều kiện / alias · <code>U</code>
+- L139 · literal cần đối chiếu · <code>Deep Focus</code>
+- L139 · literal cần đối chiếu · <code>Short Break</code>
+- L139 · literal cần đối chiếu · <code>Long Break</code>
+- L141 · nhãn hoặc giá trị mẫu · <code>{modeLabel} — {timeStr}</code>
+- L142 · nhãn hoặc giá trị mẫu · <code>FocusPulse Pomodoro Timer</code>
+- L143 · nhãn hoặc giá trị mẫu · <code>Session {sessionCount} of {arg2}</code>
+- L159 · gán DOM · <code>Pause</code>
+- L167 · gán DOM · <code>Start Focus</code>
+- L183 · literal cần đối chiếu · <code>flex-1 py-2 rounded-xl text-xs font-semibold shadow-sm transition text-center cursor-pointer v-accent-btn</code>
+- L204 · điều kiện / alias · <code>pomodoro</code>
+- L204 · gán DOM · <code>Deep Focus</code>
+- L204 · điều kiện / alias · <code>short</code>
+- L204 · gán DOM · <code>Short Break</code>
+- L204 · gán DOM · <code>Long Break</code>
+- L205 · literal cần đối chiếu · <code>rgba(var(--v-accent-rgb), 0.18)</code>
+- L207 · literal cần đối chiếu · <code>rgba(var(--v-accent-rgb), 0.42)</code>
+- L257 · điều kiện / alias · <code>pomodoro</code>
+- L257 · gán DOM · <code>🔔 TIME&#x27;S UP! — FocusPulse</code>
+- L257 · gán DOM · <code>⚡ BREAK OVER! — FocusPulse</code>
+- L258 · gán DOM · <code>FocusPulse</code>
+- L262 · điều kiện / alias · <code>pomodoro</code>
+- L262 · thông điệp · <code>Pomodoro Time&#x27;s Up! 🎉</code>
+- L262 · thông điệp · <code>Break Finished! ⚡</code>
+- L263 · điều kiện / alias · <code>pomodoro</code>
+- L264 · thông điệp · <code>Great deep focus session! Your timer finished — time to recharge and hydrate.</code>
+- L265 · thông điệp · <code>Break time is up! Ready for your next Deep Focus block?</code>
+- L295 · literal cần đối chiếu · <code>DOMContentLoaded</code>
+- L461 · literal cần đối chiếu · <code>Notification</code>
+- L549 · thông điệp · <code>Preset Selected</code>
+- L549 · thông điệp · <code>Loaded {name} preset ({focus}m / {short}m). Click Save Settings to apply.</code>
+- L577 · thông điệp · <code>Timer Saved</code>
+- L577 · thông điệp · <code>Configured {pomodoro}m Focus / {short}m Break.</code>
+
+### Tasks · 158 mục
+
+
+**index.html**
+
+- L463 · HTML · <code>Smart Task Tracker</code>
+- L464 · HTML · <code>Click anywhere near the tick box or task title to mark complete</code>
+- L468 · title · <code>Completed Task History (Auto-moves tasks marked complete for 24h+)</code>
+- L470 · HTML · <code>History</code>
+- L471 · HTML · <code>2</code>
+- L473 · title · <code>Manage Categories</code>
+- L474 · HTML · <code>Categories</code>
+- L477 · HTML · <code>Add Task</code>
+- L485 · HTML · <code>All Tasks</code>
+- L486 · HTML · <code>Due Soon ⚡</code>
+- L487 · HTML · <code>Pending</code>
+- L488 · HTML · <code>Completed</code>
+- L492 · placeholder · <code>Search tasks or categories...</code>
+- L502 · HTML · <code>Add New Task</code>
+- L504 · HTML · <code>Back</code>
+- L508 · HTML · <code>Task Title</code>
+- L511 · HTML · <code>Category</code>
+- L515 · HTML · <code>Sub-Category</code>
+- L527 · HTML · <code>Courses</code>
+- L528 · HTML · <code>(Select subject profile for Active Courses)</code>
+- L531 · HTML · <code>+ Add / Edit Courses</code>
+- L536 · HTML · <code>Due Date</code>
+- L537 · HTML · <code>Description</code>
+- L538 · HTML · <code>Save Task</code>
+- L550 · HTML · <code>Completed Task History (24h+ Archive)</code>
+- L551 · HTML · <code>Tasks that stay marked completed for 24 hours automatically move here</code>
+- L556 · HTML · <code>Clear History</code>
+- L559 · HTML · <code>Back to Tasks</code>
+- L2043 · HTML · <code>Manage Categories &amp; Subcategories</code>
+- L2048 · HTML · <code>Add New Category</code>
+- L2050 · placeholder · <code>Category name...</code>
+- L2051 · HTML · <code>Add</code>
+- L2055 · HTML · <code>Add Subcategory</code>
+- L2058 · placeholder · <code>Subcategory...</code>
+- L2059 · HTML · <code>Add Sub</code>
+- L2064 · HTML · <code>Done</code>
+- L2071 · HTML · <code>Task Details</code>
+- L2075 · HTML · <code>Category:</code>
+- L2076 · HTML · <code>Sub-Category:</code>
+- L2077 · HTML · <code>Course:</code>
+- L2078 · HTML · <code>Due Date:</code>
+- L2079 · HTML · <code>Description:</code>
+- L2082 · HTML · <code>Close</code>
+
+**js/notifications.js**
+
+- L380 · thông điệp · <code>Task Due Today 📋 ({length})</code>
+- L381 · thông điệp · <code>Next up: &quot;{arg1}&quot; ({arg2}). Start a 25m Pomodoro to knock it out!</code>
+
+**js/state.js**
+
+- L237 · literal cần đối chiếu · <code>Studies</code>
+- L237 · literal cần đối chiếu · <code>Fitness</code>
+- L237 · literal cần đối chiếu · <code>Health</code>
+- L237 · literal cần đối chiếu · <code>Personal</code>
+- L239 · literal cần đối chiếu · <code>Studies</code>
+- L239 · literal cần đối chiếu · <code>General</code>
+- L239 · literal cần đối chiếu · <code>Exams</code>
+- L239 · literal cần đối chiếu · <code>Assignments</code>
+- L240 · literal cần đối chiếu · <code>Fitness</code>
+- L240 · literal cần đối chiếu · <code>Cardio</code>
+- L240 · literal cần đối chiếu · <code>Strength</code>
+- L241 · literal cần đối chiếu · <code>Health</code>
+- L241 · literal cần đối chiếu · <code>Hydration</code>
+- L241 · literal cần đối chiếu · <code>Sleep</code>
+- L242 · literal cần đối chiếu · <code>Personal</code>
+- L242 · literal cần đối chiếu · <code>Reading</code>
+- L242 · literal cần đối chiếu · <code>Projects</code>
+- L251 · nhãn hoặc giá trị mẫu · <code>Plan today&#x27;s top priorities</code>
+- L252 · nhãn hoặc giá trị mẫu · <code>Personal</code>
+- L253 · nhãn hoặc giá trị mẫu · <code>Projects</code>
+- L256 · nhãn hoặc giá trị mẫu · <code>Review upcoming deadlines and schedule a focus session before evening.</code>
+- L431 · thông điệp · <code>Task Archived to History</code>
+- L432 · thông điệp · <code>{movedCount} completed task{arg2} (24h+) moved to Task History.</code>
+- L432 · thông điệp · <code>s</code>
+
+**js/ui.js**
+
+- L1064 · template DOM · <code>No active courses. Click</code>
+- L1064 · template DOM · <code>+ Manage</code>
+- L1064 · template DOM · <code>to add courses.</code>
+- L1079 · template DOM · <code>{coursePendingCount} pending task{arg10}</code>
+- L1079 · gán DOM · <code>s</code>
+- L1247 · thông điệp · <code>Moved to Task History</code>
+- L1247 · thông điệp · <code>&quot;{title}&quot; was archived to Task History.</code>
+- L1262 · thông điệp · <code>Task Restored</code>
+- L1262 · thông điệp · <code>Restored &quot;{title}&quot; to active tasks.</code>
+- L1269 · thông điệp · <code>History Item Deleted</code>
+- L1269 · thông điệp · <code>Removed task from history.</code>
+- L1276 · thông điệp · <code>History Cleared</code>
+- L1276 · thông điệp · <code>Cleared all archived tasks from Task History.</code>
+- L1287 · template DOM · <code>No archived tasks in History yet</code>
+- L1288 · template DOM · <code>Any task marked completed for 24 hours automatically moves here.</code>
+- L1307 · template DOM · <code>{arg2} ({arg3})</code>
+- L1307 · gán DOM · <code>General</code>
+- L1308 · template DOM · <code>Completed: {arg4} (24h+ History)</code>
+- L1313 · title · <code>Restore to Active Tasks</code>
+- L1314 · template DOM · <code>Restore</code>
+- L1316 · title · <code>Delete Permanently</code>
+- L1332 · điều kiện / alias · <code>pending</code>
+- L1334 · điều kiện / alias · <code>completed</code>
+- L1339 · điều kiện / alias · <code>Studies</code>
+- L1353 · literal cần đối chiếu · <code>pending</code>
+- L1353 · literal cần đối chiếu · <code>completed</code>
+- L1365 · template DOM · <code>No tasks found matching this filter.</code>
+- L1383 · title · <code>Click anywhere here to mark/unmark task</code>
+- L1386 · gán DOM · <code>checked</code>
+- L1393 · template DOM · <code>{arg9} ({arg10})</code>
+- L1393 · gán DOM · <code>General</code>
+- L1394 · template DOM · <code>{arg13} {arg14}</code>
+- L1395 · template DOM · <code>History in ~{hoursLeftToArchive}h</code>
+- L1400 · title · <code>Archive to History now</code>
+- L1401 · template DOM · <code>View</code>
+- L1402 · template DOM · <code>Edit</code>
+- L1437 · thông điệp · <code>Task Completed! ✅</code>
+- L1437 · thông điệp · <code>Task Reopened</code>
+- L1439 · thông điệp · <code>Marked &quot;{title}&quot; complete.</code>
+- L1440 · thông điệp · <code>Unmarked &quot;{title}&quot;.</code>
+- L1441 · thông điệp · <code>task</code>
+- L1441 · thông điệp · <code>info</code>
+- L1451 · thông điệp · <code>Task Deleted</code>
+- L1451 · thông điệp · <code>Removed &quot;{title}&quot;.</code>
+- L1459 · gán DOM · <code>General</code>
+- L1463 · điều kiện / alias · <code>Studies</code>
+- L1471 · gán DOM · <code>No description provided.</code>
+- L1488 · gán DOM · <code>Edit Task</code>
+- L1492 · gán DOM · <code>Not Selected</code>
+- L1495 · gán DOM · <code>Not Selected</code>
+- L1501 · gán DOM · <code>Add New Task</code>
+- L1505 · gán DOM · <code>Not Selected</code>
+- L1511 · gán DOM · <code>Not Selected</code>
+- L1526 · literal cần đối chiếu · <code>Not Selected</code>
+- L1527 · điều kiện / alias · <code>Not Selected</code>
+- L1530 · literal cần đối chiếu · <code>Not Selected</code>
+- L1530 · điều kiện / alias · <code>Not Selected</code>
+- L1532 · gán DOM · <code>Not Selected</code>
+- L1544 · điều kiện / alias · <code>Not Selected</code>
+- L1544 · literal cần đối chiếu · <code>Not Selected</code>
+- L1545 · điều kiện / alias · <code>Not Selected</code>
+- L1545 · literal cần đối chiếu · <code>Not Selected</code>
+- L1549 · điều kiện / alias · <code>Studies</code>
+- L1564 · thông điệp · <code>Task Updated</code>
+- L1564 · thông điệp · <code>Saved changes to &quot;{title}&quot;{arg2}.</code>
+- L1577 · thông điệp · <code>Task Added</code>
+- L1577 · thông điệp · <code>Added &quot;{title}&quot;{arg2} to Smart Task Tracker.</code>
+- L1577 · thông điệp · <code>under</code>
+- L1592 · literal cần đối chiếu · <code>Not Selected</code>
+- L1592 · điều kiện / alias · <code>Not Selected</code>
+- L1597 · gán DOM · <code>Not Selected</code>
+- L1607 · literal cần đối chiếu · <code>General</code>
+- L1611 · thông điệp · <code>Category Added</code>
+- L1611 · thông điệp · <code>Created category &quot;{name}&quot;.</code>
+- L1624 · thông điệp · <code>Subcategory Added</code>
+- L1624 · thông điệp · <code>Added &quot;{sub}&quot; under {cat}.</code>
+- L1653 · template DOM · <code>Delete Cat</code>
+- L1997 · literal cần đối chiếu · <code>Select...</code>
+- L2015 · gán DOM · <code>selected</code>
+- L2495 · điều kiện / alias · <code>Studies</code>
+- L2508 · điều kiện / alias · <code>Studies</code>
+- L2513 · template DOM · <code>• {arg5}</code>
+- L2522 · điều kiện / alias · <code>Studies</code>
+- L2533 · template DOM · <code>No courses added yet.</code>
+- L2533 · template DOM · <code>Add courses in Settings</code>
+- L2551 · gán DOM · <code>active</code>
+- L2556 · template DOM · <code>{pendingCnt} pending</code>
+- L2596 · điều kiện / alias · <code>Studies</code>
+- L2602 · template DOM · <code>All Courses ({allStudiesPending})</code>
+
+### Habits · 97 mục
+
+
+**index.html**
+
+- L581 · HTML · <code>Habit Flow Tracker</code>
+- L584 · HTML · <code>Build daily consistency, track weekly targets, and grow your habit chains</code>
+- L589 · HTML · <code>New Habit</code>
+- L667 · title · <code>Previous Week</code>
+- L672 · HTML · <code>Current Week</code>
+- L674 · title · <code>Next Week</code>
+- L679 · HTML · <code>Jump to Today</code>
+- L1815 · HTML · <code>Create New Habit</code>
+- L1821 · HTML · <code>Habit Title *</code>
+- L1822 · placeholder · <code>e.g., Drink 2L Water, Read 20 Pages...</code>
+- L1826 · HTML · <code>Category</code>
+- L1828 · HTML · <code>Health</code>
+- L1829 · HTML · <code>Fitness</code>
+- L1830 · HTML · <code>Productivity</code>
+- L1831 · HTML · <code>Mindfulness</code>
+- L1832 · HTML · <code>Learning</code>
+- L1836 · HTML · <code>Weekly Goal:</code>
+- L1836 · HTML · <code>5 days</code>
+- L1838 · HTML · <code>1d</code>
+- L1838 · HTML · <code>4d</code>
+- L1838 · HTML · <code>7d</code>
+- L1842 · HTML · <code>Choose Icon</code>
+- L1846 · HTML · <code>Accent Color</code>
+- L1850 · HTML · <code>Cancel</code>
+- L1851 · HTML · <code>Save Habit</code>
+- L1864 · HTML · <code>Delete Habit?</code>
+- L1865 · HTML · <code>This will remove the habit and its check-in history from your tracker.</code>
+- L1868 · HTML · <code>Keep Habit</code>
+- L1869 · HTML · <code>Yes, Delete</code>
+
+**js/habits.js**
+
+- L5 · literal cần đối chiếu · <code>All</code>
+- L5 · literal cần đối chiếu · <code>Health</code>
+- L5 · literal cần đối chiếu · <code>Fitness</code>
+- L5 · literal cần đối chiếu · <code>Productivity</code>
+- L5 · literal cần đối chiếu · <code>Mindfulness</code>
+- L5 · literal cần đối chiếu · <code>Learning</code>
+- L13 · literal cần đối chiếu · <code>from-emerald-500 to-teal-400</code>
+- L20 · literal cần đối chiếu · <code>from-blue-500 to-cyan-400</code>
+- L27 · literal cần đối chiếu · <code>from-violet-500 to-purple-400</code>
+- L34 · literal cần đối chiếu · <code>from-amber-500 to-yellow-400</code>
+- L41 · literal cần đối chiếu · <code>from-rose-500 to-pink-400</code>
+- L46 · literal cần đối chiếu · <code>All</code>
+- L110 · thông điệp · <code>Future Date</code>
+- L110 · thông điệp · <code>Cannot log habit completion for future dates!</code>
+- L123 · thông điệp · <code>Habit Unmarked</code>
+- L123 · thông điệp · <code>Unchecked &quot;{name}&quot; for {dateKey}.</code>
+- L130 · thông điệp · <code>Habit Logged!</code>
+- L130 · thông điệp · <code>Great job completing &quot;{name}&quot;!</code>
+- L161 · thông điệp · <code>All Habits Completed!</code>
+- L161 · thông điệp · <code>Awesome! Every habit for today is marked complete.</code>
+- L167 · literal cần đối chiếu · <code>All</code>
+- L170 · thông điệp · <code>Sample Habits Restored</code>
+- L170 · thông điệp · <code>Habit tracker has been reset to sample routines.</code>
+- L178 · gán DOM · <code>5 days</code>
+- L202 · gán DOM · <code>{val} day{arg2}</code>
+- L202 · gán DOM · <code>s</code>
+- L243 · nhãn hoặc giá trị mẫu · <code>Health</code>
+- L254 · thông điệp · <code>Habit Created</code>
+- L254 · thông điệp · <code>Added &quot;{name}&quot; to your Habit Flow tracker!</code>
+- L262 · gán DOM · <code>Delete &quot;{name}&quot;?</code>
+- L280 · thông điệp · <code>Habit Removed</code>
+- L280 · thông điệp · <code>Deleted &quot;{name}&quot;.</code>
+- L298 · điều kiện / alias · <code>All</code>
+- L325 · gán DOM · <code>{todayPercent}%</code>
+- L330 · gán DOM · <code>{weeklyRate}%</code>
+- L340 · literal cần đối chiếu · <code>{arg1} – {arg2}</code>
+- L369 · template DOM · <code>Habit &amp; Weekly Target</code>
+- L380 · template DOM · <code>Streak</code>
+- L381 · template DOM · <code>Weekly Goal</code>
+- L394 · template DOM · <code>No habits in this view</code>
+- L395 · template DOM · <code>Add a daily habit or switch category filters to track your consistency.</code>
+- L397 · template DOM · <code>Add First Habit</code>
+- L418 · template DOM · <code>Target: {targetPerWeek}d/wk</code>
+- L428 · gán DOM · <code>disabled</code>
+- L429 · title · <code>Mark {arg5} for {dayName} ({key})</code>
+- L437 · gán DOM · <code>scale-100</code>
+- L437 · gán DOM · <code>scale-0</code>
+- L446 · template DOM · <code>{currentStreak}d</code>
+- L448 · template DOM · <code>Best: {bestStreak}d</code>
+- L454 · template DOM · <code>{weeklyCompletions}/{targetPerWeek}</code>
+- L455 · template DOM · <code>{weeklyProgress}%</code>
+- L463 · title · <code>Delete Habit</code>
+- L480 · template DOM · <code>No habits in this view</code>
+- L481 · template DOM · <code>Add a daily habit or change filter categories.</code>
+- L483 · template DOM · <code>Add First Habit</code>
+- L504 · template DOM · <code>Target: {targetPerWeek}d/wk</code>
+- L511 · template DOM · <code>{currentStreak}d</code>
+- L513 · title · <code>Delete Habit</code>
+- L513 · aria-label · <code>Delete Habit</code>
+- L528 · gán DOM · <code>disabled</code>
+- L529 · title · <code>{arg7} - {dayName} ({dayNumber})</code>
+- L534 · gán DOM · <code>{bg} text-white shadow-md active:scale-95</code>
+
+**js/notifications.js**
+
+- L399 · thông điệp · <code>Protect Your {arg1}-Day Streak 🔥</code>
+- L400 · thông điệp · <code>You have {length} habit(s) left for today — next up: &quot;{arg2}&quot;.</code>
+
+**js/state.js**
+
+- L143 · nhãn hoặc giá trị mẫu · <code>Morning Hydration (500ml)</code>
+- L144 · nhãn hoặc giá trị mẫu · <code>Health</code>
+- L155 · nhãn hoặc giá trị mẫu · <code>Sleep on time</code>
+- L156 · nhãn hoặc giá trị mẫu · <code>Health</code>
+
+### Study Plans · 40 mục
+
+
+**index.html**
+
+- L811 · HTML · <code>Active Study Plans</code>
+- L812 · HTML · <code>Recurring daily &amp; weekly study schedules</code>
+- L816 · HTML · <code>Add</code>
+- L2250 · HTML · <code>Add Active Plan</code>
+- L2254 · HTML · <code>Plan Name / Preset</code>
+- L2254 · placeholder · <code>e.g. Balanced Weekdays</code>
+- L2254 · value · <code>Balanced Weekdays</code>
+- L2256 · HTML · <code>Daily Hours</code>
+- L2257 · HTML · <code>Target Sessions</code>
+- L2260 · HTML · <code>Applicable Days of Week</code>
+- L2262 · HTML · <code>Mon</code>
+- L2263 · HTML · <code>Tue</code>
+- L2264 · HTML · <code>Wed</code>
+- L2265 · HTML · <code>Thu</code>
+- L2266 · HTML · <code>Fri</code>
+- L2267 · HTML · <code>Sat</code>
+- L2268 · HTML · <code>Sun</code>
+- L2272 · HTML · <code>Cancel</code>
+- L2273 · HTML · <code>Save Plan</code>
+
+**js/state.js**
+
+- L245 · nhãn hoặc giá trị mẫu · <code>Balanced Weekdays</code>
+- L245 · nhãn hoặc giá trị mẫu · <code>Mon, Tue, Wed, Thu, Fri</code>
+- L246 · nhãn hoặc giá trị mẫu · <code>Weekend Deep Review</code>
+- L246 · nhãn hoặc giá trị mẫu · <code>Sat, Sun</code>
+
+**js/ui.js**
+
+- L1751 · template DOM · <code>No active plans.</code>
+- L1757 · title · <code>Edit Plan</code>
+- L1758 · title · <code>Delete Plan</code>
+- L1761 · template DOM · <code>{hours} Hours / {sessions} Sessions ({arg6})</code>
+- L1761 · gán DOM · <code>Mon - Fri</code>
+- L1770 · gán DOM · <code>Edit Active Plan</code>
+- L1778 · gán DOM · <code>Add Active Plan</code>
+- L1779 · gán DOM · <code>Balanced Weekdays</code>
+- L1780 · gán DOM · <code>3</code>
+- L1781 · gán DOM · <code>3</code>
+- L1796 · literal cần đối chiếu · <code>Mon - Fri</code>
+- L1802 · thông điệp · <code>Plan Updated</code>
+- L1802 · thông điệp · <code>Updated &quot;{name}&quot; study schedule.</code>
+- L1805 · thông điệp · <code>Plan Added</code>
+- L1805 · thông điệp · <code>Added &quot;{name}&quot; to Active Plans.</code>
+- L1816 · thông điệp · <code>Plan Removed</code>
+- L1816 · thông điệp · <code>Study schedule removed.</code>
+
+### Hydration · 28 mục
+
+
+**index.html**
+
+- L758 · HTML · <code>Stay Hydrated</code>
+- L759 · HTML · <code>Daily fluid intake &amp; reminder interval</code>
+- L762 · HTML · <code>0 / 2500 ml</code>
+- L770 · HTML · <code>Glass Size:</code>
+- L770 · HTML · <code>250 ml</code>
+- L771 · HTML · <code>Reminder Interval:</code>
+- L771 · HTML · <code>90m</code>
+- L778 · HTML · <code>Hydration Settings</code>
+- L779 · HTML · <code>Back</code>
+- L782 · HTML · <code>Daily Goal (ml)</code>
+- L783 · HTML · <code>Glass Size (ml)</code>
+- L784 · HTML · <code>Notification Interval (mins)</code>
+- L785 · HTML · <code>Save Settings</code>
+- L791 · HTML · <code>Drink</code>
+- L793 · title · <code>Reset Hydration</code>
+- L794 · HTML · <code>Reset</code>
+- L797 · HTML · <code>Set</code>
+
+**js/notifications.js**
+
+- L362 · thông điệp · <code>Hydration Reminder 💧</code>
+- L363 · thông điệp · <code>Time for a {arg1}ml glass of water! ({arg2}/{arg3}ml today)</code>
+
+**js/ui.js**
+
+- L1095 · gán DOM · <code>{arg1} / {arg2} ml</code>
+- L1096 · gán DOM · <code>{arg1} ml</code>
+- L1097 · gán DOM · <code>{arg1}m</code>
+- L1673 · thông điệp · <code>Hydration Logged 💧</code>
+- L1673 · thông điệp · <code>+{added} ml added! Total: {waterIntakeMl} ml.</code>
+- L1680 · thông điệp · <code>Hydration Reset</code>
+- L1680 · thông điệp · <code>Daily water counter reset to 0 ml.</code>
+- L1711 · thông điệp · <code>Hydration Updated</code>
+- L1711 · thông điệp · <code>Goal set to {dailyWaterGoalMl}ml ({glassSizeMl}ml glass, reminder every {arg3}m).</code>
+
+### Zenith AI · 761 mục
+
+
+**index.html**
+
+- L840 · HTML · <code>Zenith AI Coach</code>
+- L841 · title · <code>Online</code>
+- L843 · HTML · <code>Direct AI focus strategist &amp; natural command assistant</code>
+- L846 · title · <code>Slide-Out Workspace</code>
+- L847 · HTML · <code>Workspace</code>
+- L855 · HTML · <code>👋 Hello! I am Zenith AI. Ask me to plan your day, prioritize tasks, or use quick actions below!</code>
+- L862 · đối số trong handler · <code>edit my courses</code>
+- L862 · HTML · <code>🎓 Edit Courses</code>
+- L863 · đối số trong handler · <code>add basic habits</code>
+- L863 · HTML · <code>🔥 Add Basic Habits</code>
+- L864 · đối số trong handler · <code>change my theme</code>
+- L864 · HTML · <code>🎨 Change Theme</code>
+- L865 · đối số trong handler · <code>change settings</code>
+- L865 · HTML · <code>⚙️ Change Settings</code>
+- L866 · đối số trong handler · <code>Plan my day</code>
+- L866 · HTML · <code>📋 Plan my day</code>
+- L867 · đối số trong handler · <code>Prioritize tasks</code>
+- L867 · HTML · <code>⚡ Prioritize tasks</code>
+- L868 · đối số trong handler · <code>Exam study strategy</code>
+- L868 · HTML · <code>🧠 Exam Strategy</code>
+- L869 · đối số trong handler · <code>I feel stuck and procrastinating</code>
+- L869 · HTML · <code>🚀 Beat Procrastination</code>
+- L870 · đối số trong handler · <code>My progress report</code>
+- L870 · HTML · <code>📊 My Progress</code>
+- L871 · đối số trong handler · <code>Habit tips</code>
+- L871 · HTML · <code>🔥 Habit tips</code>
+- L872 · đối số trong handler · <code>Burnout &amp; energy reset</code>
+- L872 · HTML · <code>🌿 Burnout Reset</code>
+- L873 · đối số trong handler · <code>help</code>
+- L873 · HTML · <code>🛠️ AI Commands</code>
+- L874 · đối số trong handler · <code>add task: Complete Revision Notes</code>
+- L874 · HTML · <code>➕ Add Task</code>
+- L883 · placeholder · <code>Ask any question, or type &#x27;edit my courses&#x27;, &#x27;add basic habits&#x27;, &#x27;change my theme&#x27;...</code>
+- L897 · HTML · <code>Quick Study Notes</code>
+- L898 · HTML · <code>Jot down formulas, ideas, or AI takeaways</code>
+- L901 · placeholder · <code>Write session notes, key formulas, or brain-dump thoughts here...</code>
+- L1899 · HTML · <code>Zenith AI Action Request</code>
+- L1900 · HTML · <code>Zenith AI wants to execute an action on your dashboard.</code>
+- L1903 · HTML · <code>No</code>
+- L1904 · HTML · <code>Confirm</code>
+- L1916 · HTML · <code>Session Workspace</code>
+- L1924 · HTML · <code>Session To-Do</code>
+- L1928 · placeholder · <code>Quick task...</code>
+- L1931 · HTML · <code>+ Add row</code>
+- L1934 · HTML · <code>Scratchpad</code>
+- L1935 · placeholder · <code>Jot down notes or calculations...</code>
+
+**js/ai.js**
+
+- L20 · nhãn hoặc giá trị mẫu · <code>Violet</code>
+- L20 · điều kiện / alias · <code>violet</code>
+- L20 · điều kiện / alias · <code>voilet</code>
+- L20 · điều kiện / alias · <code>purple</code>
+- L20 · điều kiện / alias · <code>purpel</code>
+- L20 · điều kiện / alias · <code>lavender</code>
+- L20 · điều kiện / alias · <code>amethyst</code>
+- L21 · nhãn hoặc giá trị mẫu · <code>Indigo</code>
+- L21 · điều kiện / alias · <code>indigo</code>
+- L21 · điều kiện / alias · <code>royal</code>
+- L22 · nhãn hoặc giá trị mẫu · <code>Emerald</code>
+- L22 · điều kiện / alias · <code>emerald</code>
+- L22 · điều kiện / alias · <code>green</code>
+- L22 · điều kiện / alias · <code>grn</code>
+- L22 · điều kiện / alias · <code>mint</code>
+- L22 · điều kiện / alias · <code>forest</code>
+- L22 · điều kiện / alias · <code>tealgreen</code>
+- L23 · nhãn hoặc giá trị mẫu · <code>Orange</code>
+- L23 · điều kiện / alias · <code>orange</code>
+- L23 · điều kiện / alias · <code>org</code>
+- L23 · điều kiện / alias · <code>amber</code>
+- L23 · điều kiện / alias · <code>tangerine</code>
+- L23 · điều kiện / alias · <code>coral</code>
+- L24 · nhãn hoặc giá trị mẫu · <code>Magenta</code>
+- L24 · điều kiện / alias · <code>magenta</code>
+- L24 · điều kiện / alias · <code>fuchsia</code>
+- L24 · điều kiện / alias · <code>neonpink</code>
+- L24 · điều kiện / alias · <code>hotpink</code>
+- L25 · nhãn hoặc giá trị mẫu · <code>Cyan</code>
+- L25 · điều kiện / alias · <code>cyan</code>
+- L25 · điều kiện / alias · <code>teal</code>
+- L25 · điều kiện / alias · <code>aqua</code>
+- L25 · điều kiện / alias · <code>turquoise</code>
+- L25 · điều kiện / alias · <code>sky</code>
+- L26 · nhãn hoặc giá trị mẫu · <code>Gold</code>
+- L26 · điều kiện / alias · <code>gold</code>
+- L26 · điều kiện / alias · <code>yellow</code>
+- L26 · điều kiện / alias · <code>ylw</code>
+- L26 · điều kiện / alias · <code>mustard</code>
+- L26 · điều kiện / alias · <code>sun</code>
+- L27 · nhãn hoặc giá trị mẫu · <code>Crimson</code>
+- L27 · điều kiện / alias · <code>crimson</code>
+- L27 · điều kiện / alias · <code>red</code>
+- L27 · điều kiện / alias · <code>scarlet</code>
+- L27 · điều kiện / alias · <code>ruby</code>
+- L28 · nhãn hoặc giá trị mẫu · <code>Blue</code>
+- L28 · điều kiện / alias · <code>blue</code>
+- L28 · điều kiện / alias · <code>blu</code>
+- L28 · điều kiện / alias · <code>navy</code>
+- L28 · điều kiện / alias · <code>cobalt</code>
+- L28 · điều kiện / alias · <code>ocean</code>
+- L29 · nhãn hoặc giá trị mẫu · <code>Rose</code>
+- L29 · điều kiện / alias · <code>rose</code>
+- L29 · điều kiện / alias · <code>pink</code>
+- L29 · điều kiện / alias · <code>pnk</code>
+- L29 · điều kiện / alias · <code>blush</code>
+- L30 · nhãn hoặc giá trị mẫu · <code>Silver / Slate</code>
+- L30 · điều kiện / alias · <code>silver</code>
+- L30 · điều kiện / alias · <code>slate</code>
+- L30 · điều kiện / alias · <code>grey</code>
+- L30 · điều kiện / alias · <code>gray</code>
+- L34 · nhãn hoặc giá trị mẫu · <code>Morning Hydration (500ml)</code>
+- L34 · nhãn hoặc giá trị mẫu · <code>Health</code>
+- L35 · nhãn hoặc giá trị mẫu · <code>Read 20 Pages of Textbook</code>
+- L35 · nhãn hoặc giá trị mẫu · <code>Learning</code>
+- L36 · nhãn hoặc giá trị mẫu · <code>45m Strength / Cardio</code>
+- L36 · nhãn hoặc giá trị mẫu · <code>Fitness</code>
+- L37 · nhãn hoặc giá trị mẫu · <code>Deep Work Session (No Phone)</code>
+- L37 · nhãn hoặc giá trị mẫu · <code>Productivity</code>
+- L38 · nhãn hoặc giá trị mẫu · <code>10m Evening Mindfulness</code>
+- L38 · nhãn hoặc giá trị mẫu · <code>Mindfulness</code>
+- L42 · nhãn hoặc giá trị mẫu · <code>Eat a Healthy Balanced Meal</code>
+- L42 · nhãn hoặc giá trị mẫu · <code>Health</code>
+- L43 · nhãn hoặc giá trị mẫu · <code>30m Outdoor Walk / Run</code>
+- L43 · nhãn hoặc giá trị mẫu · <code>Fitness</code>
+- L44 · nhãn hoặc giá trị mẫu · <code>1hr Coding / Problem Solving</code>
+- L44 · nhãn hoặc giá trị mẫu · <code>Learning</code>
+- L45 · nhãn hoặc giá trị mẫu · <code>8 Hours Quality Sleep</code>
+- L45 · nhãn hoặc giá trị mẫu · <code>Health</code>
+- L46 · nhãn hoặc giá trị mẫu · <code>1hr Evening Digital Detox</code>
+- L46 · nhãn hoặc giá trị mẫu · <code>Mindfulness</code>
+- L52 · literal cần đối chiếu · <code>Complete Lecture Revision Notes</code>
+- L53 · literal cần đối chiếu · <code>Solve 10 Practice Problems</code>
+- L54 · literal cần đối chiếu · <code>Write Lab Report Summary</code>
+- L55 · literal cần đối chiếu · <code>Review Flashcards (Active Recall)</code>
+- L56 · literal cần đối chiếu · <code>Prepare Weekly Study Outline</code>
+- L57 · literal cần đối chiếu · <code>Read Next Textbook Chapter</code>
+- L61 · nhãn hoặc giá trị mẫu · <code>Biology</code>
+- L61 · literal cần đối chiếu · <code>BI</code>
+- L62 · nhãn hoặc giá trị mẫu · <code>Chemistry</code>
+- L62 · literal cần đối chiếu · <code>CH</code>
+- L63 · nhãn hoặc giá trị mẫu · <code>Data Structures</code>
+- L63 · literal cần đối chiếu · <code>DS</code>
+- L64 · nhãn hoặc giá trị mẫu · <code>Linear Algebra</code>
+- L64 · literal cần đối chiếu · <code>LA</code>
+- L65 · nhãn hoặc giá trị mẫu · <code>World History</code>
+- L65 · literal cần đối chiếu · <code>WH</code>
+- L66 · nhãn hoặc giá trị mẫu · <code>English Literature</code>
+- L66 · literal cần đối chiếu · <code>EL</code>
+- L80 · thông điệp · <code>AI Key Saved</code>
+- L82 · thông điệp · <code>Custom Gemini API key saved.</code>
+- L83 · thông điệp · <code>Using built-in Zenith AI direct answer engine.</code>
+- L92 · literal cần đối chiếu · <code>help me</code>
+- L93 · literal cần đối chiếu · <code>help me</code>
+- L116 · literal cần đối chiếu · <code>one</code>
+- L161 · literal cần đối chiếu · <code>Indigo</code>
+- L163 · literal cần đối chiếu · <code>{label} ({hex})</code>
+- L213 · literal cần đối chiếu · <code>{title} {arg2} {arg3}</code>
+- L233 · điều kiện / alias · <code>ai</code>
+- L256 · template DOM · <code>$1</code>
+- L257 · template DOM · <code>$1</code>
+- L312 · literal cần đối chiếu · <code>CR</code>
+- L323 · template DOM · <code>Confirm Change</code>
+- L328 · template DOM · <code>No</code>
+- L331 · template DOM · <code>Apply (Yes)</code>
+- L352 · điều kiện / alias · <code>habit</code>
+- L352 · literal cần đối chiếu · <code>Habits</code>
+- L352 · điều kiện / alias · <code>task</code>
+- L352 · literal cần đối chiếu · <code>Tasks</code>
+- L352 · literal cần đối chiếu · <code>Courses</code>
+- L355 · điều kiện / alias · <code>habit</code>
+- L366 · điều kiện / alias · <code>task</code>
+- L377 · điều kiện / alias · <code>course</code>
+- L384 · template DOM · <code>{arg4} [{code}]</code>
+- L391 · template DOM · <code>Selected ({length}/{targetCount}): {arg3}</code>
+- L392 · template DOM · <code>Click {remaining} option{arg2} below, or type your own in the chat box (comma-separated or one by one).</code>
+- L392 · literal cần đối chiếu · <code>s</code>
+- L398 · template DOM · <code>Select {targetCount} {typeLabel} ({remaining} more needed)</code>
+- L401 · template DOM · <code>Review ({length})</code>
+- L421 · literal cần đối chiếu · <code>TASK</code>
+- L430 · template DOM · <code>Select an Assignment for Direct Answers &amp; Solutions</code>
+- L435 · template DOM · <code>{arg1} {taskButtons}</code>
+- L438 · template DOM · <code>✨ Solve All {length} Assignments</code>
+- L457 · template DOM · <code>Apply Solution to Workspace:</code>
+- L461 · template DOM · <code>📝 Save to Quick Study Notes</code>
+- L465 · template DOM · <code>✅ Mark &quot;{arg2}&quot; Done</code>
+- L495 · template DOM · <code>Select a Course to Edit (or type course name below)</code>
+- L502 · template DOM · <code>Add Course</code>
+- L525 · title · <code>Change colour to {label}</code>
+- L536 · template DOM · <code>Editing {arg5} — Pick Colour or Edit Option:</code>
+- L544 · template DOM · <code>✏️ Change Name</code>
+- L545 · template DOM · <code>🔤 Change 2-Letter Code</code>
+- L546 · template DOM · <code>🗑️ Delete Course</code>
+- L556 · literal cần đối chiếu · <code>Type the new name for &quot;{courseName}&quot; in the box below</code>
+- L557 · literal cần đối chiếu · <code>Type the new 2-letter code for &quot;{courseName}&quot; (e.g. PY, CS, MA)</code>
+- L558 · literal cần đối chiếu · <code>Type the name of the new course to add (e.g. Biology, Data Structures)</code>
+- L565 · template DOM · <code>Cancel</code>
+- L573 · điều kiện / alias · <code>undefined</code>
+- L595 · template DOM · <code>Choose a Theme, Surface Mode, or Accent Colour</code>
+- L601 · template DOM · <code>🌙 Dark Mode</code>
+- L602 · template DOM · <code>☀️ White Mode</code>
+- L603 · template DOM · <code>✨ Toggle Liquid Glass</code>
+- L628 · template DOM · <code>Pick a Habit to Add or Type Custom Habit(s) Below</code>
+- L633 · template DOM · <code>{arg1} {presetButtons}</code>
+- L635 · template DOM · <code>✨ Add 5 Core Basic Habits</code>
+- L639 · template DOM · <code>🚀 Add 5 Extra Starter Habits</code>
+- L642 · template DOM · <code>🔄 Reset Core 5 Habits</code>
+- L658 · template DOM · <code>Quick Settings (Click Any Option to Confirm &amp; Apply)</code>
+- L663 · template DOM · <code>⏱️ Classic (25/5m)</code>
+- L664 · template DOM · <code>⏱️ Extended (50/10m)</code>
+- L665 · template DOM · <code>⏱️ Blitz (15/3m)</code>
+- L666 · template DOM · <code>💧 Goal 2500ml</code>
+- L667 · template DOM · <code>💧 Goal 3000ml</code>
+- L668 · template DOM · <code>⚡ Performance Mode</code>
+- L669 · template DOM · <code>✨ Liquid Glass</code>
+- L670 · template DOM · <code>🔊 Toggle Sound</code>
+- L671 · template DOM · <code>🔔 Toggle Alerts</code>
+- L685 · điều kiện / alias · <code>habit</code>
+- L694 · điều kiện / alias · <code>task</code>
+- L703 · điều kiện / alias · <code>course</code>
+- L727 · điều kiện / alias · <code>habit</code>
+- L733 · literal cần đối chiếu · <code>Add {length} habit{arg2}: {namesList}</code>
+- L733 · literal cần đối chiếu · <code>s</code>
+- L735 · literal cần đối chiếu · <code>🔥 Ready to add **{length} habit{arg2}** ({namesList}) to your Habit Flow Tracker. Click **Apply (Yes)** below to confirm.</code>
+- L735 · literal cần đối chiếu · <code>s</code>
+- L737 · điều kiện / alias · <code>task</code>
+- L743 · literal cần đối chiếu · <code>Add {length} task{arg2}: {namesList}</code>
+- L743 · literal cần đối chiếu · <code>s</code>
+- L745 · literal cần đối chiếu · <code>📌 Ready to add **{length} task{arg2}** ({namesList}) to your Smart Task Tracker. Click **Apply (Yes)** below to confirm.</code>
+- L745 · literal cần đối chiếu · <code>s</code>
+- L747 · điều kiện / alias · <code>course</code>
+- L748 · literal cần đối chiếu · <code>&quot;{name}&quot; [{code}]</code>
+- L753 · literal cần đối chiếu · <code>Add {length} course{arg2}: {namesList}</code>
+- L753 · literal cần đối chiếu · <code>s</code>
+- L755 · literal cần đối chiếu · <code>🎓 Ready to add **{length} course{arg2}** ({namesList}) to your Active Courses. Click **Apply (Yes)** below to confirm.</code>
+- L755 · literal cần đối chiếu · <code>s</code>
+- L763 · literal cần đối chiếu · <code>Assignment</code>
+- L764 · literal cần đối chiếu · <code>{title} {arg2} {arg3}</code>
+- L766 · điều kiện / alias · <code>optics</code>
+- L766 · điều kiện / alias · <code>physics</code>
+- L766 · điều kiện / alias · <code>refraction</code>
+- L766 · điều kiện / alias · <code>snell</code>
+- L766 · điều kiện / alias · <code>prism</code>
+- L767 · literal cần đối chiếu · <code>🔬 **Solution Guide — {title} ({arg2}):**\n</code>
+- L767 · literal cần đối chiếu · <code>Physics</code>
+- L768 · literal cần đối chiếu · <code>• **1. Snell&#x27;s Law of Refraction:** **n₁ sin(θ₁) = n₂ sin(θ₂)**, where **n = c / v** is the refractive index. Passing from air (n₁ ≈ 1.00) into glass (n₂ ≈ 1.50), light bends **toward the normal** (θ₂ &lt; θ₁).\n</code>
+- L769 · literal cần đối chiếu · <code>• **2. Prism Minimum Deviation Formula:** **n = sin((A + Dₘ) / 2) / sin(A / 2)**, where **A** is the prism apex angle (60°) and **Dₘ** is the angle of minimum deviation.\n</code>
+- L770 · literal cần đối chiếu · <code>• **3. Thin Lens &amp; Error Analysis:** Use **1/f = 1/v − 1/u**. Key experimental sources of error: parallax error when aligning pins, finite glass slab thickness, and chromatic dispersion.</code>
+- L773 · điều kiện / alias · <code>calculus</code>
+- L773 · điều kiện / alias · <code>integration</code>
+- L773 · điều kiện / alias · <code>integral</code>
+- L773 · điều kiện / alias · <code>by parts</code>
+- L773 · điều kiện / alias · <code>substitution</code>
+- L774 · literal cần đối chiếu · <code>📐 **Solution Guide — {title} ({arg2}):**\n</code>
+- L774 · literal cần đối chiếu · <code>Calculus</code>
+- L775 · literal cần đối chiếu · <code>• **1. Integration by Parts (LIATE Rule):** **∫ u dv = u·v − ∫ v du**. Choose **u** in priority order: **L**ogarithmic, **I**nverse trig, **A**lgebraic, **T**rigonometric, **E**xponential.\n</code>
+- L776 · literal cần đối chiếu · <code>• **2. Worked Example (∫ x·eˣ dx):** Let u = x (du = dx) and dv = eˣ dx (v = eˣ). Then **∫ x·eˣ dx = x·eˣ − ∫ eˣ dx = eˣ(x − 1) + C**.\n</code>
+- L777 · literal cần đối chiếu · <code>• **3. Trigonometric Substitution:** For **√(a² − x²)** use **x = a·sin(θ)**; for **√(a² + x²)** use **x = a·tan(θ)**; for **√(x² − a²)** use **x = a·sec(θ)**.</code>
+- L780 · điều kiện / alias · <code>binary tree</code>
+- L780 · điều kiện / alias · <code>avl</code>
+- L780 · điều kiện / alias · <code>data structure</code>
+- L781 · literal cần đối chiếu · <code>💻 **Solution Guide — {title} ({arg2}):**\n</code>
+- L782 · literal cần đối chiếu · <code>• **1. Tree Traversals (O(n) Time, O(h) Space):**\n</code>
+- L783 · literal cần đối chiếu · <code>- **In-Order (Left → Root → Right):** Visits BST nodes in sorted ascending order.\n</code>
+- L784 · literal cần đối chiếu · <code>- **Pre-Order (Root → Left → Right):** Used for cloning/serializing trees.\n</code>
+- L785 · literal cần đối chiếu · <code>- **Post-Order (Left → Right → Root):** Used for deleting/freeing nodes bottom-up.\n</code>
+- L786 · literal cần đối chiếu · <code>• **2. AVL Self-Balancing Rotations:** Track balance factor **BF = height(left) − height(right) ∈ {−1, 0, 1}**. Fix imbalances via **LL (Right Rotate)**, **RR (Left Rotate)**, **LR (Left-Right)**, or **RL (Right-Left)** in O(1) pointer updates.\n</code>
+- L787 · literal cần đối chiếu · <code>• **3. Complexity:** Search, Insertion, and Deletion all run in guaranteed **O(log n)** time.</code>
+- L790 · literal cần đối chiếu · <code>📘 **Solution &amp; Key Concepts — {title} ({arg2}):**\n</code>
+- L790 · literal cần đối chiếu · <code>Study Task</code>
+- L791 · literal cần đối chiếu · <code>• **Core Thesis / Objective:** Define the primary formula, theorem, or problem statement for **{title}** first.\n</code>
+- L792 · literal cần đối chiếu · <code>• **Step-by-Step Derivation:** Write out the given parameters, apply the governing equation/algorithm, and verify boundary cases.\n</code>
+- L793 · literal cần đối chiếu · <code>• **Summary Conclusion:** State the final numerical or conceptual result clearly in 1–2 sentences.{arg1}</code>
+- L793 · literal cần đối chiếu · <code>\n• **Task Notes:** {description}</code>
+- L798 · điều kiện / alias · <code>all</code>
+- L799 · literal cần đối chiếu · <code>Solve all my assignments</code>
+- L802 · thông điệp · <code>You currently have no pending assignments in your task list! Type any question or topic and I&#x27;ll give you the direct answer.</code>
+- L829 · literal cần đối chiếu · <code>Save the AI assignment solution into Quick Study Notes</code>
+- L831 · literal cần đối chiếu · <code>📝 Ready to append this solution to your **Quick Study Notes**. Click **Apply (Yes)** below to confirm.</code>
+- L843 · literal cần đối chiếu · <code>Mark assignment &quot;{title}&quot; as completed</code>
+- L845 · literal cần đối chiếu · <code>✅ Ready to mark **&quot;{title}&quot;** as completed. Click **Apply (Yes)** below to confirm.</code>
+- L858 · thông điệp · <code>✏️ Selected **[{code}] {name}** (current colour: **{arg3}**).\n</code>
+- L859 · thông điệp · <code>Which edit do you need? Pick an option below or type:\n</code>
+- L860 · thông điệp · <code>• \`change colour to violet\` — or \`change letters to PY\` — or \`change name to ...\`</code>
+- L869 · thông điệp · <code>🎓 What is the **name** of the new course you want to add? (e.g. \`Biology\`, \`Data Structures\`)</code>
+- L890 · literal cần đối chiếu · <code>Change &quot;{name}&quot; [{code}] colour to {label} ({hex})</code>
+- L892 · literal cần đối chiếu · <code>🎨 Ready to update **{name} [{code}]** colour to **{label} ({hex})**. Click **Apply (Yes)** below to confirm.</code>
+- L903 · điều kiện / alias · <code>name</code>
+- L905 · thông điệp · <code>✏️ Type the **new course name** for **{name} [{code}]**:</code>
+- L907 · điều kiện / alias · <code>code</code>
+- L909 · thông điệp · <code>🔤 Type the **new 2-letter badge code** for **{name}** (currently \`[{code}]\`):</code>
+- L911 · điều kiện / alias · <code>delete</code>
+- L918 · literal cần đối chiếu · <code>Delete course &quot;{name}&quot; [{code}] from Active Courses</code>
+- L920 · literal cần đối chiếu · <code>🗑️ Ready to delete **{name} [{code}]**. Click **Apply (Yes)** below to confirm.</code>
+- L927 · điều kiện / alias · <code>solid</code>
+- L928 · điều kiện / alias · <code>undefined</code>
+- L936 · literal cần đối chiếu · <code>Switch application theme to &quot;{tName}&quot;</code>
+- L938 · literal cần đối chiếu · <code>🎨 Ready to switch your theme to **{tName}**. Confirm below to apply.</code>
+- L940 · điều kiện / alias · <code>surface</code>
+- L945 · literal cần đối chiếu · <code>Switch surface mode to {arg1}</code>
+- L945 · điều kiện / alias · <code>light</code>
+- L945 · literal cần đối chiếu · <code>White Mode</code>
+- L945 · literal cần đối chiếu · <code>Dark Mode</code>
+- L947 · literal cần đối chiếu · <code>🎨 Ready to switch surface mode to **{arg1}**. Confirm below to apply.</code>
+- L947 · điều kiện / alias · <code>light</code>
+- L947 · literal cần đối chiếu · <code>White Mode</code>
+- L947 · literal cần đối chiếu · <code>Dark Mode</code>
+- L949 · điều kiện / alias · <code>liquid</code>
+- L955 · literal cần đối chiếu · <code>{arg1} Liquid Glass visual mode</code>
+- L955 · literal cần đối chiếu · <code>Enable</code>
+- L955 · literal cần đối chiếu · <code>Disable</code>
+- L957 · literal cần đối chiếu · <code>✨ Ready to **{arg1} Liquid Glass Mode**. Confirm below to apply.</code>
+- L959 · điều kiện / alias · <code>accent</code>
+- L968 · literal cần đối chiếu · <code>Change accent colour to {label} ({hex})</code>
+- L970 · literal cần đối chiếu · <code>🎨 Ready to change your accent colour to **{label} ({hex})**. Confirm below to apply.</code>
+- L980 · literal cần đối chiếu · <code>Add / refresh the 5 FocusPulse Core Basic Habits (Hydration, Reading, Fitness, Deep Work, Mindfulness)</code>
+- L982 · literal cần đối chiếu · <code>🔥 Ready to apply the **5 Core Basic Habits** to your Habit Flow Tracker. Confirm below to apply.</code>
+- L992 · literal cần đối chiếu · <code>Add 5 Extra Starter Habits (Healthy Meal, Walk/Run, Coding, 8h Sleep, Digital Detox)</code>
+- L994 · literal cần đối chiếu · <code>🚀 Ready to add the **5 Extra Starter Habits** to your Habit Flow Tracker. Confirm below to apply.</code>
+- L1010 · literal cần đối chiếu · <code>Add daily habit &quot;{name}&quot; ({icon} {category})</code>
+- L1012 · literal cần đối chiếu · <code>🔥 Ready to add habit **&quot;{name}&quot;**. Confirm below to apply.</code>
+- L1021 · nhãn hoặc giá trị mẫu · <code>Classic</code>
+- L1022 · literal cần đối chiếu · <code>Set Pomodoro Timer to Classic (25m Focus / 5m Short / 15m Long)</code>
+- L1023 · literal cần đối chiếu · <code>⏱️ Ready to apply the **Classic (25/5m)** Pomodoro preset. Confirm below.</code>
+- L1027 · nhãn hoặc giá trị mẫu · <code>Extended</code>
+- L1028 · literal cần đối chiếu · <code>Set Pomodoro Timer to Extended (50m Focus / 10m Short / 20m Long)</code>
+- L1029 · literal cần đối chiếu · <code>⏱️ Ready to apply the **Extended (50/10m)** Pomodoro preset. Confirm below.</code>
+- L1033 · nhãn hoặc giá trị mẫu · <code>Blitz</code>
+- L1034 · literal cần đối chiếu · <code>Set Pomodoro Timer to Blitz (15m Focus / 3m Short / 10m Long)</code>
+- L1035 · literal cần đối chiếu · <code>⏱️ Ready to apply the **Blitz (15/3m)** Pomodoro preset. Confirm below.</code>
+- L1041 · literal cần đối chiếu · <code>Set Daily Hydration Goal to {goal} ml</code>
+- L1042 · literal cần đối chiếu · <code>💧 Ready to update your daily hydration goal to **{goal} ml**. Confirm below.</code>
+- L1048 · literal cần đối chiếu · <code>{arg1} Low-Spec / Performance Mode</code>
+- L1048 · literal cần đối chiếu · <code>Enable</code>
+- L1048 · literal cần đối chiếu · <code>Disable</code>
+- L1049 · literal cần đối chiếu · <code>⚡ Ready to **{arg1} Performance Mode**. Confirm below.</code>
+- L1055 · literal cần đối chiếu · <code>{arg1} Liquid Glass Mode</code>
+- L1055 · literal cần đối chiếu · <code>Enable</code>
+- L1055 · literal cần đối chiếu · <code>Disable</code>
+- L1056 · literal cần đối chiếu · <code>✨ Ready to **{arg1} Liquid Glass Mode**. Confirm below.</code>
+- L1062 · literal cần đối chiếu · <code>{arg1} timer &amp; alert sound effects</code>
+- L1062 · literal cần đối chiếu · <code>Enable</code>
+- L1062 · literal cần đối chiếu · <code>Mute</code>
+- L1063 · literal cần đối chiếu · <code>🔊 Ready to **{arg1} sound effects**. Confirm below.</code>
+- L1069 · literal cần đối chiếu · <code>{arg1} desktop &amp; app notifications</code>
+- L1069 · literal cần đối chiếu · <code>Enable</code>
+- L1069 · literal cần đối chiếu · <code>Disable</code>
+- L1070 · literal cần đối chiếu · <code>🔔 Ready to **{arg1} notifications**. Confirm below.</code>
+- L1105 · thông điệp · <code>Cancelled the current selection. Tell me what you&#x27;d like to do next!</code>
+- L1123 · điều kiện / alias · <code>habit</code>
+- L1136 · nhãn hoặc giá trị mẫu · <code>Productivity</code>
+- L1138 · điều kiện / alias · <code>task</code>
+- L1140 · điều kiện / alias · <code>course</code>
+- L1141 · literal cần đối chiếu · <code>CR</code>
+- L1154 · thông điệp · <code>👍 Got #{length}: **{latestName}**! What is the **{ordinal} {entityType}** you&#x27;d like to add? ({remaining} more needed — pick one below or type it in the box)</code>
+- L1169 · thông điệp · <code>You have no pending assignments in your task tracker right now. Type your assignment question or topic directly and I&#x27;ll solve it for you!</code>
+- L1214 · literal cần đối chiếu · <code>CR</code>
+- L1223 · literal cần đối chiếu · <code>Add new course &quot;{afterAdd}&quot; [{code}]</code>
+- L1225 · literal cần đối chiếu · <code>🎓 Ready to add course **&quot;{afterAdd}&quot; [{code}]**. Confirm below to apply.</code>
+- L1238 · thông điệp · <code>✏️ Selected **[{code}] {name}** (current colour: **{arg3}**).\n</code>
+- L1239 · thông điệp · <code>Which edit do you need? Pick an option below or type:\n</code>
+- L1240 · thông điệp · <code>• \`change colour to violet\` — or \`change letters to PY\` — or \`change name to ...\`</code>
+- L1269 · literal cần đối chiếu · <code>Delete course &quot;{name}&quot; [{curCode}] from Active Courses</code>
+- L1271 · literal cần đối chiếu · <code>🗑️ Ready to delete **{name} [{curCode}]**. Click **Apply (Yes)** below to confirm.</code>
+- L1277 · điều kiện / alias · <code>color</code>
+- L1277 · điều kiện / alias · <code>to</code>
+- L1286 · literal cần đối chiếu · <code>Change &quot;{name}&quot; [{curCode}] colour to {label} ({hex})</code>
+- L1288 · literal cần đối chiếu · <code>🎨 Ready to update **{name} [{curCode}]** colour to **{label} ({hex})**. Confirm below to apply.</code>
+- L1304 · literal cần đối chiếu · <code>Change 2-letter badge of &quot;{name}&quot; from [{curCode}] to [{newCode}]</code>
+- L1306 · literal cần đối chiếu · <code>🔤 Ready to update **{name}** 2-letter badge code to **[{newCode}]**. Confirm below to apply.</code>
+- L1311 · thông điệp · <code>🔤 What **2-letter badge code** would you like for **{name}**? (e.g. \`PY\`, \`CS\`, \`MA\`)</code>
+- L1329 · literal cần đối chiếu · <code>Rename course &quot;{name}&quot; to &quot;{newName}&quot;</code>
+- L1331 · literal cần đối chiếu · <code>✏️ Ready to rename **{name}** to **{newName}**. Confirm below to apply.</code>
+- L1336 · thông điệp · <code>✏️ Type the **new name** for **{name}**:</code>
+- L1357 · literal cần đối chiếu · <code>Change 2-letter badge of &quot;{name}&quot; to [{newCode}]</code>
+- L1359 · literal cần đối chiếu · <code>🔤 Ready to update **{name}** 2-letter badge code to **[{newCode}]**. Confirm below to apply.</code>
+- L1365 · thông điệp · <code>For **{name} [{curCode}]**, tell me what you&#x27;d like to change:\n</code>
+- L1366 · thông điệp · <code>• **Colour:** \`change colour to violet\` • **Code:** \`change letters to PY\` • **Name:** \`change name to Python\`</code>
+- L1388 · literal cần đối chiếu · <code>Rename course &quot;{name}&quot; to &quot;{newName}&quot;</code>
+- L1390 · literal cần đối chiếu · <code>✏️ Ready to rename **{name}** to **{newName}**. Confirm below to apply.</code>
+- L1402 · thông điệp · <code>Please enter 1 or 2 letters/numbers for the badge code (e.g. \`PY\`, \`CS\`).</code>
+- L1412 · literal cần đối chiếu · <code>Change 2-letter badge of &quot;{name}&quot; to [{cleanedCode}]</code>
+- L1414 · literal cần đối chiếu · <code>🔤 Ready to update **{name}** 2-letter badge code to **[{cleanedCode}]**. Confirm below to apply.</code>
+- L1422 · literal cần đối chiếu · <code>CR</code>
+- L1423 · nhãn hoặc giá trị mẫu · <code>Violet</code>
+- L1432 · literal cần đối chiếu · <code>Add new course &quot;{newName}&quot; [{code}]</code>
+- L1434 · literal cần đối chiếu · <code>🎓 Ready to add new course **&quot;{newName}&quot; [{code}]**. Confirm below to apply.</code>
+- L1444 · literal cần đối chiếu · <code>🎨 Ready to apply: **{summary}**. Confirm below to apply.</code>
+- L1456 · literal cần đối chiếu · <code>Change accent colour to {label} ({hex})</code>
+- L1458 · literal cần đối chiếu · <code>🎨 Ready to change accent colour to **{label} ({hex})**. Confirm below to apply.</code>
+- L1497 · literal cần đối chiếu · <code>Create daily habit &quot;{habitTitle}&quot; in Habit Flow Tracker</code>
+- L1499 · literal cần đối chiếu · <code>🔥 Ready to add daily habit **&quot;{habitTitle}&quot;**. Confirm below to apply.</code>
+- L1513 · literal cần đối chiếu · <code>⚙️ Ready to apply: **{summary}**. Confirm below.</code>
+- L1531 · literal cần đối chiếu · <code>Switch application surface to White Mode</code>
+- L1538 · literal cần đối chiếu · <code>Switch application surface to Dark Mode</code>
+- L1549 · literal cần đối chiếu · <code>{arg1} Liquid Glass visual mode</code>
+- L1549 · literal cần đối chiếu · <code>Enable</code>
+- L1549 · literal cần đối chiếu · <code>Disable</code>
+- L1554 · nhãn hoặc giá trị mẫu · <code>Obsidian</code>
+- L1555 · nhãn hoặc giá trị mẫu · <code>Midnight Navy</code>
+- L1556 · nhãn hoặc giá trị mẫu · <code>Forest Emerald</code>
+- L1557 · nhãn hoặc giá trị mẫu · <code>Cyberpunk</code>
+- L1558 · nhãn hoặc giá trị mẫu · <code>Sunset Crimson</code>
+- L1559 · nhãn hoặc giá trị mẫu · <code>Pure Black</code>
+- L1560 · nhãn hoặc giá trị mẫu · <code>Pure White</code>
+- L1569 · literal cần đối chiếu · <code>Switch solid theme to &quot;{name}&quot;</code>
+- L1582 · literal cần đối chiếu · <code>Change accent colour to {label} ({hex})</code>
+- L1604 · literal cần đối chiếu · <code>Add the 5 FocusPulse Basic Habits (Hydration, Reading, Fitness, Deep Work, Mindfulness)</code>
+- L1616 · nhãn hoặc giá trị mẫu · <code>Productivity</code>
+- L1620 · literal cần đối chiếu · <code>Add {length} habits: {arg2}</code>
+- L1629 · literal cần đối chiếu · <code>Mark all daily habits as completed for today</code>
+- L1641 · literal cần đối chiếu · <code>Add new task &quot;{rawTitle}&quot; to Smart Task Tracker</code>
+- L1645 · điều kiện / alias · <code>add task</code>
+- L1645 · điều kiện / alias · <code>new task</code>
+- L1645 · điều kiện / alias · <code>create task</code>
+- L1648 · nhãn hoặc giá trị mẫu · <code>Focused Study Session</code>
+- L1649 · literal cần đối chiếu · <code>Add new task &quot;Focused Study Session&quot; to Smart Task Tracker</code>
+- L1664 · literal cần đối chiếu · <code>Mark task &quot;{targetLabel}&quot; as completed</code>
+- L1674 · literal cần đối chiếu · <code>Delete task matching &quot;{queryTitle}&quot;</code>
+- L1686 · literal cần đối chiếu · <code>Create daily habit &quot;{rawHabit}&quot; in Habit Flow Tracker</code>
+- L1698 · literal cần đối chiếu · <code>Log today&#x27;s completion for habit matching &quot;{queryHabit}&quot;</code>
+- L1707 · literal cần đối chiếu · <code>Delete habit matching &quot;{queryHabit}&quot;</code>
+- L1716 · literal cần đối chiếu · <code>CR</code>
+- L1717 · nhãn hoặc giá trị mẫu · <code>Violet</code>
+- L1724 · literal cần đối chiếu · <code>Add new course &quot;{rawCourse}&quot; [{code}]</code>
+- L1737 · literal cần đối chiếu · <code>Delete course &quot;{name}&quot; [{code}] from Active Courses</code>
+- L1753 · literal cần đối chiếu · <code>Change &quot;{name}&quot; [{curCode}] colour to {label} ({hex})</code>
+- L1764 · literal cần đối chiếu · <code>Change 2-letter badge of &quot;{name}&quot; to [{newCode}]</code>
+- L1775 · literal cần đối chiếu · <code>Rename course &quot;{name}&quot; to &quot;{newName}&quot;</code>
+- L1788 · literal cần đối chiếu · <code>AI Deep Focus Sprint</code>
+- L1794 · literal cần đối chiếu · <code>Add study plan &quot;{rawPlan}&quot; (4 hrs / 4 sessions)</code>
+- L1799 · điều kiện / alias · <code>start timer</code>
+- L1799 · điều kiện / alias · <code>start pomodoro</code>
+- L1799 · điều kiện / alias · <code>start focus</code>
+- L1802 · literal cần đối chiếu · <code>Start a {arg1}-minute Deep Focus Pomodoro timer</code>
+- L1805 · điều kiện / alias · <code>pause timer</code>
+- L1805 · điều kiện / alias · <code>stop timer</code>
+- L1808 · literal cần đối chiếu · <code>Pause the active Pomodoro timer</code>
+- L1811 · điều kiện / alias · <code>classic</code>
+- L1811 · điều kiện / alias · <code>classic preset</code>
+- L1812 · nhãn hoặc giá trị mẫu · <code>Classic</code>
+- L1812 · literal cần đối chiếu · <code>Set Pomodoro Timer to Classic (25m / 5m)</code>
+- L1814 · điều kiện / alias · <code>extended</code>
+- L1814 · điều kiện / alias · <code>extended preset</code>
+- L1815 · nhãn hoặc giá trị mẫu · <code>Extended</code>
+- L1815 · literal cần đối chiếu · <code>Set Pomodoro Timer to Extended (50m / 10m)</code>
+- L1817 · điều kiện / alias · <code>blitz</code>
+- L1817 · điều kiện / alias · <code>blitz preset</code>
+- L1818 · nhãn hoặc giá trị mẫu · <code>Blitz</code>
+- L1818 · literal cần đối chiếu · <code>Set Pomodoro Timer to Blitz (15m / 3m)</code>
+- L1826 · literal cần đối chiếu · <code>Set Pomodoro focus duration to {mins} minutes</code>
+- L1831 · điều kiện / alias · <code>reset water</code>
+- L1831 · điều kiện / alias · <code>reset hydration</code>
+- L1834 · literal cần đối chiếu · <code>Reset today&#x27;s hydration counter to 0 ml</code>
+- L1837 · điều kiện / alias · <code>log water</code>
+- L1837 · điều kiện / alias · <code>drink water</code>
+- L1837 · điều kiện / alias · <code>hydrate</code>
+- L1837 · điều kiện / alias · <code>add water</code>
+- L1841 · literal cần đối chiếu · <code>Log +{arg1} ml water intake</code>
+- L1850 · literal cần đối chiếu · <code>Set Daily Hydration Goal to {goalMl} ml</code>
+- L1859 · literal cần đối chiếu · <code>Set water glass size to {glassMl} ml</code>
+- L1871 · literal cần đối chiếu · <code>{arg1} Low-Spec / Performance Mode</code>
+- L1871 · literal cần đối chiếu · <code>Enable</code>
+- L1871 · literal cần đối chiếu · <code>Disable</code>
+- L1880 · literal cần đối chiếu · <code>Set UI Scale to {arg1}% (step {stepVal})</code>
+- L1884 · literal cần đối chiếu · <code>Mute timer &amp; alert sound effects</code>
+- L1887 · literal cần đối chiếu · <code>Enable timer &amp; alert sound effects</code>
+- L1890 · literal cần đối chiếu · <code>Disable notifications</code>
+- L1893 · literal cần đối chiếu · <code>Enable notifications</code>
+- L1896 · literal cần đối chiếu · <code>Hide the top-bar Streak counter badge</code>
+- L1899 · literal cần đối chiếu · <code>Show the top-bar Streak counter badge</code>
+- L1908 · literal cần đối chiếu · <code>Change your profile display name to &quot;{newUser}&quot;</code>
+- L1915 · literal cần đối chiếu · <code>Save the last AI response into Quick Study Notes</code>
+- L1927 · literal cần đối chiếu · <code>Add new task &quot;{taskTitle}&quot; to Smart Task Tracker</code>
+- L1932 · literal cần đối chiếu · <code>Switch application surface to Dark Mode</code>
+- L1936 · literal cần đối chiếu · <code>Increase UI Scale to {arg1}%</code>
+- L1962 · điều kiện / alias · <code>habit</code>
+- L1962 · điều kiện / alias · <code>task</code>
+- L1963 · điều kiện / alias · <code>habit</code>
+- L1964 · literal cần đối chiếu · <code>\`Morning Run, Read 20 Pages\`</code>
+- L1965 · điều kiện / alias · <code>task</code>
+- L1965 · literal cần đối chiếu · <code>\`Physics Lab, Read Ch 4\`</code>
+- L1965 · literal cần đối chiếu · <code>\`Biology, Chemistry\`</code>
+- L1968 · thông điệp · <code>🔥 **Add {reqCount} New {arg2}:**\n</code>
+- L1969 · thông điệp · <code>Which **{reqCount} {typePlural}** do you need? You can:\n</code>
+- L1970 · thông điệp · <code>• **Click {reqCount} options** in the selector tray below\n</code>
+- L1971 · thông điệp · <code>• **Type them separated by a comma** (e.g. {exampleStr})\n</code>
+- L1972 · thông điệp · <code>• Or **type them one by one** and I&#x27;ll follow up for each!</code>
+- L2013 · literal cần đối chiếu · <code>{arg1}. **[{arg2}] {title}**</code>
+- L2013 · literal cần đối chiếu · <code>Task</code>
+- L2015 · thông điệp · <code>📚 **Assignment &amp; Homework Solver:**\n</code>
+- L2016 · thông điệp · <code>I analyzed your workspace and found **{length} active assignment(s)**:\n{taskLines}\n\n</code>
+- L2017 · thông điệp · <code>Which assignment do you need answers for? **Click one below**, type \`all\` (or \`I need answers\`) to solve all of them, or type your specific assignment question!</code>
+- L2023 · thông điệp · <code>📚 **Assignment &amp; Homework Solver:**\n</code>
+- L2024 · thông điệp · <code>Paste or type your assignment question or topic below, and I will give you a direct, step-by-step answer!</code>
+- L2035 · điều kiện / alias · <code>courses</code>
+- L2035 · điều kiện / alias · <code>course</code>
+- L2035 · điều kiện / alias · <code>edit course</code>
+- L2035 · điều kiện / alias · <code>change course</code>
+- L2044 · thông điệp · <code>✏️ Selected **[{code}] {name}** (colour: **{arg3}**).\n</code>
+- L2045 · thông điệp · <code>Which edit do you need? Pick an option below or type \`change colour to violet\`, \`change letters to PY\`, or \`change name to ...\`</code>
+- L2056 · literal cần đối chiếu · <code>{arg1}. **{name}** — Badge: \`[{code}]\` • Colour: **{arg4}**</code>
+- L2060 · thông điệp · <code>🎓 **Available Courses ({length}):**\n{arg2}\n\n</code>
+- L2060 · thông điệp · <code>No courses yet.</code>
+- L2061 · thông điệp · <code>Which course would you like to edit? **Click a course below** or type its name, then tell me what to change (colour, 2-letter code, or name)!</code>
+- L2078 · thông điệp · <code>🔥 All **5 Core Basic Habits** are already in your Habit Flow Tracker!\n</code>
+- L2079 · thông điệp · <code>Would you like to add **5 Extra Starter Habits** (Healthy Meal, Walk/Run, Coding, 8h Sleep, Digital Detox), pick individual habits from the popup below, or type a custom habit name?</code>
+- L2085 · thông điệp · <code>🔥 **Add Habits to Habit Flow:**\n</code>
+- L2086 · thông điệp · <code>Which habit would you like to add? Pick any preset in the popup below, type a single habit name, or type \`add 2 habits\` to add multiple at once!</code>
+- L2097 · điều kiện / alias · <code>theme</code>
+- L2097 · điều kiện / alias · <code>themes</code>
+- L2097 · điều kiện / alias · <code>color</code>
+- L2097 · điều kiện / alias · <code>colors</code>
+- L2102 · thông điệp · <code>🎨 **Theme &amp; Colour Studio** (Current: **{curTheme}** • Accent: **{curAccent}**)\n</code>
+- L2103 · thông điệp · <code>Pick a **Solid Theme**, **Surface Mode** (\`Dark Mode\`, \`White Mode\`, \`Liquid Glass\`), or **Accent Colour** from the popup below — or type your choice!</code>
+- L2113 · điều kiện / alias · <code>settings</code>
+- L2113 · điều kiện / alias · <code>setting</code>
+- L2116 · thông điệp · <code>⚙️ **FocusPulse Settings Control:**\n</code>
+- L2117 · thông điệp · <code>Click any quick setting in the popup below, or type a command:\n</code>
+- L2118 · thông điệp · <code>• **Timer:** \`set pomodoro to 45 mins\` • \`Classic\` • \`Extended\` • \`Blitz\`\n</code>
+- L2119 · thông điệp · <code>• **Hydration:** \`set water goal to 3000ml\` • \`set glass size to 300ml\`\n</code>
+- L2120 · thông điệp · <code>• **System:** \`enable performance mode\` • \`enable liquid glass\` • \`mute sound\` • \`change my name to ...\`</code>
+- L2172 · literal cần đối chiếu · <code>⚡ Ready to apply: **{summary}**. Click **Apply (Yes)** or **No** below.</code>
+- L2202 · literal cần đối chiếu · <code>⚡ Ready to apply: **{summary}**. Click **Apply (Yes)** or **No** below.</code>
+- L2216 · literal cần đối chiếu · <code>prime minister</code>
+- L2217 · literal cần đối chiếu · <code>prime minister</code>
+- L2238 · literal cần đối chiếu · <code>&quot;use strict&quot;; return (</code>
+- L2239 · điều kiện / alias · <code>number</code>
+- L2240 · literal cần đối chiếu · <code>**{mathCandidate} = {arg2}**</code>
+- L2247 · literal cần đối chiếu · <code>It is currently **{arg1}**.</code>
+- L2250 · literal cần đối chiếu · <code>Today is **{arg1}**.</code>
+- L2254 · điều kiện / alias · <code>prime minister</code>
+- L2255 · điều kiện / alias · <code>president</code>
+- L2259 · literal cần đối chiếu · <code>The United States does **not** have a Prime Minister — it is a presidential republic led by a **President**. The current President of the United States is **Donald Trump**.</code>
+- L2262 · literal cần đối chiếu · <code>The current President of the United States is **Donald Trump** (47th U.S. President).</code>
+- L2265 · literal cần đối chiếu · <code>The Prime Minister of India is **Narendra Modi** (serving since May 2014).</code>
+- L2268 · literal cần đối chiếu · <code>The President of India is **Droupadi Murmu** (15th President of India).</code>
+- L2271 · literal cần đối chiếu · <code>The Prime Minister of the United Kingdom is **Keir Starmer**.</code>
+- L2274 · literal cần đối chiếu · <code>The United Kingdom does **not** have a President — it is a constitutional monarchy with **King Charles III** as head of state and **Keir Starmer** as Prime Minister.</code>
+- L2277 · literal cần đối chiếu · <code>The Prime Minister of Canada is **Mark Carney**.</code>
+- L2280 · literal cần đối chiếu · <code>The Prime Minister of Australia is **Anthony Albanese**.</code>
+- L2283 · literal cần đối chiếu · <code>The President of France is **Emmanuel Macron**.</code>
+- L2286 · literal cần đối chiếu · <code>The President of Russia is **Vladimir Putin**.</code>
+- L2289 · literal cần đối chiếu · <code>The President of China is **Xi Jinping**.</code>
+- L2292 · literal cần đối chiếu · <code>The President of Ukraine is **Volodymyr Zelenskyy**.</code>
+- L2295 · literal cần đối chiếu · <code>The Chief Minister of Kerala is **Pinarayi Vijayan**.</code>
+- L2300 · literal cần đối chiếu · <code>New Delhi</code>
+- L2301 · literal cần đối chiếu · <code>Washington, D.C.</code>
+- L2302 · literal cần đối chiếu · <code>united states</code>
+- L2302 · literal cần đối chiếu · <code>Washington, D.C.</code>
+- L2303 · literal cần đối chiếu · <code>Washington, D.C.</code>
+- L2304 · literal cần đối chiếu · <code>London</code>
+- L2305 · literal cần đối chiếu · <code>united kingdom</code>
+- L2305 · literal cần đối chiếu · <code>London</code>
+- L2306 · literal cần đối chiếu · <code>London</code>
+- L2307 · literal cần đối chiếu · <code>Paris</code>
+- L2308 · literal cần đối chiếu · <code>Berlin</code>
+- L2309 · literal cần đối chiếu · <code>Tokyo</code>
+- L2310 · literal cần đối chiếu · <code>Beijing</code>
+- L2311 · literal cần đối chiếu · <code>Moscow</code>
+- L2312 · literal cần đối chiếu · <code>Ottawa</code>
+- L2313 · literal cần đối chiếu · <code>Canberra</code>
+- L2314 · literal cần đối chiếu · <code>Rome</code>
+- L2315 · literal cần đối chiếu · <code>Madrid</code>
+- L2317 · literal cần đối chiếu · <code>south korea</code>
+- L2317 · literal cần đối chiếu · <code>Seoul</code>
+- L2318 · literal cần đối chiếu · <code>Abu Dhabi</code>
+- L2319 · literal cần đối chiếu · <code>saudi arabia</code>
+- L2319 · literal cần đối chiếu · <code>Riyadh</code>
+- L2320 · literal cần đối chiếu · <code>Thiruvananthapuram</code>
+- L2322 · điều kiện / alias · <code>capital of</code>
+- L2326 · literal cần đối chiếu · <code>The capital of {label} is **{cap}**.</code>
+- L2333 · literal cần đối chiếu · <code>**Photosynthesis** is the process by which green plants use sunlight, water (H₂O), and carbon dioxide (CO₂) to produce glucose (C₆H₁₂O₆) and oxygen (O₂).</code>
+- L2334 · literal cần đối chiếu · <code>**Mitochondria** are the powerhouses of the cell, generating most of the cell&#x27;s **ATP** (chemical energy) through cellular respiration.</code>
+- L2335 · literal cần đối chiếu · <code>**Newton&#x27;s Second Law** states that force equals mass times acceleration (**F = m·a**).</code>
+- L2336 · literal cần đối chiếu · <code>**Newton&#x27;s First Law (Inertia)** states that an object remains at rest or in uniform motion unless acted upon by an external net force.</code>
+- L2337 · literal cần đối chiếu · <code>**Newton&#x27;s Third Law** states that for every action, there is an equal and opposite reaction.</code>
+- L2338 · literal cần đối chiếu · <code>**Ohm&#x27;s Law** states that voltage equals current times resistance (**V = I × R**).</code>
+- L2339 · literal cần đối chiếu · <code>**Snell&#x27;s Law** states that **n₁ sin(θ₁) = n₂ sin(θ₂)**, relating the angles of incidence and refraction to the refractive indices of two media.</code>
+- L2340 · literal cần đối chiếu · <code>The **Pythagorean Theorem** states that in a right triangle, **a² + b² = c²**, where c is the hypotenuse.</code>
+- L2341 · literal cần đối chiếu · <code>The **Quadratic Formula** for ax² + bx + c = 0 is **x = (−b ± √(b² − 4ac)) / 2a**.</code>
+- L2342 · literal cần đối chiếu · <code>**Integration by Parts** uses the formula **∫ u dv = u·v − ∫ v du** (choose u via the **LIATE** priority rule).</code>
+- L2343 · literal cần đối chiếu · <code>The speed of light in a vacuum (c) is approximately **299,792,458 m/s** (~3 × 10⁸ m/s).</code>
+- L2344 · literal cần đối chiếu · <code>**Binary Search** finds a target in a sorted array by repeatedly halving the search interval, running in **O(log n)** time.</code>
+- L2345 · literal cần đối chiếu · <code>A **Red-Black Tree** is a self-balancing binary search tree that guarantees **O(log n)** search, insertion, and deletion using node color invariants.</code>
+- L2346 · literal cần đối chiếu · <code>An **AVL Tree** is a self-balancing binary search tree where the heights of left and right subtrees of any node differ by at most **1** (**O(log n)** operations).</code>
+- L2347 · literal cần đối chiếu · <code>**Recursion** is when a function calls itself on a smaller subproblem until reaching a **base case** that stops the calls.</code>
+- L2348 · literal cần đối chiếu · <code>**RAM** is fast, volatile working memory cleared when power turns off; **ROM** is non-volatile permanent memory used for firmware/boot instructions.</code>
+- L2349 · literal cần đối chiếu · <code>**FocusPulse** is developed by **azmee7 (Azmi)** under **Foc-It** (github.com/foc-it).</code>
+- L2368 · literal cần đối chiếu · <code>Scholar</code>
+- L2369 · literal cần đối chiếu · <code>your courses</code>
+- L2378 · literal cần đối chiếu · <code>reviewing {arg1}</code>
+- L2379 · literal cần đối chiếu · <code>all daily habits</code>
+- L2383 · literal cần đối chiếu · <code>📌 **Further Breakdown:**\nTo apply this in practice, focus on writing out one concrete worked example step by step, verifying units/boundary conditions, and summarizing the key takeaway in **Quick Study Notes** (or type \`save to notes\` and I&#x27;ll add it for you!).</code>
+- L2395 · literal cần đối chiếu · <code>👋 Hi {userName}! How can I help you today? You can ask me any study/assignment question, or tell me to update your courses, habits, tasks, themes, or settings.</code>
+- L2399 · điều kiện / alias · <code>plan my day</code>
+- L2399 · điều kiện / alias · <code>schedule</code>
+- L2399 · điều kiện / alias · <code>timeblock</code>
+- L2400 · literal cần đối chiếu · <code>active recall on {subjects}</code>
+- L2401 · literal cần đối chiếu · <code>📋 **Today&#x27;s Study Plan ({userName}):**\n</code>
+- L2402 · literal cần đối chiếu · <code>• **Block 1 ({pomodoro}m):** Complete **&quot;{topTask}&quot;**.\n</code>
+- L2403 · literal cần đối chiếu · <code>• **Break ({short}m):** Drink {glassSizeMl}ml water &amp; check off **&quot;{nextHabitName}&quot;**.\n</code>
+- L2404 · literal cần đối chiếu · <code>• **Block 2 ({pomodoro}m):** Work on **&quot;{secondTask}&quot;**.</code>
+- L2408 · điều kiện / alias · <code>prioritize</code>
+- L2408 · điều kiện / alias · <code>tasks</code>
+- L2408 · điều kiện / alias · <code>my tasks</code>
+- L2408 · điều kiện / alias · <code>urgent</code>
+- L2408 · điều kiện / alias · <code>backlog</code>
+- L2410 · literal cần đối chiếu · <code>🎉 You have **0 pending tasks**! Type \`add task: [Task Title]\` or \`add 2 tasks\` to add new goals.</code>
+- L2413 · literal cần đối chiếu · <code>{arg1}. **[{arg2}] {title}** (Due {dueDate})</code>
+- L2413 · literal cần đối chiếu · <code>Task</code>
+- L2414 · literal cần đối chiếu · <code>⚡ **Priority Task Queue ({length} Pending):**\n{listStr}\n\nWant me to solve any of these? Type \`help me with my assignment\`!</code>
+- L2418 · điều kiện / alias · <code>procrastinat</code>
+- L2418 · điều kiện / alias · <code>lazy</code>
+- L2418 · điều kiện / alias · <code>stuck</code>
+- L2418 · điều kiện / alias · <code>unmotivated</code>
+- L2419 · literal cần đối chiếu · <code>🚀 **2-Minute Reset:** Commit to working on **&quot;{topTask}&quot;** for just **2 minutes**. Starting breaks the friction immediately — or type \`help me with {topTask}\` and we&#x27;ll solve the first part together!</code>
+- L2423 · điều kiện / alias · <code>overwhelm</code>
+- L2423 · điều kiện / alias · <code>stress</code>
+- L2423 · điều kiện / alias · <code>tired</code>
+- L2423 · điều kiện / alias · <code>burnout</code>
+- L2424 · literal cần đối chiếu · <code>🌿 **Energy Reset:** Drink a glass of water, step away from screens for 5 minutes, and focus on just one small step when you&#x27;re ready.</code>
+- L2428 · điều kiện / alias · <code>exam</code>
+- L2428 · điều kiện / alias · <code>revision</code>
+- L2428 · điều kiện / alias · <code>active recall</code>
+- L2428 · điều kiện / alias · <code>spaced repetition</code>
+- L2429 · literal cần đối chiếu · <code>🧠 **Exam Strategy:** Spend 60% of your session solving practice problems without looking at notes, log mistakes in **Quick Study Notes**, and review at **Day 1 → Day 3 → Day 7**.</code>
+- L2433 · điều kiện / alias · <code>habit tips</code>
+- L2433 · điều kiện / alias · <code>habit status</code>
+- L2433 · điều kiện / alias · <code>my habits</code>
+- L2433 · điều kiện / alias · <code>streak</code>
+- L2434 · literal cần đối chiếu · <code>🔥 **Habit Status:** {habitsDoneToday}/{length} completed today ({streakCount}-day streak). Next up: **&quot;{nextHabitName}&quot;** — or type \`add 2 habits\` to add new habits!</code>
+- L2438 · điều kiện / alias · <code>stats</code>
+- L2438 · điều kiện / alias · <code>progress</code>
+- L2438 · điều kiện / alias · <code>report</code>
+- L2438 · điều kiện / alias · <code>summary</code>
+- L2442 · literal cần đối chiếu · <code>📊 **Your Progress Today:**\n</code>
+- L2443 · literal cần đối chiếu · <code>• **Focus Logged:** {focusMins}m ({streakCount}d streak 🔥)\n</code>
+- L2444 · literal cần đối chiếu · <code>• **Tasks:** {length}/{totalTasks} done ({taskPct}%)\n</code>
+- L2445 · literal cần đối chiếu · <code>• **Habits:** {habitsDoneToday}/{length} done ({habitPct}%)\n</code>
+- L2446 · literal cần đối chiếu · <code>• **Water:** {waterIntakeMl}/{dailyWaterGoalMl}ml ({waterPct}%)</code>
+- L2450 · điều kiện / alias · <code>help</code>
+- L2450 · điều kiện / alias · <code>ai commands</code>
+- L2450 · điều kiện / alias · <code>what can you do</code>
+- L2451 · literal cần đối chiếu · <code>🛠️ **Zenith AI Site Controls &amp; Study Assistant:**\n</code>
+- L2452 · literal cần đối chiếu · <code>• **Assignments &amp; Q&amp;A:** \`help me with my assignment\` • \`I need answers\` • or ask any question!\n</code>
+- L2453 · literal cần đối chiếu · <code>• **Habits (Single or Multi):** \`add basic habits\` • \`add 2 habits\` • \`add habit: Morning Run\`\n</code>
+- L2454 · literal cần đối chiếu · <code>• **Courses:** \`edit my courses\` • \`add 2 courses\` • \`change CS101 colour to violet\`\n</code>
+- L2455 · literal cần đối chiếu · <code>• **Themes &amp; Settings:** \`change my theme\` • \`change settings\` • \`cyberpunk\` • \`white mode\`</code>
+- L2465 · literal cần đối chiếu · <code>{arg1}: {text}</code>
+- L2465 · điều kiện / alias · <code>user</code>
+- L2465 · literal cần đối chiếu · <code>User</code>
+- L2465 · literal cần đối chiếu · <code>Zenith AI</code>
+- L2469 · literal cần đối chiếu · <code>{title} ({arg2})</code>
+- L2469 · literal cần đối chiếu · <code>General</code>
+- L2472 · literal cần đối chiếu · <code>You are Zenith AI inside FocusPulse. Answer the user&#x27;s question directly, accurately, and concisely (1 to 3 sentences). Do NOT spam Pomodoro timers or task counts unless asked. Active user assignments: {arg1}. Recent chat context:\n{recentHistory}</code>
+- L2472 · literal cần đối chiếu · <code>None</code>
+- L2480 · literal cần đối chiếu · <code>POST</code>
+- L2481 · literal cần đối chiếu · <code>Content-Type</code>
+- L2483 · nhãn hoặc giá trị mẫu · <code>{sysInstruction}\n\nUser: {promptText}</code>
+- L2500 · literal cần đối chiếu · <code>POST</code>
+- L2501 · literal cần đối chiếu · <code>Content-Type</code>
+- L2508 · điều kiện / alias · <code>user</code>
+- L2548 · điều kiện / alias · <code>disambiguation</code>
+- L2576 · template DOM · <code>Thinking...</code>
+- L2604 · literal cần đối chiếu · <code>I can help solve your assignments, answer questions, or update your workspace! Try \`help me with my assignment\`, \`add 2 habits\`, \`edit my courses\`, \`change my theme\`, or \`change settings\`.</code>
+- L2623 · literal cần đối chiếu · <code>Action executed!</code>
+- L2645 · literal cần đối chiếu · <code>✅ All 5 Core Basic Habits were refreshed in your Habit Flow Tracker!</code>
+- L2647 · literal cần đối chiếu · <code>✅ Added {addedCount} Basic Habit{arg2} to your Habit Flow Tracker!</code>
+- L2647 · literal cần đối chiếu · <code>s</code>
+- L2649 · điều kiện / alias · <code>function</code>
+- L2660 · nhãn hoặc giá trị mẫu · <code>Productivity</code>
+- L2668 · điều kiện / alias · <code>function</code>
+- L2669 · literal cần đối chiếu · <code>✅ Added {length} habit{arg2} ({arg3}) to your Habit Flow Tracker!</code>
+- L2669 · literal cần đối chiếu · <code>s</code>
+- L2681 · nhãn hoặc giá trị mẫu · <code>Studies</code>
+- L2682 · nhãn hoặc giá trị mẫu · <code>General</code>
+- L2685 · nhãn hoặc giá trị mẫu · <code>Added by Zenith AI Coach</code>
+- L2691 · literal cần đối chiếu · <code>✅ Added {length} task{arg2} ({arg3}) to your Smart Task Tracker!</code>
+- L2691 · literal cần đối chiếu · <code>s</code>
+- L2699 · literal cần đối chiếu · <code>CR</code>
+- L2706 · literal cần đối chiếu · <code>&quot;{name}&quot; [{code}]</code>
+- L2709 · điều kiện / alias · <code>function</code>
+- L2710 · literal cần đối chiếu · <code>🎓 Added {length} course{arg2} ({arg3}) to your Active Courses!</code>
+- L2710 · literal cần đối chiếu · <code>s</code>
+- L2717 · literal cần đối chiếu · <code>📝 Saved solution to your **Quick Study Notes**!</code>
+- L2724 · điều kiện / alias · <code>function</code>
+- L2725 · literal cần đối chiếu · <code>🔥 Marked all {arg1} daily habits as completed for today!</code>
+- L2731 · nhãn hoặc giá trị mẫu · <code>Productivity</code>
+- L2737 · điều kiện / alias · <code>function</code>
+- L2738 · literal cần đối chiếu · <code>✅ Added habit &quot;{name}&quot; to your Habit Flow Tracker!</code>
+- L2745 · điều kiện / alias · <code>function</code>
+- L2746 · literal cần đối chiếu · <code>🔥 Checked off habit &quot;{name}&quot; for today!</code>
+- L2748 · literal cần đối chiếu · <code>ℹ️ Could not find a habit matching &quot;{query}&quot;.</code>
+- L2755 · điều kiện / alias · <code>function</code>
+- L2756 · literal cần đối chiếu · <code>🗑️ Deleted habit &quot;{name}&quot;.</code>
+- L2758 · literal cần đối chiếu · <code>ℹ️ Could not find a habit matching &quot;{query}&quot;.</code>
+- L2770 · điều kiện / alias · <code>function</code>
+- L2771 · literal cần đối chiếu · <code>🎓 Added course &quot;{name}&quot; [{code}] to your Active Courses!</code>
+- L2789 · điều kiện / alias · <code>function</code>
+- L2791 · literal cần đối chiếu · <code>✅ Updated course &quot;{name}&quot; [{code}] ({arg3})!</code>
+- L2798 · điều kiện / alias · <code>function</code>
+- L2799 · literal cần đối chiếu · <code>🗑️ Removed course &quot;{name}&quot; from Active Courses.</code>
+- L2802 · điều kiện / alias · <code>function</code>
+- L2808 · literal cần đối chiếu · <code>🎨 Switched theme to **{arg1}**!</code>
+- L2810 · điều kiện / alias · <code>function</code>
+- L2816 · literal cần đối chiếu · <code>🎨 Changed accent colour to **{arg1}**!</code>
+- L2818 · điều kiện / alias · <code>function</code>
+- L2819 · literal cần đối chiếu · <code>🎨 Switched surface mode to **{arg1}**!</code>
+- L2819 · điều kiện / alias · <code>light</code>
+- L2819 · literal cần đối chiếu · <code>White Mode</code>
+- L2819 · literal cần đối chiếu · <code>Dark Mode</code>
+- L2822 · điều kiện / alias · <code>function</code>
+- L2823 · literal cần đối chiếu · <code>✨ {arg1} **Liquid Glass Mode**!</code>
+- L2823 · literal cần đối chiếu · <code>Enabled</code>
+- L2823 · literal cần đối chiếu · <code>Disabled</code>
+- L2828 · nhãn hoặc giá trị mẫu · <code>Studies</code>
+- L2829 · nhãn hoặc giá trị mẫu · <code>General</code>
+- L2832 · nhãn hoặc giá trị mẫu · <code>Added by Zenith AI Coach</code>
+- L2836 · literal cần đối chiếu · <code>✅ Added task &quot;{title}&quot; to your Smart Task Tracker!</code>
+- L2843 · literal cần đối chiếu · <code>✅ Marked task &quot;{title}&quot; as completed!</code>
+- L2845 · literal cần đối chiếu · <code>ℹ️ Could not find a pending task matching &quot;{query}&quot;.</code>
+- L2852 · literal cần đối chiếu · <code>🗑️ Deleted task &quot;{title}&quot;.</code>
+- L2854 · literal cần đối chiếu · <code>ℹ️ Could not find a task matching &quot;{query}&quot;.</code>
+- L2862 · nhãn hoặc giá trị mẫu · <code>Mon, Tue, Wed, Thu, Fri</code>
+- L2864 · literal cần đối chiếu · <code>✅ Added study plan &quot;{presetName}&quot; to Active Plans!</code>
+- L2866 · điều kiện / alias · <code>function</code>
+- L2867 · literal cần đối chiếu · <code>⏱️ Started your {arg1}m Deep Focus Pomodoro timer!</code>
+- L2869 · điều kiện / alias · <code>function</code>
+- L2870 · literal cần đối chiếu · <code>⏸️ Paused your Pomodoro timer.</code>
+- L2872 · điều kiện / alias · <code>function</code>
+- L2877 · literal cần đối chiếu · <code>⏱️ Updated Pomodoro timer preset to **{name} ({focus}m / {short}m)**!</code>
+- L2880 · điều kiện / alias · <code>pomodoro</code>
+- L2883 · điều kiện / alias · <code>function</code>
+- L2884 · literal cần đối chiếu · <code>⏱️ Set Pomodoro focus duration to **{minutes} minutes**!</code>
+- L2887 · literal cần đối chiếu · <code>✅ Reset daily hydration intake to 0 ml.</code>
+- L2890 · literal cần đối chiếu · <code>💧 Logged +{arg1} ml of water!</code>
+- L2893 · literal cần đối chiếu · <code>💧 Updated daily hydration goal to **{goalMl} ml**!</code>
+- L2896 · literal cần đối chiếu · <code>💧 Updated water glass size to **{glassMl} ml**!</code>
+- L2898 · điều kiện / alias · <code>function</code>
+- L2904 · literal cần đối chiếu · <code>⚡ {arg1} **Performance Mode**!</code>
+- L2904 · literal cần đối chiếu · <code>Enabled</code>
+- L2904 · literal cần đối chiếu · <code>Disabled</code>
+- L2906 · điều kiện / alias · <code>function</code>
+- L2912 · literal cần đối chiếu · <code>🔍 Updated UI Scale to **{arg1}%**!</code>
+- L2915 · literal cần đối chiếu · <code>🔊 {arg1} sound effects!</code>
+- L2915 · literal cần đối chiếu · <code>Enabled</code>
+- L2915 · literal cần đối chiếu · <code>Muted</code>
+- L2918 · literal cần đối chiếu · <code>🔔 {arg1} notifications!</code>
+- L2918 · literal cần đối chiếu · <code>Enabled</code>
+- L2918 · literal cần đối chiếu · <code>Disabled</code>
+- L2920 · điều kiện / alias · <code>function</code>
+- L2923 · literal cần đối chiếu · <code>🛡️ Applied your 1-per-week Restore Missed Streak safeguard!</code>
+- L2926 · điều kiện / alias · <code>function</code>
+- L2927 · literal cần đối chiếu · <code>🔥 {arg1} the top-bar Streak badge!</code>
+- L2927 · literal cần đối chiếu · <code>Showing</code>
+- L2927 · literal cần đối chiếu · <code>Hid</code>
+- L2931 · literal cần đối chiếu · <code>👤 Updated your display name to **{name}**!</code>
+- L2935 · điều kiện / alias · <code>function</code>
+- L2936 · thông điệp · <code>Zenith AI Action</code>
+- L2939 · điều kiện / alias · <code>function</code>
+- L2947 · thông điệp · <code>Cancelled — no changes were made.</code>
+- L2948 · thông điệp · <code>Action Cancelled</code>
+- L2948 · thông điệp · <code>No changes were applied.</code>
+
+**js/ui.js**
+
+- L1884 · placeholder · <code>Quick task...</code>
+
+### Account · 252 mục
+
+
+**index.html**
+
+- L6 · HTML · <code>FocusPulse</code>
+- L42 · aria-label · <code>FocusPulse Startup Intro</code>
+- L46 · alt · <code>FocusPulse Logo</code>
+- L49 · HTML · <code>FocusPulse</code>
+- L50 · HTML · <code>Your day, your way.</code>
+- L61 · aria-label · <code>FocusPulse Welcome and Personal Setup</code>
+- L67 · alt · <code>FocusPulse Logo</code>
+- L69 · HTML · <code>FocusPulse</code>
+- L76 · HTML · <code>Step 1 of 6</code>
+- L77 · HTML · <code>Personal Setup • Skippable Anytime</code>
+- L90 · HTML · <code>Foc-it • FocusPulse v1.0</code>
+- L915 · title · <code>Click to upload or change profile picture</code>
+- L917 · HTML · <code>GU</code>
+- L921 · HTML · <code>Photo</code>
+- L927 · HTML · <code>Scholar</code>
+- L929 · HTML · <code>Account Required</code>
+- L934 · HTML · <code>Courses:</code>
+- L934 · HTML · <code>No courses listed yet</code>
+- L941 · title · <code>Sign In or Sign Up</code>
+- L942 · HTML · <code>Sign In / Sign Up</code>
+- L944 · title · <code>Customize Theme &amp; Palette</code>
+- L945 · HTML · <code>Theme</code>
+- L947 · title · <code>Open Settings</code>
+- L948 · HTML · <code>Settings</code>
+- L1022 · HTML · <code>Edit Profile &amp; Courses</code>
+- L1024 · HTML · <code>Persists on Refresh</code>
+- L1032 · HTML · <code>Profile Picture</code>
+- L1037 · HTML · <code>Upload Photo</code>
+- L1039 · title · <code>Remove Profile Picture</code>
+- L1047 · HTML · <code>Display Name</code>
+- L1051 · HTML · <code>Subjects / Courses</code>
+- L1052 · placeholder · <code>e.g. CS101, Calculus, Physics</code>
+- L1055 · HTML · <code>Save Profile Changes</code>
+- L1069 · HTML · <code>Course Edit &amp; Subject Profile Management</code>
+- L1070 · HTML · <code>Add, edit, or remove subject profiles &amp; 2-letter course badges (synced with Settings &amp; Active Courses)</code>
+- L1073 · HTML · <code>3 Courses</code>
+- L1080 · HTML · <code>CS</code>
+- L1083 · HTML · <code>2-Letter Code *</code>
+- L1084 · placeholder · <code>CS</code>
+- L1090 · HTML · <code>Course / Subject Name *</code>
+- L1091 · placeholder · <code>e.g. CS101, Calculus, Physics...</code>
+- L1098 · HTML · <code>Badge Color:</code>
+- L1103 · HTML · <code>Cancel</code>
+- L1107 · HTML · <code>Save Course</code>
+- L2089 · HTML · <code>Sign In / Sign Up</code>
+- L2093 · HTML · <code>Email Address</code>
+- L2093 · placeholder · <code>you@example.com</code>
+- L2094 · HTML · <code>Password</code>
+- L2094 · placeholder · <code>Enter password</code>
+- L2096 · HTML · <code>Sign In</code>
+- L2097 · HTML · <code>Sign Up</code>
+- L2103 · HTML · <code>Your Name (Syncs to Local + Cloud DB)</code>
+- L2104 · HTML · <code>Subjects / Courses</code>
+- L2104 · placeholder · <code>e.g. CS101</code>
+- L2105 · HTML · <code>Update Profile</code>
+- L2107 · HTML · <code>Sign Out</code>
+- L2389 · HTML · <code>Existing Workspace Data Detected</code>
+- L2390 · HTML · <code>Protect your existing profile / guest data before signing in</code>
+- L2393 · aria-label · <code>Close</code>
+- L2400 · HTML · <code>Signing in to an existing account will load that account&#x27;s cloud data and may overwrite your current profile or guest data. Export a backup first if you&#x27;d like to keep a copy of your tasks, habits, and courses (or switch to Sign Up to sync your current data into a new account).</code>
+- L2407 · HTML · <code>Export Backup (.json)</code>
+- L2411 · HTML · <code>Switch to Sign Up</code>
+- L2414 · HTML · <code>Continue to Sign In →</code>
+- L2418 · HTML · <code>Cancel</code>
+- L2447 · HTML · <code>Permanently Delete Account?</code>
+- L2448 · HTML · <code>Reset email registration so it is not registered ever</code>
+- L2451 · aria-label · <code>Close</code>
+- L2459 · HTML · <code>Irreversible Action</code>
+- L2462 · HTML · <code>This will permanently delete your user profile and cloud Firestore records. Your registered email will be released and reset as if it was never registered in the system.</code>
+- L2469 · HTML · <code>Export JSON Backup First</code>
+- L2473 · HTML · <code>Cancel</code>
+- L2476 · HTML · <code>Yes, Delete Account</code>
+
+**js/firebase.js**
+
+- L61 · literal cần đối chiếu · <code>An error occurred during authentication.</code>
+- L76 · thông điệp · <code>Authentication</code>
+- L98 · nhãn hoặc giá trị mẫu · <code>Scholar</code>
+- L209 · literal cần đối chiếu · <code>done</code>
+- L254 · literal cần đối chiếu · <code>done</code>
+- L270 · điều kiện / alias · <code>Guest</code>
+- L270 · điều kiện / alias · <code>Student Scholar</code>
+- L371 · điều kiện / alias · <code>Guest</code>
+- L371 · điều kiện / alias · <code>Student Scholar</code>
+- L401 · literal cần đối chiếu · <code>done</code>
+- L445 · thông điệp · <code>Welcome, {name}! 👋</code>
+- L446 · thông điệp · <code>Signed in successfully. Your profile and cloud workspace are active.</code>
+- L475 · literal cần đối chiếu · <code>Please enter both your email address and password.</code>
+- L483 · literal cần đối chiếu · <code>Verifying credentials &amp; restoring data...</code>
+- L501 · literal cần đối chiếu · <code>No user found with this email. Please check your email or create an account.</code>
+- L505 · literal cần đối chiếu · <code>Invalid credential, check your email and password again.</code>
+- L513 · literal cần đối chiếu · <code>No user found with this email. Please check your email or create an account.</code>
+- L518 · literal cần đối chiếu · <code>Invalid credential, check your email and password again.</code>
+- L525 · literal cần đối chiếu · <code>No user found with this email. Please check your email or create an account.</code>
+- L531 · literal cần đối chiếu · <code>Invalid credential, check your email and password again.</code>
+- L547 · literal cần đối chiếu · <code>done</code>
+- L594 · thông điệp · <code>Welcome Back! 👋</code>
+- L594 · thông điệp · <code>Signed in as {arg1}. All data restored.</code>
+- L604 · literal cần đối chiếu · <code>Please enter your email address and a password.</code>
+- L608 · literal cần đối chiếu · <code>Password must be at least 6 characters long.</code>
+- L617 · literal cần đối chiếu · <code>An account with this email already exists. Please sign in instead.</code>
+- L623 · literal cần đối chiếu · <code>Setting up your space...</code>
+- L635 · literal cần đối chiếu · <code>An account with this email already exists. Please sign in instead.</code>
+- L638 · literal cần đối chiếu · <code>Password should be at least 6 characters long.</code>
+- L641 · literal cần đối chiếu · <code>Please enter a valid email address.</code>
+- L644 · literal cần đối chiếu · <code>Could not create account. Please try again.</code>
+- L653 · literal cần đối chiếu · <code>Scholar</code>
+- L659 · literal cần đối chiếu · <code>Scholar</code>
+- L677 · thông điệp · <code>Account Created! 🎉</code>
+- L677 · thông điệp · <code>Welcome {name}! Let&#x27;s set up your preferences.</code>
+- L688 · literal cần đối chiếu · <code>Please enter the email address associated with your account.</code>
+- L699 · literal cần đối chiếu · <code>No account found with this email. Please verify your email or create an account.</code>
+- L736 · template DOM · <code>Password Reset Successful!</code>
+- L738 · template DOM · <code>Your password has been reset to:</code>
+- L743 · template DOM · <code>Format:</code>
+- L743 · template DOM · <code>[Name]@123</code>
+- L743 · template DOM · <code>. Click below to sign in immediately with this password.</code>
+- L746 · template DOM · <code>Sign In With New Password →</code>
+- L758 · thông điệp · <code>Password Reset! 🔑</code>
+- L758 · thông điệp · <code>New password: {newPassword}</code>
+- L848 · thông điệp · <code>Logged Out 👋</code>
+- L848 · thông điệp · <code>Session ended. Please sign in to access your account.</code>
+- L866 · gán DOM · <code>This will permanently delete your user profile and cloud Firestore records for {email}. Your email will be completely reset and released so it can be registered afresh as a new account.</code>
+- L880 · template DOM · <code>Deleting...</code>
+- L937 · nhãn hoặc giá trị mẫu · <code>Scholar</code>
+- L950 · thông điệp · <code>Account Deleted &amp; Reset</code>
+- L951 · thông điệp · <code>Account for {arg1} has been deleted. Your email is reset and can be registered as new.</code>
+- L951 · thông điệp · <code>user</code>
+- L960 · literal cần đối chiếu · <code>Account deletion note:</code>
+- L964 · template DOM · <code>Yes, Delete Account</code>
+- L990 · thông điệp · <code>Session Expired</code>
+- L990 · thông điệp · <code>Account was deleted. Please sign in or create an account.</code>
+- L1006 · template DOM · <code>Syncing...</code>
+- L1010 · thông điệp · <code>Sync Notice</code>
+- L1010 · thông điệp · <code>Please sign in to sync your workspace data across devices.</code>
+- L1045 · thông điệp · <code>Sync Complete! 🔄</code>
+- L1045 · thông điệp · <code>All workspace tasks, habits &amp; settings synced in realtime.</code>
+- L1048 · thông điệp · <code>Sync Notice</code>
+- L1048 · thông điệp · <code>Workspace state saved locally and queued for cloud sync.</code>
+
+**js/onboarding.js**
+
+- L319 · literal cần đối chiếu · <code>Working...</code>
+- L344 · thông điệp · <code>Sign In Required 🔒</code>
+- L344 · thông điệp · <code>Please sign in or create an account to use FocusPulse.</code>
+- L350 · thông điệp · <code>Account Required 🔒</code>
+- L350 · thông điệp · <code>Please sign in or create an account to access the dashboard.</code>
+- L374 · literal cần đối chiếu · <code>Please enter both your email address and password.</code>
+- L400 · literal cần đối chiếu · <code>Please enter a valid email address.</code>
+- L404 · literal cần đối chiếu · <code>Password must be at least 6 characters long.</code>
+- L408 · literal cần đối chiếu · <code>Passwords do not match. Please re-enter your password.</code>
+- L412 · literal cần đối chiếu · <code>Please acknowledge the privacy &amp; license terms to create an account.</code>
+- L429 · gán DOM · <code>Please enter the email address associated with your account.</code>
+- L439 · gán DOM · <code>Password reset link sent to {email}! Check your inbox and return to Sign In.</code>
+- L462 · template DOM · <code>Landing Page</code>
+- L464 · template DOM · <code>Sign In</code>
+- L468 · template DOM · <code>Welcome back 👋</code>
+- L469 · template DOM · <code>Sign in to automatically restore your cloud-synced tasks, courses, habits, and profile.</code>
+- L474 · template DOM · <code>Email Address</code>
+- L475 · placeholder · <code>you@example.com</code>
+- L479 · template DOM · <code>Password</code>
+- L480 · template DOM · <code>Forgot password?</code>
+- L483 · placeholder · <code>Enter your password</code>
+- L484 · aria-label · <code>Show or hide password</code>
+- L493 · template DOM · <code>Sign In &amp; Restore Workspace</code>
+- L500 · template DOM · <code>New to FocusPulse? Create an Account →</code>
+- L503 · template DOM · <code>Back to Landing</code>
+- L520 · template DOM · <code>Landing Page</code>
+- L522 · template DOM · <code>Sign Up</code>
+- L526 · template DOM · <code>Create your space ✨</code>
+- L527 · template DOM · <code>Set up your account, then we&#x27;ll personalize your courses, tasks, habits, and rhythm in a quick 1-minute walkthrough.</code>
+- L532 · template DOM · <code>Your Name</code>
+- L533 · placeholder · <code>Enter your name...</code>
+- L536 · template DOM · <code>Email Address *</code>
+- L537 · placeholder · <code>you@example.com</code>
+- L541 · template DOM · <code>Password *</code>
+- L543 · placeholder · <code>Min. 6 characters</code>
+- L544 · aria-label · <code>Show or hide password</code>
+- L550 · template DOM · <code>Confirm Password *</code>
+- L551 · placeholder · <code>Repeat password</code>
+- L557 · template DOM · <code>I agree to FocusPulse terms and privacy-first local + cloud storage.</code>
+- L563 · template DOM · <code>Create Account &amp; Personalize</code>
+- L570 · template DOM · <code>Already have an account? Sign In →</code>
+- L573 · template DOM · <code>Back to Landing</code>
+- L590 · template DOM · <code>Back to Sign In</code>
+- L592 · template DOM · <code>Password Reset</code>
+- L596 · template DOM · <code>Reset your password 🔑</code>
+- L597 · template DOM · <code>Enter your account email to reset your password to the secure</code>
+- L597 · template DOM · <code>[Name]@123</code>
+- L597 · template DOM · <code>format.</code>
+- L602 · template DOM · <code>Account Email</code>
+- L603 · placeholder · <code>you@example.com</code>
+- L607 · template DOM · <code>Reset Password</code>
+- L622 · alt · <code>FocusPulse Logo</code>
+- L626 · template DOM · <code>FocusPulse • Deep Work &amp; Study Suite</code>
+- L632 · template DOM · <code>Your day, your way.</code>
+- L635 · template DOM · <code>Let&#x27;s make a little space for your goals, your habits, and everything you want to get done.</code>
+- L640 · template DOM · <code>⏱️ Smart Pomodoro</code>
+- L641 · template DOM · <code>📚 Courses &amp; Tasks</code>
+- L642 · template DOM · <code>🌱 7-Day Habit Flow</code>
+- L643 · template DOM · <code>💧 Hydration &amp; AI Coach</code>
+- L649 · template DOM · <code>Sign In</code>
+- L653 · template DOM · <code>Sign Up</code>
+- L659 · template DOM · <code>Authentication is required to unlock your personalized study workspace and keep your progress synced.</code>
+
+**js/state.js**
+
+- L112 · nhãn hoặc giá trị mẫu · <code>Astronaut</code>
+- L113 · nhãn hoặc giá trị mẫu · <code>Scholar</code>
+- L114 · nhãn hoặc giá trị mẫu · <code>Developer</code>
+- L115 · nhãn hoặc giá trị mẫu · <code>Rocket</code>
+- L116 · nhãn hoặc giá trị mẫu · <code>Lightning</code>
+- L117 · nhãn hoặc giá trị mẫu · <code>Zen Lotus</code>
+- L223 · nhãn hoặc giá trị mẫu · <code>Scholar</code>
+- L271 · nhãn hoặc giá trị mẫu · <code>Scholar</code>
+- L295 · thông điệp · <code>Profile Picture Saved 📸</code>
+- L295 · thông điệp · <code>Your profile picture has been updated and synced.</code>
+- L297 · thông điệp · <code>Profile Picture Removed</code>
+- L297 · thông điệp · <code>Reverted to your 2-letter initials badge.</code>
+- L319 · thông điệp · <code>Invalid File Type</code>
+- L319 · thông điệp · <code>Please select a valid image file (PNG, JPG, WEBP, or GIF).</code>
+- L541 · literal cần đối chiếu · <code>done</code>
+- L555 · literal cần đối chiếu · <code>done</code>
+- L571 · điều kiện / alias · <code>Guest</code>
+- L571 · điều kiện / alias · <code>Scholar</code>
+- L571 · điều kiện / alias · <code>Student Scholar</code>
+- L650 · điều kiện / alias · <code>Studies</code>
+
+**js/ui.js**
+
+- L978 · điều kiện / alias · <code>Guest</code>
+- L978 · điều kiện / alias · <code>Student Scholar</code>
+- L982 · điều kiện / alias · <code>Student Scholar</code>
+- L982 · điều kiện / alias · <code>Guest</code>
+- L985 · literal cần đối chiếu · <code>FP</code>
+- L994 · điều kiện / alias · <code>Guest</code>
+- L996 · điều kiện / alias · <code>Guest</code>
+- L1010 · điều kiện / alias · <code>authenticated</code>
+- L1010 · gán DOM · <code>Scholar</code>
+- L1010 · gán DOM · <code>Authentication Required</code>
+- L1011 · gán DOM · <code>No courses listed yet</code>
+- L1014 · alt · <code>Profile Picture</code>
+- L1037 · template DOM · <code>Presets:</code>
+- L1042 · gán DOM · <code>transparent</code>
+- L1042 · gán DOM · <code>scale(1.12)</code>
+- L1042 · gán DOM · <code>scale(1)</code>
+- L1056 · gán DOM · <code>No courses listed yet</code>
+- L1843 · thông điệp · <code>Profile Saved</code>
+- L1843 · thông điệp · <code>Display name updated to &quot;{newName}&quot; and synced to database!</code>
+- L1870 · thông điệp · <code>Account Updated</code>
+- L1870 · thông điệp · <code>Your name &quot;{newName}&quot; is saved locally and synced to cloud!</code>
+- L2799 · literal cần đối chiếu · <code>CS</code>
+- L2814 · gán DOM · <code>2px solid var(--v-fg)</code>
+- L2814 · gán DOM · <code>1px solid rgba(255,255,255,0.2)</code>
+- L2814 · gán DOM · <code>scale(1.12)</code>
+- L2814 · gán DOM · <code>scale(1)</code>
+- L2815 · title · <code>Badge Color {col}</code>
+- L2835 · template DOM · <code>Update Course</code>
+- L2851 · template DOM · <code>Save Course</code>
+- L2867 · literal cần đối chiếu · <code>CR</code>
+- L2884 · thông điệp · <code>Course Updated</code>
+- L2884 · thông điệp · <code>Updated &quot;{name}&quot; [{code}] in Account &amp; Settings.</code>
+- L2893 · thông điệp · <code>Course Added</code>
+- L2893 · thông điệp · <code>Added &quot;{name}&quot; [{code}] to Active Courses!</code>
+
+### Statistics · 82 mục
+
+
+**index.html**
+
+- L395 · HTML · <code>Focus Logged</code>
+- L398 · HTML · <code>1h 0m</code>
+- L399 · HTML · <code>View stats →</code>
+- L403 · HTML · <code>Smart Tasks</code>
+- L406 · HTML · <code>2 Pending</code>
+- L407 · HTML · <code>Open tasks →</code>
+- L411 · HTML · <code>Habits Today</code>
+- L414 · HTML · <code>4/5 Done</code>
+- L415 · HTML · <code>Check-in grid →</code>
+- L419 · HTML · <code>Hydration</code>
+- L422 · HTML · <code>0% (0ml)</code>
+- L423 · HTML · <code>Log water →</code>
+- L598 · HTML · <code>Today&#x27;s Goals</code>
+- L603 · HTML · <code>0</code>
+- L604 · HTML · <code>/ 5 completed</code>
+- L606 · HTML · <code>0%</code>
+- L615 · HTML · <code>Weekly Target Rate</code>
+- L619 · HTML · <code>0%</code>
+- L620 · HTML · <code>of weekly targets</code>
+- L629 · HTML · <code>Best Active Streak</code>
+- L633 · HTML · <code>0</code>
+- L634 · HTML · <code>days in a row</code>
+- L638 · HTML · <code>Protect your chain!</code>
+- L640 · title · <code>Restore Missed Streak (1 safeguard per week)</code>
+- L641 · HTML · <code>Restore Missed Streak (1/wk)</code>
+- L648 · HTML · <code>Weekly Check-ins</code>
+- L652 · HTML · <code>0</code>
+- L653 · HTML · <code>completed logs</code>
+- L656 · HTML · <code>This Week</code>
+- L657 · HTML · <code>Complete all today</code>
+- L706 · HTML · <code>Weekly Completion &amp; Consistency Chart</code>
+- L708 · HTML · <code>Daily percentage of completed habits across the selected week</code>
+- L710 · HTML · <code>Week</code>
+- L716 · HTML · <code>100% Perfect Day</code>
+- L717 · HTML · <code>In Progress</code>
+- L719 · HTML · <code>Click any day square above to update live</code>
+- L728 · HTML · <code>Streak Leaderboard</code>
+- L730 · HTML · <code>Your strongest active habit chains</code>
+- L736 · HTML · <code>Personal best records are saved permanently even if an active chain resets!</code>
+- L956 · HTML · <code>0m</code>
+- L957 · HTML · <code>Focus Time</code>
+- L960 · HTML · <code>1/1</code>
+- L961 · HTML · <code>Tasks Done</code>
+- L964 · HTML · <code>2/2</code>
+- L965 · HTML · <code>Habits Today</code>
+- L968 · HTML · <code>0d</code>
+- L969 · HTML · <code>Best Streak</code>
+- L979 · HTML · <code>Your Productivity Stats</code>
+- L981 · HTML · <code>Live Sync</code>
+- L987 · HTML · <code>Task Completion Rate</code>
+- L988 · HTML · <code>33%</code>
+- L997 · HTML · <code>Daily Hydration Goal</code>
+- L998 · HTML · <code>0%</code>
+- L1007 · HTML · <code>Export Backup</code>
+- L1009 · title · <code>Realtime cloud sync across all devices</code>
+- L1010 · HTML · <code>Sync Now</code>
+- L1013 · HTML · <code>🔥 Restore Streak</code>
+
+**js/habits.js**
+
+- L558 · template DOM · <code>Weekly Progress: {weeklyCompletions}/{targetPerWeek} ({weeklyProgress}%)</code>
+- L559 · gán DOM · <code>✓ Target Met</code>
+- L559 · gán DOM · <code>{arg1} left</code>
+- L574 · template DOM · <code>{percent}%</code>
+- L584 · template DOM · <code>{count}/{total}</code>
+- L598 · template DOM · <code>Add habits to see your streak leaderboard.</code>
+- L611 · template DOM · <code>{currentStreak}d</code>
+- L618 · template DOM · <code>Active chain: {currentStreak}d</code>
+- L619 · template DOM · <code>Personal record: {bestStreak}d</code>
+
+**js/script.js**
+
+- L361 · thông điệp · <code>Daily Streak +1 🔥</code>
+- L361 · thông điệp · <code>You&#x27;re on a {streakCount}-day FocusPulse streak!</code>
+- L372 · thông điệp · <code>Streak Safeguard Limit</code>
+- L372 · thông điệp · <code>You have already used your 1-per-week Restore Missed Streak safeguard for this week. It resets next Monday!</code>
+- L404 · thông điệp · <code>Streak Safe! 🛡️</code>
+- L404 · thông điệp · <code>Your streaks are already active and up to date! Your 1-per-week safeguard is ready whenever you miss a day.</code>
+- L415 · thông điệp · <code>Streak Restored! 🛡️</code>
+- L415 · thông điệp · <code>1-per-week Streak Safeguard applied! Restored your consistency chain ({arg1}d).</code>
+
+**js/ui.js**
+
+- L1102 · literal cần đối chiếu · <code>{hrs}h {mins}m</code>
+- L1106 · gán DOM · <code>Session {sessionCount} of {arg2}</code>
+- L1125 · gán DOM · <code>{pendingTasksCount} Pending</code>
+- L1126 · gán DOM · <code>{habitsDoneToday}/{length} Done</code>
+- L1127 · gán DOM · <code>{pct}% ({arg2}ml)</code>
+- L1135 · gán DOM · <code>{doneTasksCount}/{length}</code>
+- L1136 · gán DOM · <code>{habitsDoneToday}/{length}</code>
+- L1144 · gán DOM · <code>{userBestStreak}d</code>
+
+### Settings · 343 mục
+
+
+**index.html**
+
+- L1125 · HTML · <code>Settings</code>
+- L1128 · placeholder · <code>Find a setting...</code>
+- L1133 · HTML · <code>Appearance</code>
+- L1137 · HTML · <code>Courses &amp; Badges</code>
+- L1141 · HTML · <code>Focus &amp; Timer</code>
+- L1145 · HTML · <code>Notifications</code>
+- L1149 · HTML · <code>AI &amp; Cloud</code>
+- L1153 · HTML · <code>Storage &amp; Account</code>
+- L1158 · HTML · <code>Updates</code>
+- L1171 · HTML · <code>Appearance &amp; Custom Palettes</code>
+- L1172 · HTML · <code>When Liquid Glass is OFF, choose any FocusPulse high-contrast theme or custom hex palette. Toggle Liquid Glass ON for the original frosted glass site.</code>
+- L1181 · HTML · <code>Rendering Mode: Solid Theme vs. Original Liquid Glass</code>
+- L1183 · HTML · <code>Liquid OFF enables custom themes &amp; custom palettes (zero gradients/transparency). Liquid ON restores the original frosted glass site.</code>
+- L1188 · HTML · <code>Liquid: OFF</code>
+- L1192 · HTML · <code>Dark Mode</code>
+- L1195 · HTML · <code>White Mode</code>
+- L1206 · HTML · <code>Application Theme (When Liquid is OFF)</code>
+- L1207 · HTML · <code>Solid Theme Engine</code>
+- L1210 · HTML · <code>Choose from our curated high-contrast themes or create a custom hex background.</code>
+- L1224 · HTML · <code>Custom Theme</code>
+- L1225 · HTML · <code>Personal background color &amp; auto-contrasted surface palette</code>
+- L1230 · HTML · <code>Hex:</code>
+- L1231 · value · <code>#0c0b0b</code>
+- L1237 · title · <code>Pick Custom Background Color</code>
+- L1251 · HTML · <code>Accent Color &amp; Custom Palette</code>
+- L1252 · HTML · <code>Highlight Profile</code>
+- L1255 · HTML · <code>Choose a preset highlight color or pick any custom hex accent for buttons, active indicators, and progress bars.</code>
+- L1263 · title · <code>Custom Hex Accent Picker</code>
+- L1272 · HTML · <code>Hex:</code>
+- L1273 · value · <code>#e2ddd9</code>
+- L1285 · HTML · <code>Brand Logo (logo.png) &amp; Dynamic Color Sync</code>
+- L1286 · HTML · <code>Live Accent Sync</code>
+- L1291 · alt · <code>Logo Preview</code>
+- L1294 · HTML · <code>Dynamic Logo Color</code>
+- L1294 · HTML · <code>logo.png</code>
+- L1295 · HTML · <code>Automatically tints your logo with the active Theme &amp; Accent Palette (Accent Badge or Accent Icon mode).</code>
+- L1301 · HTML · <code>Mode: Accent Badge</code>
+- L1315 · HTML · <code>Interface Scaling (UI Scale)</code>
+- L1317 · HTML · <code>Default scale (100%)</code>
+- L1320 · title · <code>Decrease UI Scale (-5%)</code>
+- L1321 · HTML · <code>100%</code>
+- L1322 · title · <code>Increase UI Scale (+5%)</code>
+- L1323 · title · <code>Reset to 100%</code>
+- L1323 · HTML · <code>Reset</code>
+- L1331 · HTML · <code>85% (Compact)</code>
+- L1332 · HTML · <code>100% (Default)</code>
+- L1333 · HTML · <code>115% (Large)</code>
+- L1343 · HTML · <code>Low-Spec / Performance Mode</code>
+- L1344 · HTML · <code>OFF</code>
+- L1346 · HTML · <code>Disables animations, GPU blur shaders, shadows &amp; background auto-sliders for maximum battery &amp; FPS.</code>
+- L1350 · title · <code>Toggle Low-Spec / Performance Mode</code>
+- L1356 · HTML · <code>Zero-Blur Solid GPU Pipeline</code>
+- L1357 · HTML · <code>Standard Visuals</code>
+- L1367 · HTML · <code>Windows Settings</code>
+- L1374 · HTML · <code>Run at Startup</code>
+- L1375 · HTML · <code>Automatically launch FocusPulse when Windows starts up</code>
+- L1378 · title · <code>Toggle Run at Startup</code>
+- L1386 · HTML · <code>Move to Tray on Close</code>
+- L1387 · HTML · <code>Minimize FocusPulse to the system tray when closing the window so Pomodoro continues running</code>
+- L1390 · title · <code>Toggle Move to Tray on Close</code>
+- L1402 · HTML · <code>Courses &amp; 2-Letter Profile Badges</code>
+- L1403 · HTML · <code>Add, edit, or delete your active study courses and customize each course&#x27;s 2-letter profile picture badge and color.</code>
+- L1411 · HTML · <code>Add or Update Course</code>
+- L1414 · HTML · <code>Cancel Edit</code>
+- L1423 · HTML · <code>CS</code>
+- L1426 · HTML · <code>2-Letter Badge *</code>
+- L1427 · placeholder · <code>e.g. CS</code>
+- L1435 · HTML · <code>Course / Subject Name *</code>
+- L1436 · placeholder · <code>e.g. CS101, Calculus, Data Structures...</code>
+- L1445 · HTML · <code>Badge Color:</code>
+- L1450 · HTML · <code>Save Course</code>
+- L1460 · HTML · <code>Your Active Courses</code>
+- L1461 · HTML · <code>Click Edit on any course to change its 2-letter profile picture or name, or click Delete to remove it.</code>
+- L1463 · HTML · <code>3 Courses</code>
+- L1471 · HTML · <code>Focus &amp; Timer Defaults</code>
+- L1472 · HTML · <code>Select a quick Pomodoro preset or customize your session intervals on the Home screen.</code>
+- L1474 · đối số trong handler · <code>Normal</code>
+- L1475 · HTML · <code>Normal (25/5)</code>
+- L1476 · HTML · <code>4 sessions • 15m long</code>
+- L1478 · đối số trong handler · <code>Blitz</code>
+- L1479 · HTML · <code>Blitz (15/3)</code>
+- L1480 · HTML · <code>2 sessions • 10m long</code>
+- L1482 · đối số trong handler · <code>Quick Rev</code>
+- L1483 · HTML · <code>Quick Rev (45/10)</code>
+- L1484 · HTML · <code>3 sessions • 20m long</code>
+- L1486 · đối số trong handler · <code>Extra+</code>
+- L1487 · HTML · <code>Extra+ (60/5)</code>
+- L1488 · HTML · <code>4 sessions • 15m long</code>
+- L1496 · HTML · <code>Notifications, Audio Chimes, Popups &amp; Streak</code>
+- L1497 · HTML · <code>Ready to Enable</code>
+- L1502 · HTML · <code>App Sound &amp; Harmonic Chimes (Default: ON)</code>
+- L1503 · HTML · <code>Play multi-burst Pomodoro completion alarms and habit/task check-in chimes</code>
+- L1509 · HTML · <code>In-App Toast Popups (Default: ON)</code>
+- L1510 · HTML · <code>Display floating toast notification cards for timers, tasks, habits, and water reminders</code>
+- L1516 · HTML · <code>Show Active Streak in Top Bar</code>
+- L1517 · HTML · <code>Displays your daily streak counter in the navigation bar</code>
+- L1522 · HTML · <code>🔊 Test Notification &amp; Chime</code>
+- L1523 · HTML · <code>🔔 Enable Notification</code>
+- L1524 · HTML · <code>🔥 Restore Missing Day Streak (1/wk)</code>
+- L1531 · HTML · <code>Zenith AI &amp; Firebase Cloud Sync</code>
+- L1533 · HTML · <code>Optional Gemini API Key (For Live Cloud LLM Responses)</code>
+- L1534 · placeholder · <code>Leave blank to use built-in Zenith AI local strategist...</code>
+- L1536 · HTML · <code>Sign In / Sign Up</code>
+- L1543 · HTML · <code>Storage &amp; JSON Backup</code>
+- L1545 · HTML · <code>Export your entire FocusPulse state (tasks, 7-day habit logs, courses, schedules, and custom custom palettes) to a portable JSON file or restore from a backup.</code>
+- L1547 · HTML · <code>Export Backup JSON</code>
+- L1548 · HTML · <code>Import Backup JSON</code>
+- L1556 · HTML · <code>Delete Account &amp; Reset Email</code>
+- L1559 · HTML · <code>Permanently delete your account from cloud Firestore and wipe locally cached sessions. This completely resets your email address so it is treated as never registered, allowing you to register afresh as a new user anytime.</code>
+- L1564 · HTML · <code>Delete This Account (Reset Email)</code>
+- L1568 · HTML · <code>Export Backup First</code>
+- L1578 · HTML · <code>Updates</code>
+- L1579 · HTML · <code>Check your installed version and the latest release reported on GitHub.</code>
+- L1585 · alt · <code>FocusPulse Logo</code>
+- L1589 · HTML · <code>FocusPulse is up to date</code>
+- L1590 · HTML · <code>Installed version v1.0.0 is the latest release. You&#x27;re running the newest build with all features active.</code>
+- L1594 · HTML · <code>Check GitHub Release (v1.0)</code>
+- L1602 · HTML · <code>Installed Version</code>
+- L1603 · HTML · <code>v1.0</code>
+- L1606 · HTML · <code>Latest Available (GitHub)</code>
+- L1607 · HTML · <code>v1.0</code>
+- L1609 · title · <code>Open GitHub Releases</code>
+- L1610 · HTML · <code>Update Source</code>
+- L1613 · HTML · <code>GitHub Releases</code>
+- L1622 · HTML · <code>Check Automatically on Startup</code>
+- L1623 · HTML · <code>Automatically check GitHub Releases for new versions when launching FocusPulse</code>
+- L1625 · title · <code>Toggle Startup Update Check</code>
+- L1632 · HTML · <code>Manual Update Check</code>
+- L1633 · HTML · <code>Query GitHub for the latest version report of FocusPulse</code>
+- L1637 · HTML · <code>Check Now</code>
+- L1650 · HTML · <code>Credits — Foc-It</code>
+- L1651 · HTML · <code>Creator Profile &amp; Open-Source Mission</code>
+- L1654 · HTML · <code>100% Free &amp; Open</code>
+- L1662 · alt · <code>Foc-It Profile</code>
+- L1666 · HTML · <code>Foc-It</code>
+- L1669 · HTML · <code>Computer Science student focused on building free productivity tools and startups.</code>
+- L1673 · HTML · <code>info.focit@gmail.com</code>
+- L1682 · HTML · <code>GitHub (foc-it)</code>
+- L1689 · HTML · <code>Profile Details</code>
+- L1694 · HTML · <code>Creator &amp; Development</code>
+- L1698 · alt · <code>azmee7 Profile</code>
+- L1701 · HTML · <code>azmee7 (Azmi)</code>
+- L1704 · HTML · <code>GitHub (azmee7)</code>
+- L1714 · HTML · <code>Mission</code>
+- L1717 · HTML · <code>Developing accessible, high-performance desktop and mobile productivity tools designed to streamline everyday workflows without paywalls.</code>
+- L1721 · HTML · <code>Contact &amp; Support:</code>
+- L1722 · HTML · <code>info.focit@gmail.com</code>
+- L1733 · HTML · <code>GitHub Repository &amp; Profile</code>
+- L1737 · HTML · <code>github.com/foc-it/foc-it/FocusPulse</code>
+- L1738 · HTML · <code>Explore source code, report issues, and download the latest FocusPulse releases on GitHub. Contact:</code>
+- L1738 · HTML · <code>info.focit@gmail.com</code>
+- L1743 · HTML · <code>Visit github.com/foc-it/foc-it/FocusPulse</code>
+- L1750 · HTML · <code>Rate 5 star on GitHub — Support open-source at</code>
+- L1750 · HTML · <code>github.com/foc-it</code>
+- L2118 · HTML · <code>Quick Appearance &amp; App Settings</code>
+- L2121 · HTML · <code>Updates &amp; Credits</code>
+- L2122 · HTML · <code>Full View</code>
+- L2128 · HTML · <code>Mode Switch: Liquid Glass vs Solid Theme</code>
+- L2130 · HTML · <code>Flip Dark/Light</code>
+- L2131 · HTML · <code>Liquid: OFF</code>
+- L2137 · HTML · <code>Solid Themes (Active when Liquid is OFF)</code>
+- L2140 · HTML · <code>Custom Theme Hex:</code>
+- L2142 · value · <code>#0c0b0b</code>
+- L2150 · HTML · <code>Custom Accent Palette</code>
+- L2154 · value · <code>#e2ddd9</code>
+- L2160 · HTML · <code>Interface Scaling &amp; Performance</code>
+- L2163 · HTML · <code>Interface Scaling (UI Scale)</code>
+- L2164 · HTML · <code>Default scale (100%)</code>
+- L2168 · HTML · <code>100%</code>
+- L2170 · HTML · <code>Reset</code>
+- L2175 · HTML · <code>Low-Spec / Performance Mode</code>
+- L2176 · HTML · <code>Disables blurs, shadows &amp; animations for max FPS</code>
+- L2189 · HTML · <code>Windows Settings</code>
+- L2193 · HTML · <code>Run at Startup</code>
+- L2194 · HTML · <code>Launch FocusPulse automatically when Windows starts</code>
+- L2204 · HTML · <code>Move to Tray on Close</code>
+- L2205 · HTML · <code>Keep app &amp; Pomodoro running in system tray when closed</code>
+- L2216 · HTML · <code>Notifications &amp; Streak</code>
+- L2218 · HTML · <code>Show Streak in Navigation</code>
+- L2222 · HTML · <code>Sound Effects &amp; Chimes</code>
+- L2226 · HTML · <code>In-App Toast Popups</code>
+- L2229 · HTML · <code>🔥 Restore Missing Day Streak (1/week)</code>
+- L2232 · HTML · <code>Zenith AI — Optional Gemini API Key</code>
+- L2233 · placeholder · <code>Leave blank to use built-in AI Coach...</code>
+- L2236 · HTML · <code>Data Backup</code>
+- L2238 · HTML · <code>Export JSON</code>
+- L2239 · HTML · <code>Import JSON</code>
+
+**js/state.js**
+
+- L48 · literal cần đối chiếu · <code>95, 91, 246</code>
+- L53 · literal cần đối chiếu · <code>95, 91, 246</code>
+- L57 · literal cần đối chiếu · <code>95, 91, 246</code>
+- L58 · literal cần đối chiếu · <code>{r}, {g}, {b}</code>
+- L74 · nhãn hoặc giá trị mẫu · <code>Obsidian</code>
+- L74 · nhãn hoặc giá trị mẫu · <code>Deep carbon &amp; slate</code>
+- L75 · nhãn hoặc giá trị mẫu · <code>Midnight Navy</code>
+- L75 · nhãn hoặc giá trị mẫu · <code>Deep navy &amp; indigo</code>
+- L76 · nhãn hoặc giá trị mẫu · <code>Forest Emerald</code>
+- L76 · nhãn hoặc giá trị mẫu · <code>Moss &amp; emerald tones</code>
+- L77 · nhãn hoặc giá trị mẫu · <code>Cyberpunk</code>
+- L77 · nhãn hoặc giá trị mẫu · <code>Vibrant neon purple</code>
+- L78 · nhãn hoặc giá trị mẫu · <code>Sunset Crimson</code>
+- L78 · nhãn hoặc giá trị mẫu · <code>Warm crimson tones</code>
+- L79 · nhãn hoặc giá trị mẫu · <code>Pure Black</code>
+- L79 · nhãn hoặc giá trị mẫu · <code>OLED pitch black</code>
+- L80 · nhãn hoặc giá trị mẫu · <code>Pure White</code>
+- L80 · nhãn hoặc giá trị mẫu · <code>Crisp white surface</code>
+- L84 · nhãn hoặc giá trị mẫu · <code>Silver / Slate</code>
+- L85 · nhãn hoặc giá trị mẫu · <code>Indigo</code>
+- L86 · nhãn hoặc giá trị mẫu · <code>Violet</code>
+- L87 · nhãn hoặc giá trị mẫu · <code>Emerald</code>
+- L88 · nhãn hoặc giá trị mẫu · <code>Magenta</code>
+- L89 · nhãn hoặc giá trị mẫu · <code>Orange</code>
+- L90 · nhãn hoặc giá trị mẫu · <code>Crimson</code>
+- L91 · nhãn hoặc giá trị mẫu · <code>Cyan</code>
+- L92 · nhãn hoặc giá trị mẫu · <code>Gold</code>
+- L675 · điều kiện / alias · <code>Guest</code>
+- L676 · điều kiện / alias · <code>Student Scholar</code>
+- L728 · thông điệp · <code>Backup Exported</code>
+- L728 · thông điệp · <code>Your FocusPulse data has been downloaded as JSON.</code>
+- L749 · điều kiện / alias · <code>Studies</code>
+- L763 · thông điệp · <code>Data Restored</code>
+- L763 · thông điệp · <code>Your backup file was imported and synced!</code>
+- L765 · thông điệp · <code>Import Error</code>
+- L765 · thông điệp · <code>The selected backup file could not be parsed. Please verify that it is a valid FocusPulse JSON file.</code>
+- L799 · literal cần đối chiếu · <code>{ar} {ar} {ar}</code>
+- L800 · literal cần đối chiếu · <code>{ag} {ag} {ag}</code>
+- L801 · literal cần đối chiếu · <code>{ab} {ab} {ab}</code>
+- L803 · literal cần đối chiếu · <code>{ar} {ar} {fr}</code>
+- L804 · literal cần đối chiếu · <code>{ag} {ag} {fg}</code>
+- L805 · literal cần đối chiếu · <code>{ab} {ab} {fb}</code>
+- L816 · literal cần đối chiếu · <code>Mode: Accent Badge</code>
+- L817 · literal cần đối chiếu · <code>Mode: Accent Icon</code>
+- L819 · gán DOM · <code>Mode: Accent Badge</code>
+- L831 · literal cần đối chiếu · <code>Accent Badge Mode: Logo badge &amp; background dynamically follow your Theme &amp; Accent Palette.</code>
+- L832 · literal cần đối chiếu · <code>Accent Icon Mode: The logo icon itself is tinted with your active Accent Color.</code>
+- L835 · thông điệp · <code>Logo Color Mode Updated</code>
+
+**js/ui.js**
+
+- L290 · điều kiện / alias · <code>Escape</code>
+- L300 · điều kiện / alias · <code>ArrowLeft</code>
+- L303 · điều kiện / alias · <code>ArrowRight</code>
+- L647 · literal cần đối chiếu · <code>Custom Theme</code>
+- L648 · literal cần đối chiếu · <code>White Mode</code>
+- L648 · literal cần đối chiếu · <code>Dark Mode</code>
+- L649 · literal cần đối chiếu · <code>(Liquid Glass ON)</code>
+- L650 · thông điệp · <code>Theme Applied</code>
+- L650 · thông điệp · <code>Applied {label} palette in {modeStr}{liquidStr}.</code>
+- L664 · điều kiện / alias · <code>light</code>
+- L664 · thông điệp · <code>White Mode Active ☀️</code>
+- L664 · thông điệp · <code>Dark Mode Active 🌙</code>
+- L665 · điều kiện / alias · <code>light</code>
+- L666 · thông điệp · <code>All theme &amp; accent palettes now apply directly to White Mode!</code>
+- L667 · thông điệp · <code>Switched surface to Dark Mode.</code>
+- L712 · thông điệp · <code>Run at Startup: ON 🚀</code>
+- L712 · thông điệp · <code>Run at Startup: OFF</code>
+- L714 · thông điệp · <code>FocusPulse will launch automatically when Windows starts.</code>
+- L715 · thông điệp · <code>FocusPulse will no longer auto-launch at Windows startup.</code>
+- L730 · thông điệp · <code>Move to Tray on Close: ON 📥</code>
+- L730 · thông điệp · <code>Move to Tray on Close: OFF</code>
+- L732 · thông điệp · <code>Closing the window will minimize FocusPulse to the system tray so Pomodoro keeps running.</code>
+- L733 · thông điệp · <code>Closing the window will exit FocusPulse completely.</code>
+- L751 · thông điệp · <code>Low-Spec / Eco Mode Enabled ⚡</code>
+- L751 · thông điệp · <code>Low-Spec / Eco Mode Disabled</code>
+- L753 · thông điệp · <code>GPU blurs, shadows, transitions &amp; background auto-sliders paused for maximum FPS &amp; battery.</code>
+- L754 · thông điệp · <code>Standard visual animations, shadows &amp; 5s dashboard sliders restored.</code>
+- L769 · thông điệp · <code>Interface Scale: {pct}%</code>
+- L770 · thông điệp · <code>Restored default 100% interface scaling.</code>
+- L770 · thông điệp · <code>Scaled entire interface typography &amp; layout to {pct}% ({arg2}).</code>
+- L815 · gán DOM · <code>active</code>
+- L825 · template DOM · <code>{desc}{arg9}</code>
+- L825 · điều kiện / alias · <code>pureblack</code>
+- L825 · gán DOM · <code>(White Tint)</code>
+- L864 · title · <code>{label} ({swatchColor})</code>
+- L865 · gán DOM · <code>2px solid var(--v-fg)</code>
+- L865 · gán DOM · <code>1px solid rgba(150,150,150,0.4)</code>
+- L865 · gán DOM · <code>2px solid var(--v-accent)</code>
+- L865 · gán DOM · <code>none</code>
+- L912 · gán DOM · <code>ON • ECO ACTIVE</code>
+- L912 · gán DOM · <code>OFF</code>
+- L919 · gán DOM · <code>Max FPS • Animations Paused</code>
+- L919 · gán DOM · <code>Standard Visuals</code>
+- L925 · literal cần đối chiếu · <code>Default scale (100%)</code>
+- L925 · literal cần đối chiếu · <code>Step {arg1} ({scalePct}% interface zoom)</code>
+- L932 · gán DOM · <code>{scalePct}%</code>
+- L961 · literal cần đối chiếu · <code>White Mode</code>
+- L961 · literal cần đối chiếu · <code>Dark Mode</code>
+- L963 · template DOM · <code>Liquid Glass Mode is ON ({surfaceName})</code>
+- L963 · template DOM · <code>— translucent frosted glass &amp; gradients are active, with accent palette</code>
+- L966 · literal cần đối chiếu · <code>Custom Theme</code>
+- L967 · template DOM · <code>Solid Theme Mode is ACTIVE ({tName} • {surfaceName})</code>
+- L967 · template DOM · <code>— zero gradients, zero blur/transparency, using accent palette</code>
+- L1895 · thông điệp · <code>Liquid Glass Mode: ON</code>
+- L1895 · thông điệp · <code>Solid Theme Mode: ON (Liquid OFF)</code>
+- L1897 · thông điệp · <code>Restored original FocusPulse frosted glass &amp; gradient aesthetics!</code>
+- L1898 · thông điệp · <code>Activated solid theme &amp; custom palette engine (zero gradients/transparency).</code>
+- L1921 · gán DOM · <code>Liquid: ON</code>
+- L1921 · gán DOM · <code>Liquid: OFF</code>
+- L2115 · template DOM · <code>Update available:</code>
+- L2118 · gán DOM · <code>A new version of FocusPulse ({latestVer}) is reported on GitHub Releases. Your installed version is {installedVer}.</code>
+- L2121 · gán DOM · <code>Download {latestVer}</code>
+- L2125 · template DOM · <code>FocusPulse is up to date</code>
+- L2128 · gán DOM · <code>Installed version {installedVer} is the latest release. You&#x27;re running the newest build with all features active.</code>
+- L2131 · gán DOM · <code>View Releases ({installedVer})</code>
+- L2141 · literal cần đối chiếu · <code>Accept</code>
+- L2150 · literal cần đối chiếu · <code>Accept</code>
+- L2174 · thông điệp · <code>Update Available: {latest} 🚀</code>
+- L2175 · thông điệp · <code>GitHub Releases reports version {latest} (Installed: {installed}).</code>
+- L2180 · thông điệp · <code>Up to Date ({installed}) ✅</code>
+- L2181 · thông điệp · <code>Installed version ({installed}) matches the latest GitHub report ({latest}).</code>
+- L2193 · thông điệp · <code>Auto-Update Check Enabled</code>
+- L2193 · thông điệp · <code>Auto-Update Check Disabled</code>
+- L2195 · thông điệp · <code>FocusPulse will automatically check GitHub Releases on startup.</code>
+- L2196 · thông điệp · <code>Startup release checks paused.</code>
+- L2204 · template DOM · <code>Checking...</code>
+- L2208 · template DOM · <code>Check Now</code>
+- L2242 · literal cần đối chiếu · <code>noopener noreferrer</code>
+- L2274 · thông điệp · <code>Opening GitHub Releases ({latest})</code>
+- L2275 · thông điệp · <code>Opened github.com/foc-it/FocusPulse/releases/latest in your default browser!</code>
+- L2287 · thông điệp · <code>Opening GitHub (azmee7)</code>
+- L2287 · thông điệp · <code>Opened github.com/azmee7 in your default browser.</code>
+- L2641 · literal cần đối chiếu · <code>CS</code>
+- L2662 · gán DOM · <code>2px solid var(--v-fg)</code>
+- L2662 · gán DOM · <code>1px solid rgba(255,255,255,0.2)</code>
+- L2662 · gán DOM · <code>scale(1.12)</code>
+- L2662 · gán DOM · <code>scale(1)</code>
+- L2663 · title · <code>Badge Color {col}</code>
+- L2679 · template DOM · <code>Add New Course</code>
+- L2680 · template DOM · <code>Add Course</code>
+- L2703 · template DOM · <code>Editing Course: {arg1}</code>
+- L2704 · template DOM · <code>Update Course</code>
+- L2726 · thông điệp · <code>Course Deleted</code>
+- L2726 · thông điệp · <code>Removed &quot;{name}&quot; from your active courses.</code>
+- L2738 · literal cần đối chiếu · <code>CR</code>
+- L2756 · thông điệp · <code>Course Updated</code>
+- L2756 · thông điệp · <code>Updated &quot;{name}&quot; with 2-letter profile badge [{code}].</code>
+- L2765 · thông điệp · <code>Course Added</code>
+- L2765 · thông điệp · <code>Added &quot;{name}&quot; with 2-letter profile badge [{code}]!</code>
+- L2783 · literal cần đối chiếu · <code>CR</code>
+- L2914 · gán DOM · <code>{length} Course{arg2}</code>
+- L2914 · gán DOM · <code>s</code>
+- L2921 · template DOM · <code>No courses added yet. Use the form above to add your first course and 2-letter subject profile!</code>
+- L2938 · template DOM · <code>Badge: {arg6}</code>
+- L2941 · template DOM · <code>{pendingCnt} pending task{arg9} in Active Courses</code>
+- L2941 · gán DOM · <code>s</code>
+- L2948 · template DOM · <code>Edit</code>
+- L2952 · template DOM · <code>Delete</code>
+
+### Onboarding · 278 mục
+
+
+**js/onboarding.js**
+
+- L8 · nhãn hoặc giá trị mẫu · <code>Mathematics</code>
+- L8 · literal cần đối chiếu · <code>MA</code>
+- L9 · nhãn hoặc giá trị mẫu · <code>Programming</code>
+- L9 · literal cần đối chiếu · <code>PR</code>
+- L10 · nhãn hoặc giá trị mẫu · <code>Physics</code>
+- L10 · literal cần đối chiếu · <code>PH</code>
+- L11 · nhãn hoặc giá trị mẫu · <code>Digital Electronics</code>
+- L11 · literal cần đối chiếu · <code>DE</code>
+- L12 · nhãn hoặc giá trị mẫu · <code>Data Structures</code>
+- L12 · literal cần đối chiếu · <code>DS</code>
+- L13 · nhãn hoặc giá trị mẫu · <code>AI &amp; ML</code>
+- L13 · literal cần đối chiếu · <code>AI</code>
+- L14 · nhãn hoặc giá trị mẫu · <code>Chemistry</code>
+- L14 · literal cần đối chiếu · <code>CH</code>
+- L15 · nhãn hoặc giá trị mẫu · <code>Literature</code>
+- L15 · literal cần đối chiếu · <code>LI</code>
+- L19 · nhãn hoặc giá trị mẫu · <code>Morning Hydration (500ml)</code>
+- L19 · nhãn hoặc giá trị mẫu · <code>Health</code>
+- L20 · nhãn hoặc giá trị mẫu · <code>Sleep on time</code>
+- L20 · nhãn hoặc giá trị mẫu · <code>Health</code>
+- L21 · nhãn hoặc giá trị mẫu · <code>Read for 20 minutes</code>
+- L21 · nhãn hoặc giá trị mẫu · <code>Learning</code>
+- L22 · nhãn hoặc giá trị mẫu · <code>Revise today&#x27;s lessons</code>
+- L22 · nhãn hoặc giá trị mẫu · <code>Learning</code>
+- L23 · nhãn hoặc giá trị mẫu · <code>Exercise / Stretch (30m)</code>
+- L23 · nhãn hoặc giá trị mẫu · <code>Fitness</code>
+- L24 · nhãn hoặc giá trị mẫu · <code>Deep Work Session (No Phone)</code>
+- L24 · nhãn hoặc giá trị mẫu · <code>Productivity</code>
+- L25 · nhãn hoặc giá trị mẫu · <code>10m Evening Mindfulness</code>
+- L25 · nhãn hoặc giá trị mẫu · <code>Mindfulness</code>
+- L33 · literal cần đối chiếu · <code>Balanced Weekdays</code>
+- L38 · điều kiện / alias · <code>Guest</code>
+- L38 · điều kiện / alias · <code>Student Scholar</code>
+- L38 · điều kiện / alias · <code>Student</code>
+- L47 · điều kiện / alias · <code>Guest</code>
+- L47 · điều kiện / alias · <code>Student Scholar</code>
+- L70 · literal cần đối chiếu · <code>(prefers-reduced-motion: reduce)</code>
+- L160 · điều kiện / alias · <code>Guest</code>
+- L160 · điều kiện / alias · <code>Student Scholar</code>
+- L170 · literal cần đối chiếu · <code>done</code>
+- L188 · literal cần đối chiếu · <code>Good morning</code>
+- L188 · literal cần đối chiếu · <code>Good afternoon</code>
+- L188 · literal cần đối chiếu · <code>Good evening</code>
+- L190 · điều kiện / alias · <code>Guest</code>
+- L190 · điều kiện / alias · <code>Student Scholar</code>
+- L193 · điều kiện / alias · <code>Student Scholar</code>
+- L193 · điều kiện / alias · <code>Student</code>
+- L193 · điều kiện / alias · <code>Guest</code>
+- L194 · literal cần đối chiếu · <code>Guest</code>
+- L202 · gán DOM · <code>{timeGreeting} • FocusPulse Studio</code>
+- L208 · template DOM · <code>Welcome back,</code>
+- L215 · gán DOM · <code>Ready to pick up where you left off? You have {pendingCnt} pending task{arg2} and {habitsLeft} habit{arg4} queued for today.</code>
+- L215 · gán DOM · <code>s</code>
+- L217 · gán DOM · <code>Ready to pick up where you left off? Start a deep focus session or review your study plan.</code>
+- L234 · literal cần đối chiếu · <code>Cloud Synced</code>
+- L235 · template DOM · <code>Signed In ({arg1})</code>
+- L238 · template DOM · <code>Authentication Required</code>
+- L248 · template DOM · <code>Logout</code>
+- L249 · gán DOM · <code>Sync &amp; Logout of Account</code>
+- L255 · template DOM · <code>Sign In / Sign Up</code>
+- L256 · gán DOM · <code>Sign In or Sign Up</code>
+- L692 · gán DOM · <code>Setup Complete 🎉</code>
+- L706 · gán DOM · <code>Step {stepNum} of {total}</code>
+- L848 · literal cần đối chiếu · <code>CR</code>
+- L895 · literal cần đối chiếu · <code>Studies</code>
+- L896 · điều kiện / alias · <code>Studies</code>
+- L909 · điều kiện / alias · <code>Studies</code>
+- L909 · nhãn hoặc giá trị mẫu · <code>Assignments</code>
+- L909 · nhãn hoặc giá trị mẫu · <code>General</code>
+- L954 · thông điệp · <code>Habit Cancelled</code>
+- L954 · thông điệp · <code>Removed &quot;{removedName}&quot; from your active habits.</code>
+- L970 · nhãn hoặc giá trị mẫu · <code>Health</code>
+- L983 · thông điệp · <code>Habit Added!</code>
+- L983 · thông điệp · <code>Added &quot;{name}&quot; to your habits.</code>
+- L1001 · nhãn hoặc giá trị mẫu · <code>Personal</code>
+- L1113 · literal cần đối chiếu · <code>done</code>
+- L1120 · literal cần đối chiếu · <code>Friend</code>
+- L1122 · thông điệp · <code>You&#x27;re all set, {arg1}! 🎉</code>
+- L1123 · thông điệp · <code>Your personalized space is ready. Let&#x27;s make today count — one little step at a time.</code>
+- L1142 · điều kiện / alias · <code>Guest</code>
+- L1144 · literal cần đối chiếu · <code>FP</code>
+- L1153 · template DOM · <code>Hey, welcome aboard! Let&#x27;s set things up so your space feels like yours. This will only take a minute, and you can skip anything you don&#x27;t feel like doing now.</code>
+- L1159 · template DOM · <code>First things first — what should we call you?</code>
+- L1162 · template DOM · <code>A name and profile picture make things feel a little more personal.</code>
+- L1168 · template DOM · <code>Your Preferred Name or Nickname</code>
+- L1169 · placeholder · <code>Enter your name...</code>
+- L1171 · đối số trong handler · <code>Enter</code>
+- L1179 · title · <code>Click to upload profile picture</code>
+- L1181 · alt · <code>Profile Picture</code>
+- L1188 · template DOM · <code>Profile Picture</code>
+- L1188 · template DOM · <code>(optional)</code>
+- L1189 · template DOM · <code>Upload a custom photo or pick an avatar badge</code>
+- L1195 · template DOM · <code>Upload Photo</code>
+- L1199 · title · <code>Remove photo</code>
+- L1206 · template DOM · <code>Quick Avatars:</code>
+- L1212 · gán DOM · <code>transparent</code>
+- L1212 · gán DOM · <code>scale(1.12)</code>
+- L1212 · gán DOM · <code>scale(1)</code>
+- L1221 · template DOM · <code>Pick your workspace vibe</code>
+- L1221 · template DOM · <code>(optional)</code>
+- L1224 · template DOM · <code>🌙 Dark</code>
+- L1224 · gán DOM · <code>v-accent-btn</code>
+- L1227 · template DOM · <code>☀️ Light</code>
+- L1227 · gán DOM · <code>v-accent-btn</code>
+- L1232 · template DOM · <code>Accent:</code>
+- L1237 · gán DOM · <code>2.5px solid var(--v-fg)</code>
+- L1237 · gán DOM · <code>1px solid rgba(255,255,255,0.25)</code>
+- L1237 · gán DOM · <code>scale(1.15)</code>
+- L1237 · gán DOM · <code>scale(1)</code>
+- L1245 · template DOM · <code>← Back</code>
+- L1249 · template DOM · <code>Skip for now</code>
+- L1252 · template DOM · <code>Continue</code>
+- L1272 · template DOM · <code>What are you studying these days? 📚</code>
+- L1275 · template DOM · <code>Add your courses or subjects so we can help organize your study life.</code>
+- L1280 · template DOM · <code>Quick-Add Popular Subjects</code>
+- L1286 · gán DOM · <code>active</code>
+- L1297 · template DOM · <code>Add Your Own Course or Subject</code>
+- L1299 · placeholder · <code>2-Letter (e.g. MA)</code>
+- L1302 · placeholder · <code>e.g. Mathematics, Programming, Digital Electronics</code>
+- L1303 · đối số trong handler · <code>Enter</code>
+- L1306 · template DOM · <code>+ Add Course</code>
+- L1313 · template DOM · <code>Your Active Courses ({length})</code>
+- L1314 · template DOM · <code>Clear all</code>
+- L1318 · template DOM · <code>No courses selected yet. Tap any subject chip above, type your own, or skip for now.</code>
+- L1329 · title · <code>Remove course</code>
+- L1338 · template DOM · <code>Not studying right now? No worries — you can skip this.</code>
+- L1344 · template DOM · <code>← Back</code>
+- L1348 · template DOM · <code>Skip for now</code>
+- L1351 · template DOM · <code>Continue</code>
+- L1373 · template DOM · <code>Got something on your to-do list? ✍️</code>
+- L1376 · template DOM · <code>Let&#x27;s get that first task out of your head and into your plan.</code>
+- L1383 · template DOM · <code>Nice! One less thing to keep track of (added &quot;{arg1}&quot;). Want to add another?</code>
+- L1389 · template DOM · <code>Task Title</code>
+- L1390 · placeholder · <code>e.g. Finish Physics Lab Report, Revise Chapter 3...</code>
+- L1391 · đối số trong handler · <code>Enter</code>
+- L1397 · template DOM · <code>Due Date (optional)</code>
+- L1401 · template DOM · <code>Category</code>
+- L1403 · template DOM · <code>Personal</code>
+- L1404 · template DOM · <code>Studies</code>
+- L1405 · template DOM · <code>Fitness</code>
+- L1406 · template DOM · <code>Health</code>
+- L1410 · template DOM · <code>Course (optional)</code>
+- L1412 · template DOM · <code>General / None</code>
+- L1413 · template DOM · <code>{arg2} ({arg3})</code>
+- L1420 · template DOM · <code>Add Task to My List</code>
+- L1425 · template DOM · <code>Pending Tasks Queued ({length})</code>
+- L1434 · title · <code>Remove task</code>
+- L1444 · template DOM · <code>← Back</code>
+- L1448 · template DOM · <code>Skip for now</code>
+- L1451 · template DOM · <code>Continue</code>
+- L1470 · template DOM · <code>Anything you&#x27;d like to do more often? 🌱</code>
+- L1473 · template DOM · <code>A small habit can make a big difference. Let&#x27;s start with one.</code>
+- L1480 · template DOM · <code>Love that! Small steps, steady progress (&quot;{arg1}&quot;). Want to add one more?</code>
+- L1485 · template DOM · <code>Starter Habit Ideas (Click to Add)</code>
+- L1490 · gán DOM · <code>active</code>
+- L1501 · template DOM · <code>Or Create Your Own Habit</code>
+- L1503 · placeholder · <code>e.g. Practice coding for 30 mins...</code>
+- L1504 · đối số trong handler · <code>Enter</code>
+- L1507 · template DOM · <code>Every day (7d/wk)</code>
+- L1508 · template DOM · <code>Weekdays (5d/wk)</code>
+- L1509 · template DOM · <code>4 days / week</code>
+- L1510 · template DOM · <code>3 days / week</code>
+- L1513 · template DOM · <code>+ Add Habit</code>
+- L1520 · template DOM · <code>← Back</code>
+- L1524 · template DOM · <code>Skip for now</code>
+- L1527 · template DOM · <code>Continue</code>
+- L1552 · template DOM · <code>Let&#x27;s make your routine work for you 💧</code>
+- L1555 · template DOM · <code>A couple of optional settings can help personalize your day.</code>
+- L1567 · template DOM · <code>Water &amp; Hydration Reminders</code>
+- L1568 · template DOM · <code>Stay hydrated while you study with gentle cup reminders</code>
+- L1571 · gán DOM · <code>active</code>
+- L1578 · template DOM · <code>Daily Water Goal (ml)</code>
+- L1582 · template DOM · <code>Cup / Glass Size</code>
+- L1584 · template DOM · <code>200 ml (Small cup)</code>
+- L1584 · gán DOM · <code>selected</code>
+- L1585 · template DOM · <code>250 ml (Standard glass)</code>
+- L1585 · gán DOM · <code>selected</code>
+- L1586 · template DOM · <code>300 ml (Mug)</code>
+- L1586 · gán DOM · <code>selected</code>
+- L1587 · template DOM · <code>500 ml (Bottle)</code>
+- L1587 · gán DOM · <code>selected</code>
+- L1591 · template DOM · <code>Reminder Frequency</code>
+- L1593 · template DOM · <code>Every 60 mins</code>
+- L1593 · gán DOM · <code>selected</code>
+- L1594 · template DOM · <code>Every 90 mins</code>
+- L1594 · gán DOM · <code>selected</code>
+- L1595 · template DOM · <code>Every 2 hours</code>
+- L1595 · gán DOM · <code>selected</code>
+- L1609 · template DOM · <code>Study Plan &amp; Pomodoro Target</code>
+- L1610 · template DOM · <code>Choose your preferred daily study pace and focus session length</code>
+- L1613 · gán DOM · <code>active</code>
+- L1620 · gán DOM · <code>Light Daily Flow</code>
+- L1620 · gán DOM · <code>Mon, Tue, Wed, Thu, Fri</code>
+- L1620 · gán DOM · <code>2h / 2 sessions</code>
+- L1621 · gán DOM · <code>Balanced Weekdays</code>
+- L1621 · gán DOM · <code>Mon, Tue, Wed, Thu, Fri</code>
+- L1621 · gán DOM · <code>3h / 3 sessions</code>
+- L1622 · gán DOM · <code>Exam Sprint</code>
+- L1622 · gán DOM · <code>Mon, Tue, Wed, Thu, Fri, Sat</code>
+- L1622 · gán DOM · <code>5h / 5 sessions</code>
+- L1637 · template DOM · <code>Default Pomodoro Session Length:</code>
+- L1639 · template DOM · <code>15 mins (Blitz)</code>
+- L1639 · gán DOM · <code>selected</code>
+- L1640 · template DOM · <code>25 mins (Classic)</code>
+- L1640 · gán DOM · <code>selected</code>
+- L1641 · template DOM · <code>45 mins (Deep Work)</code>
+- L1641 · gán DOM · <code>selected</code>
+- L1642 · template DOM · <code>60 mins (Extra+)</code>
+- L1642 · gán DOM · <code>selected</code>
+- L1649 · template DOM · <code>← Back</code>
+- L1653 · template DOM · <code>Skip for now</code>
+- L1656 · template DOM · <code>Continue</code>
+- L1679 · template DOM · <code>Want a little nudge when you need it? 🔔</code>
+- L1682 · template DOM · <code>Tasks, habits, study time — we can give you a gentle reminder so things don&#x27;t slip your mind. No pressure, though. You&#x27;re in control.</code>
+- L1689 · template DOM · <code>App Sound &amp; Popup Preferences (ON by Default)</code>
+- L1691 · template DOM · <code>🔊 Preview Chime</code>
+- L1701 · template DOM · <code>App Sound &amp; Harmonic Chimes</code>
+- L1702 · template DOM · <code>Plays Pomodoro completion alarms &amp; gentle habit/task check-in chimes</code>
+- L1705 · gán DOM · <code>active</code>
+- L1716 · template DOM · <code>In-App Toast Popups</code>
+- L1717 · template DOM · <code>Shows floating corner popups for reminders, streaks &amp; timer alerts</code>
+- L1720 · gán DOM · <code>active</code>
+- L1728 · template DOM · <code>What We&#x27;ll Remind You About</code>
+- L1731 · gán DOM · <code>pomodoro</code>
+- L1731 · gán DOM · <code>Pomodoro &amp; Study Timer</code>
+- L1731 · gán DOM · <code>When focus or break sessions finish</code>
+- L1732 · gán DOM · <code>tasks</code>
+- L1732 · gán DOM · <code>Due-Today Tasks</code>
+- L1732 · gán DOM · <code>Nudges for pending tasks due today</code>
+- L1733 · gán DOM · <code>habits</code>
+- L1733 · gán DOM · <code>Habit Streak Protection</code>
+- L1733 · gán DOM · <code>Evening check-in for unfinished habits</code>
+- L1734 · gán DOM · <code>hydration</code>
+- L1734 · gán DOM · <code>Water &amp; Hydration</code>
+- L1734 · gán DOM · <code>Every {arg1} mins toward {arg2}ml</code>
+- L1746 · gán DOM · <code>checked</code>
+- L1758 · template DOM · <code>System &amp; Background Notification Access</code>
+- L1761 · điều kiện / alias · <code>granted</code>
+- L1761 · gán DOM · <code>Permission Granted ✅</code>
+- L1761 · điều kiện / alias · <code>denied</code>
+- L1761 · gán DOM · <code>Blocked in Browser Settings</code>
+- L1761 · gán DOM · <code>Click Below to Allow</code>
+- L1765 · template DOM · <code>Allowing notification access lets FocusPulse alert you when a Pomodoro finishes or when it&#x27;s time to drink water — even if the app is minimized or in the background.</code>
+- L1771 · template DOM · <code>Yep, let&#x27;s do it!</code>
+- L1774 · template DOM · <code>Maybe later</code>
+- L1781 · template DOM · <code>← Back</code>
+- L1783 · template DOM · <code>You can change these anytime in Settings → Notifications</code>
+- L1793 · literal cần đối chiếu · <code>Guest</code>
+- L1810 · template DOM · <code>You&#x27;re all set, {arg2}! 🎉</code>
+- L1813 · template DOM · <code>Your space is ready. Let&#x27;s make today count — one little step at a time.</code>
+- L1820 · template DOM · <code>👋 Profile &amp; Space</code>
+- L1822 · template DOM · <code>{arg4} • {arg5}</code>
+- L1823 · điều kiện / alias · <code>authenticated</code>
+- L1823 · gán DOM · <code>Cloud Synced Account Active</code>
+- L1823 · gán DOM · <code>Guest Workspace Saved Locally</code>
+- L1823 · điều kiện / alias · <code>light</code>
+- L1823 · gán DOM · <code>Light Surface</code>
+- L1823 · gán DOM · <code>Dark Surface</code>
+- L1826 · template DOM · <code>📚 Courses ({length})</code>
+- L1828 · gán DOM · <code>No courses added yet</code>
+- L1829 · gán DOM · <code>2-letter subject badges ready</code>
+- L1829 · gán DOM · <code>Add anytime in Courses &amp; Badges</code>
+- L1832 · template DOM · <code>✍️ Tasks &amp; Habits</code>
+- L1833 · template DOM · <code>{length} Pending Task{arg10} • {length} Habit{arg12}</code>
+- L1834 · gán DOM · <code>s</code>
+- L1835 · gán DOM · <code>Next:</code>
+- L1835 · gán DOM · <code>Ready for your first task</code>
+- L1838 · template DOM · <code>🔔 Reminders &amp; Routine</code>
+- L1839 · template DOM · <code>Sound {arg14} • Popups {arg15}</code>
+- L1840 · template DOM · <code>Water: {arg16}ml ({arg17}m) • Pomodoro: {arg18}m</code>
+- L1840 · gán DOM · <code>ON</code>
+- L1840 · gán DOM · <code>OFF</code>
+- L1846 · template DOM · <code>← Review Steps</code>
+- L1849 · template DOM · <code>Let&#x27;s get started</code>
+- L1870 · thông điệp · <code>Sign In Required 🔒</code>
+- L1870 · thông điệp · <code>Please sign in or create an account to use FocusPulse.</code>
+- L1876 · thông điệp · <code>Account Required 🔒</code>
+- L1876 · thông điệp · <code>Please sign in or create an account to access the dashboard.</code>
+
+### Thông báo · 38 mục
+
+
+**index.html**
+
+- L1879 · HTML · <code>Notification Center</code>
+- L1882 · HTML · <code>Test Alert 🔔</code>
+- L1883 · HTML · <code>Enable Notification</code>
+- L1884 · HTML · <code>Clear</code>
+
+**js/notifications.js**
+
+- L9 · literal cần đối chiếu · <code>An unexpected operation error occurred. Please try again or submit feedback if the issue persists.</code>
+- L11 · literal cần đối chiếu · <code>System Notice</code>
+- L36 · literal cần đối chiếu · <code>ResizeObserver</code>
+- L36 · literal cần đối chiếu · <code>Script error</code>
+- L136 · literal cần đối chiếu · <code>Notification</code>
+- L156 · literal cần đối chiếu · <code>Notification</code>
+- L200 · literal cần đối chiếu · <code>FocusPulse</code>
+- L276 · thông điệp · <code>Notifications Active 🔔</code>
+- L276 · thông điệp · <code>System notifications and audio alerts are enabled!</code>
+- L286 · thông điệp · <code>Notifications Enabled 🔔</code>
+- L286 · thông điệp · <code>Android system notifications and study reminders are active.</code>
+- L293 · literal cần đối chiếu · <code>Notification</code>
+- L294 · thông điệp · <code>In-App Notifications Active 🔔</code>
+- L294 · thông điệp · <code>In-app alerts and audio chimes are enabled.</code>
+- L300 · thông điệp · <code>Notifications Active ✅</code>
+- L300 · thông điệp · <code>System push notifications and study alarms are ready.</code>
+- L311 · thông điệp · <code>Notifications Enabled 🔔</code>
+- L311 · thông điệp · <code>System notifications are active! You will receive timely reminders.</code>
+- L315 · thông điệp · <code>Notifications Denied</code>
+- L315 · thông điệp · <code>System notification permission was denied. You can enable it in device Settings.</code>
+- L317 · thông điệp · <code>In-App Alerts Active</code>
+- L317 · thông điệp · <code>FocusPulse in-app toast notifications and sound alerts are active.</code>
+- L330 · thông điệp · <code>FocusPulse System Notification 🔔</code>
+- L331 · thông điệp · <code>Native OS push notification, in-app toast popup, and harmonic audio chime fired!</code>
+- L441 · template DOM · <code>No recent notifications yet. Click</code>
+- L441 · template DOM · <code>Test Alert</code>
+- L441 · template DOM · <code>above to verify sound &amp; OS push!</code>
+- L460 · thông điệp · <code>Sound Effects On 🔊</code>
+- L460 · thông điệp · <code>Audio chimes will play on timers, tasks &amp; check-ins.</code>
+- L469 · thông điệp · <code>In-App Popups On 💬</code>
+- L469 · thông điệp · <code>Floating toast popups are enabled for reminders &amp; actions.</code>
+- L500 · gán DOM · <code>Access Granted ✅</code>
+- L503 · gán DOM · <code>Browser Blocked (In-App Active)</code>
+- L506 · gán DOM · <code>Ready to Enable</code>
+
+### Trợ giúp và cài đặt · 102 mục
+
+
+**css/tailwind.config.js**
+
+- L7 · literal cần đối chiếu · <code>rgba(15, 15, 25, 0.45)</code>
+- L8 · literal cần đối chiếu · <code>rgba(255, 255, 255, 0.55)</code>
+- L11 · literal cần đối chiếu · <code>repeat(7, minmax(0, 1fr))</code>
+
+**index.html**
+
+- L1945 · HTML · <code>v1.0</code>
+- L1946 · HTML · <code>FocusPulse v1.0 — Official Release &amp; Features</code>
+- L1948 · aria-label · <code>Close Release Overview</code>
+- L1953 · HTML · <code>FocusPulse v1.0 provides a unified productivity and academic management environment. The core application modules are organized in the following order:</code>
+- L1958 · HTML · <code>1. Smart Pomodoro Timer</code>
+- L1959 · HTML · <code>Configurable focus, short break, and long break intervals with wall-clock synchronization and preset study modes (Normal, Blitz, Quick Rev, and Extra+).</code>
+- L1962 · HTML · <code>2. Smart Task Tracker &amp; Active Courses</code>
+- L1963 · HTML · <code>Deadline-sorted task management organized by category, subcategory, and two-letter course badges, with automatic 24-hour archiving to Completed Task History.</code>
+- L1966 · HTML · <code>3. Seven-Day Habit Flow Tracker</code>
+- L1967 · HTML · <code>Interactive weekly check-in matrix featuring customizable weekly frequency targets, active streak tracking, and completion analytics.</code>
+- L1970 · HTML · <code>4. Active Study Plans &amp; Hydration Tracker</code>
+- L1971 · HTML · <code>Recurring daily and weekly study schedules paired with daily fluid intake monitoring and scheduled hydration reminders.</code>
+- L1974 · HTML · <code>5. Zenith AI Coach &amp; Session Workspace</code>
+- L1975 · HTML · <code>Academic strategy assistant supporting natural-language task and habit commands, accompanied by a dedicated session scratchpad.</code>
+- L1978 · HTML · <code>6. Account Analytics &amp; Data Backup</code>
+- L1979 · HTML · <code>Comprehensive productivity metrics, course management, optional cloud synchronization, and local JSON data export and import.</code>
+- L1986 · HTML · <code>User Feedback &amp; Continuous Improvement</code>
+- L1989 · HTML · <code>User feedback is our most valuable resource for improving FocusPulse. Please share your suggestions, feature requests, or issue reports via</code>
+- L1989 · HTML · <code>GitHub Discussions</code>
+- L1989 · HTML · <code>or by email at</code>
+- L1989 · HTML · <code>info.focit@gmail.com</code>
+- L1994 · HTML · <code>Close</code>
+- L2001 · HTML · <code>FocusPulse — Application Guide</code>
+- L2002 · aria-label · <code>Close Application Guide</code>
+- L2006 · HTML · <code>1. Home &amp; Smart Pomodoro Timer</code>
+- L2007 · HTML · <code>Initiate focus sessions, switch between Pomodoro, Short Break, and Long Break intervals, or configure custom session durations and presets. The dashboard also displays your upcoming tasks and habits.</code>
+- L2010 · HTML · <code>2. Smart Task Tracker &amp; Active Courses</code>
+- L2011 · HTML · <code>Create tasks assigned to specific categories, subcategories, and two-letter course badges. Tasks are sorted automatically by remaining days until the due date, and completed tasks are archived to Task History after 24 hours.</code>
+- L2014 · HTML · <code>3. Seven-Day Habit Flow Tracker</code>
+- L2015 · HTML · <code>Record daily habit completions across the seven-day grid, monitor weekly target progress, and review your streak leaderboard.</code>
+- L2018 · HTML · <code>4. Active Study Plans &amp; Hydration</code>
+- L2019 · HTML · <code>Maintain recurring weekly study plans and log daily water intake with customizable glass sizes and reminder intervals.</code>
+- L2022 · HTML · <code>5. Zenith AI Coach &amp; Session Workspace</code>
+- L2023 · HTML · <code>Consult Zenith AI for structured study planning, task prioritization, or direct command execution, and record session notes in the Quick Study Notes panel or slide-out Workspace.</code>
+- L2026 · HTML · <code>6. Account Analytics &amp; Settings</code>
+- L2027 · HTML · <code>Review focus and completion metrics, manage course profiles, configure notifications and interface scaling, or export and import JSON data backups.</code>
+- L2030 · HTML · <code>User Feedback</code>
+- L2032 · HTML · <code>Your feedback is essential to the continued development of FocusPulse. Submit suggestions or report issues via</code>
+- L2032 · HTML · <code>GitHub Discussions</code>
+- L2032 · HTML · <code>or</code>
+- L2032 · HTML · <code>info.focit@gmail.com</code>
+- L2036 · HTML · <code>Close Guide</code>
+- L2290 · HTML · <code>Install FocusPulse</code>
+- L2291 · HTML · <code>Official builds from</code>
+- L2291 · HTML · <code>github.com/foc-it/FocusPulse</code>
+- L2294 · aria-label · <code>Close Install Modal</code>
+- L2308 · HTML · <code>Windows Desktop App (.EXE)</code>
+- L2309 · HTML · <code>Windows 10 / 11 (64-bit NSIS Installer)</code>
+- L2312 · HTML · <code>GitHub Releases</code>
+- L2315 · HTML · <code>Download</code>
+- L2315 · HTML · <code>FocusPulse_1.0.0_x64-setup.exe</code>
+- L2315 · HTML · <code>from the official GitHub Releases section and run the setup wizard. Includes custom borderless frame, system tray, and startup launch.</code>
+- L2319 · HTML · <code>Open Windows Release on GitHub</code>
+- L2332 · HTML · <code>Android Mobile App (.APK)</code>
+- L2333 · HTML · <code>Android 7.0+ Signed Universal Package</code>
+- L2336 · HTML · <code>Signed APK Release</code>
+- L2339 · HTML · <code>Download the</code>
+- L2339 · HTML · <code>signed</code>
+- L2339 · HTML · <code>FocusPulse_1.0.0_Android_Signed.apk</code>
+- L2339 · HTML · <code>from GitHub Releases.</code>
+- L2343 · HTML · <code>Android Security Note:</code>
+- L2343 · HTML · <code>Because FocusPulse is installed directly from GitHub Releases rather than Google Play, Android may ask you to allow</code>
+- L2343 · HTML · <code>&quot;Install unknown apps&quot;</code>
+- L2343 · HTML · <code>permission for your browser or file manager. Always download only the</code>
+- L2343 · HTML · <code>signed</code>
+- L2343 · HTML · <code>release APK.</code>
+- L2347 · HTML · <code>Open Signed Android APK on GitHub</code>
+- L2360 · HTML · <code>Use on the Web</code>
+- L2361 · HTML · <code>Instant Browser &amp; PWA Experience</code>
+- L2364 · HTML · <code>Ready Now</code>
+- L2367 · HTML · <code>Continue using FocusPulse directly in your web browser with full offline local storage, or install it as a Progressive Web App (PWA) from your browser&#x27;s address bar.</code>
+- L2371 · HTML · <code>Continue in Web Application</code>
+
+**js/ui.js**
+
+- L2306 · literal cần đối chiếu · <code>Accept</code>
+- L2315 · gán DOM · <code>Release Ready (.EXE)</code>
+- L2318 · gán DOM · <code>Download Windows Installer (.EXE)</code>
+- L2321 · gán DOM · <code>View on GitHub Releases</code>
+- L2327 · gán DOM · <code>Signed APK Ready</code>
+- L2330 · gán DOM · <code>Download Signed Android APK</code>
+- L2333 · gán DOM · <code>Signed Release Pending • View Releases</code>
+- L2341 · gán DOM · <code>GitHub Releases (v1.0.0)</code>
+- L2344 · gán DOM · <code>Signed APK via GitHub Releases</code>
+- L2366 · thông điệp · <code>Windows Installer (.EXE)</code>
+- L2366 · thông điệp · <code>Opening official FocusPulse GitHub Releases page.</code>
+- L2369 · thông điệp · <code>Android Signed APK</code>
+- L2369 · thông điệp · <code>Opening official FocusPulse GitHub Releases page. Remember to allow installing from this source if prompted by Android.</code>
+- L2378 · thông điệp · <code>FocusPulse Web Suite Active ⚡</code>
+- L2378 · thông điệp · <code>You are running the full FocusPulse Web Application right here!</code>
+
+**manifest.json**
+
+- L2 · name · <code>FocusPulse — Study, Tasks, Habits &amp; Hydration</code>
+- L3 · short_name · <code>FocusPulse</code>
+- L4 · description · <code>The deep-work suite for students, developers, and creators by Foc-It.</code>
+
+**src-tauri/src/lib.rs**
+
+- L247 · menu hệ điều hành · <code>Open FocusPulse</code>
+- L249 · menu hệ điều hành · <code>Start / Pause Pomodoro</code>
+- L252 · menu hệ điều hành · <code>Quit FocusPulse</code>
+- L259 · menu hệ điều hành · <code>FocusPulse — Study, Tasks, Habits &amp; Hydration</code>
+
+**src-tauri/tauri.conf.json**
+
+- L3 · productName · <code>FocusPulse</code>
+- L17 · title · <code>FocusPulse — Study, Tasks, Habits &amp; Hydration</code>
+
+**vite.config.js**
+
+- L7 · nhãn hoặc giá trị mẫu · <code>focuspulse-copy-static-dirs-and-icons</code>
+- L60 · literal cần đối chiếu · <code>&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt; &lt;resources&gt; &lt;color name=&quot;ic_launcher_background&quot;&gt;#4f46e5&lt;/color&gt; &lt;/resources&gt;</code>
+- L70 · literal cần đối chiếu · <code>&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt; &lt;adaptive-icon xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;&gt; &lt;background android:drawable=&quot;@color/ic_launcher_background&quot;/&gt; &lt;foreground android:drawable=&quot;@mipmap/ic_launcher_foreground&quot;/&gt; &lt;/adaptive-icon&gt;</code>
+
