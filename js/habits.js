@@ -61,9 +61,9 @@ function getHabitWeekDays() {
         return {
             date,
             key,
-            dayName: date.toLocaleDateString('en-US', { weekday: 'short' }),
+            weekday: FPi18n.dateMessage(key, {weekday: 'short'}),
             dayNumber: date.getDate(),
-            monthDay: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            monthDay: FPi18n.dateMessage(key, {month: 'short', day: 'numeric'}),
             isToday: key === todayKey,
             isFuture: date > today
         };
@@ -158,7 +158,7 @@ function markAllHabitsToday() {
     });
     saveState();
     window.updateUI();
-    showNotification("All Habits Completed!", "Awesome! Every habit for today is marked complete.", "success");
+    showNotification(FPi18n.message('stats.completedTitle'), FPi18n.message('stats.completedHint'), "success");
 }
 
 function resetSampleHabitsData() {
@@ -320,28 +320,28 @@ function renderHabitsSection() {
     const elTodayTotal = document.getElementById('habit-kpi-today-total');
     const elTodayPct = document.getElementById('habit-kpi-today-pct');
     const elTodayBar = document.getElementById('habit-kpi-today-bar');
-    if (elTodayCount) elTodayCount.innerText = completedToday;
-    if (elTodayTotal) elTodayTotal.innerText = `/ ${totalHabits} completed`;
-    if (elTodayPct) elTodayPct.innerText = `${todayPercent}%`;
+    FPi18n.bind(elTodayCount, 'stats.number', {value: completedToday});
+    FPi18n.bind(elTodayTotal, 'stats.todayTotal', {total: totalHabits});
+    FPi18n.bind(elTodayPct, 'stats.percent', {percent: todayPercent});
     if (elTodayBar) elTodayBar.style.width = `${todayPercent}%`;
 
     const elWeeklyRate = document.getElementById('habit-kpi-weekly-rate');
     const elWeeklyBar = document.getElementById('habit-kpi-weekly-bar');
-    if (elWeeklyRate) elWeeklyRate.innerText = `${weeklyRate}%`;
+    FPi18n.bind(elWeeklyRate, 'stats.percent', {percent: weeklyRate});
     if (elWeeklyBar) elWeeklyBar.style.width = `${weeklyRate}%`;
 
     const elBestStreak = document.getElementById('habit-kpi-best-streak');
-    if (elBestStreak) elBestStreak.innerText = longestActiveStreak;
+    FPi18n.bind(elBestStreak, 'stats.number', {value: longestActiveStreak});
 
     const elCheckins = document.getElementById('habit-kpi-checkins');
     const elDateRange = document.getElementById('habit-kpi-date-range');
     const elWeekLabel = document.getElementById('habit-week-range-label');
     const elChartRange = document.getElementById('habit-chart-range-badge');
-    const rangeStr = `${weekDays[0].monthDay} – ${weekDays[6].monthDay}`;
-    if (elCheckins) elCheckins.innerText = totalCheckinsThisWeek;
-    if (elDateRange) elDateRange.innerText = rangeStr;
-    if (elWeekLabel) elWeekLabel.innerText = rangeStr;
-    if (elChartRange) elChartRange.innerText = rangeStr;
+    const range = {start: weekDays[0].monthDay, end: weekDays[6].monthDay};
+    FPi18n.bind(elCheckins, 'stats.number', {value: totalCheckinsThisWeek});
+    FPi18n.bind(elDateRange, 'stats.dateRange', range);
+    FPi18n.bind(elWeekLabel, 'stats.dateRange', range);
+    FPi18n.bind(elChartRange, 'stats.dateRange', range);
 
     const btnJumpToday = document.getElementById('habit-jump-today-btn');
     if (btnJumpToday) {
@@ -372,7 +372,7 @@ function renderHabitsSection() {
                     <div class="inline-flex flex-col items-center justify-center px-2 py-1 rounded-xl ${
                         day.isToday ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25' : ''
                     }">
-                        <span class="text-[9px] font-bold uppercase tracking-wider opacity-80">${day.dayName}</span>
+                        <span class="text-[9px] font-bold uppercase tracking-wider opacity-80">${FPi18n.markup('stats.date', {date: day.weekday})}</span>
                         <span class="text-xs font-extrabold mt-0.5">${day.dayNumber}</span>
                     </div>
                 </th>
@@ -426,7 +426,7 @@ function renderHabitsSection() {
                                 <td class="py-2.5 px-1.5 text-center">
                                     <button onclick="toggleHabitDayCheck('${habit.id}', '${day.key}', ${day.isFuture})"
                                         ${day.isFuture ? 'disabled' : ''}
-                                        title="Mark ${escapeHtml(habit.name)} for ${day.dayName} (${day.key})"
+                                        ${FPi18n.attributeMarkup('title', 'stats.markDay', {name: habit.name, day: day.weekday, date: FPi18n.dateMessage(day.key)})}
                                         class="w-9 h-9 rounded-xl inline-flex items-center justify-center transition-all duration-200 ${
                                             day.isFuture
                                                 ? 'bg-slate-200/40 dark:bg-white/5 border border-white/20 opacity-30 cursor-not-allowed'
@@ -522,11 +522,11 @@ function renderHabitsSection() {
                                 const isCompleted = !!habit.logs[day.key];
                                 return `
                                     <div class="flex flex-col items-center gap-1">
-                                        <span class="text-[9px] font-extrabold uppercase tracking-wider ${day.isToday ? 'text-indigo-600 dark:text-indigo-400 font-black' : 'text-slate-500 dark:text-slate-400'}">${day.dayName.slice(0, 3)}</span>
+                                        <span class="text-[9px] font-extrabold uppercase tracking-wider ${day.isToday ? 'text-indigo-600 dark:text-indigo-400 font-black' : 'text-slate-500 dark:text-slate-400'}">${FPi18n.markup('stats.date', {date: day.weekday})}</span>
                                         <button type="button"
                                             onclick="toggleHabitDayCheck('${habit.id}', '${day.key}', ${day.isFuture})"
                                             ${day.isFuture ? 'disabled' : ''}
-                                            title="${escapeHtml(habit.name)} - ${day.dayName} (${day.dayNumber})"
+                                            ${FPi18n.attributeMarkup('title', 'stats.habitDay', {name: habit.name, day: day.weekday, number: day.dayNumber})}
                                             class="relative w-full aspect-square max-w-[44px] max-h-[44px] rounded-xl flex items-center justify-center transition-all duration-200 ${
                                                 day.isFuture
                                                     ? 'bg-slate-200/40 dark:bg-white/5 border border-white/20 opacity-30 cursor-not-allowed'
@@ -571,7 +571,7 @@ function renderHabitsSection() {
             const isPerfect = day.percent === 100 && day.total > 0;
             return `
                 <div class="flex flex-col items-center h-full justify-end">
-                    <div class="text-[11px] font-extrabold mb-1.5 ${day.isToday ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400'}">${day.percent}%</div>
+                    <div class="text-[11px] font-extrabold mb-1.5 ${day.isToday ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400'}">${FPi18n.markup('stats.percent', {percent: day.percent})}</div>
                     <div class="w-full max-w-[42px] h-32 rounded-2xl p-1 flex items-end bg-white/60 dark:bg-white/10 overflow-hidden shadow-inner">
                         <div class="w-full rounded-xl transition-all duration-500 ${
                             isPerfect
@@ -582,8 +582,8 @@ function renderHabitsSection() {
                         }" style="height: ${Math.max(day.percent, 8)}%"></div>
                     </div>
                     <div class="mt-2 text-center">
-                        <p class="text-[11px] font-bold ${day.isToday ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-800 dark:text-slate-200'}">${day.dayName}</p>
-                        <p class="text-[9px] text-slate-500 dark:text-slate-400 font-semibold">${day.count}/${day.total}</p>
+                        <p class="text-[11px] font-bold ${day.isToday ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-800 dark:text-slate-200'}">${FPi18n.markup('stats.date', {date: day.weekday})}</p>
+                        <p class="text-[9px] text-slate-500 dark:text-slate-400 font-semibold">${FPi18n.markup('account.countOfTotal', {done: day.count, total: day.total})}</p>
                     </div>
                 </div>
             `;
@@ -595,7 +595,7 @@ function renderHabitsSection() {
     if (leaderboardEl) {
         const sorted = [...enriched].sort((a, b) => b.currentStreak - a.currentStreak).slice(0, 5);
         if (sorted.length === 0) {
-            leaderboardEl.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">Add habits to see your streak leaderboard.</p>`;
+            leaderboardEl.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">${FPi18n.markup('stats.empty')}</p>`;
         } else {
             leaderboardEl.innerHTML = sorted.map(habit => {
                 const theme = HABIT_COLOR_THEMES[habit.color] || HABIT_COLOR_THEMES.emerald;
@@ -608,15 +608,15 @@ function renderHabitsSection() {
                                 <span class="truncate">${escapeHtml(habit.name)}</span>
                             </span>
                             <span class="font-extrabold text-amber-500 shrink-0 flex items-center gap-1">
-                                <i class="fa-solid fa-fire"></i> ${habit.currentStreak}d
+                                <i class="fa-solid fa-fire"></i> ${FPi18n.markup('account.streakDays', {days: habit.currentStreak})}
                             </span>
                         </div>
                         <div class="w-full h-2 rounded-full overflow-hidden bg-white/60 dark:bg-white/10">
                             <div class="h-full rounded-full bg-gradient-to-r ${theme.bar} transition-all duration-500" style="width: ${Math.max(ratio, 8)}%"></div>
                         </div>
                         <div class="flex justify-between text-[10px] text-slate-600 dark:text-slate-400 font-medium">
-                            <span>Active chain: ${habit.currentStreak}d</span>
-                            <span>Personal record: ${habit.bestStreak}d</span>
+                            <span>${FPi18n.markup('stats.activeChain', {days: habit.currentStreak})}</span>
+                            <span>${FPi18n.markup('stats.record', {days: habit.bestStreak})}</span>
                         </div>
                     </div>
                 `;

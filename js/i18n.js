@@ -26,7 +26,9 @@
 
     // Messages can be retained by an open dialog or toast and resolved again after a switch.
     const message = (key, params = {}) => ({key, params});
+    const dateMessage = (date, options) => ({date, options});
     function resolve(value) {
+        if (value && typeof value === 'object' && hasOwn(value, 'date')) return formatDate(value.date, value.options);
         if (value && typeof value === 'object' && hasOwn(value, 'key')) return translate(value.key, value.params);
         return value == null ? '' : String(value);
     }
@@ -56,6 +58,11 @@
     }
 
     const attributes = ['title', 'aria-label', 'placeholder', 'alt'];
+    function attributeMarkup(attribute, key, params) {
+        if (!attributes.includes(attribute)) return '';
+        const args = params ? ' data-i18n-params="' + escape(JSON.stringify(params)) + '"' : '';
+        return attribute + '="' + escape(translate(key, params)) + '" data-i18n-' + attribute + '="' + escape(key) + '"' + args;
+    }
     const selector = ['[data-i18n]', ...attributes.map(a => '[data-i18n-' + a + ']')].join(',');
     function applyLabel(element) {
         const params = element.dataset.i18nParams ? JSON.parse(element.dataset.i18nParams) : {};
@@ -67,6 +74,15 @@
             const key = element.getAttribute('data-i18n-' + attribute);
             if (key) element.setAttribute(attribute, translate(key, params));
         }
+    }
+
+    // Rebind an existing text node without replacing a focused control or its listeners.
+    function bind(element, key, params) {
+        if (!element) return;
+        element.dataset.i18n = key;
+        if (params) element.dataset.i18nParams = JSON.stringify(params);
+        else delete element.dataset.i18nParams;
+        applyLabel(element);
     }
 
     function apply(root) {
@@ -98,7 +114,7 @@
     }
 
     window.FPi18n = {getCurrentLanguage: () => currentLanguage, setLanguage, translate,
-        message, resolve, markup, messageHtml, apply, formatDate, formatNumber, getLocale: locale};
+        message, dateMessage, resolve, bind, markup, attributeMarkup, messageHtml, apply, formatDate, formatNumber, getLocale: locale};
 
     document.addEventListener('DOMContentLoaded', () => {
         for (const select of document.querySelectorAll('[data-language-select]')) {
@@ -112,7 +128,7 @@
         refreshLabels();
         document.addEventListener('invalid', event => {
             const input = event.target;
-            if (!input.closest('#fp-onboarding-shell, #view-section-account, #account-modal, #view-section-settings, #settings-modal')) return;
+            if (!input.closest('#pomo-inline-settings, #fp-onboarding-shell, #view-section-account, #account-modal, #view-section-settings, #settings-modal')) return;
             const validity = input.validity;
             if (!validity || validity.customError) return;
             let key = 'validation.invalid';

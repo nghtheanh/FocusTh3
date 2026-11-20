@@ -185,37 +185,32 @@ window.handlePostAuthRouting = function(user, isNewSignup = false) {
 function updateReturningUserHomeGreeting() {
     if (!window.appState) return;
     const hour = new Date().getHours();
-    const timeGreeting = hour < 12 ? 'Good morning' : (hour < 17 ? 'Good afternoon' : 'Good evening');
+    const greetingKey = hour < 12 ? 'home.morning' : (hour < 17 ? 'home.afternoon' : 'home.evening');
+    FPi18n.bind(document.getElementById('home-greeting-eyebrow'), greetingKey);
 
-    const rawName = ((window.appState.user && window.appState.user.name && window.appState.user.name !== 'Guest' && window.appState.user.name !== 'Student Scholar')
-        ? window.appState.user.name.trim()
-        : getSavedLocalGuestName());
-    const hasPersonalName = rawName && rawName !== 'Student Scholar' && rawName !== 'Student' && rawName !== 'Guest';
-    const firstName = hasPersonalName ? rawName.split(' ')[0] : 'Guest';
+    const user = window.appState.user;
+    const name = (user?.name || '').trim();
+    const isPersonal = name && (user.isCustomName || !['Guest', 'Student Scholar', 'Student'].includes(name));
+    const personalName = isPersonal ? name : getSavedLocalGuestName();
+    const nameEl = document.getElementById('home-greeting-name');
+    if (nameEl && personalName) {
+        delete nameEl.dataset.i18n;
+        nameEl.textContent = personalName.split(' ')[0];
+    } else {
+        FPi18n.bind(nameEl, 'setup.guestName');
+    }
 
-    const eyebrowEl = document.getElementById('home-greeting-eyebrow');
-    const titleEl = document.getElementById('home-greeting-heading');
-    const nameSpan = document.getElementById('home-greeting-name');
-    const subEl = document.getElementById('home-greeting-subtitle');
-
-    if (eyebrowEl) {
-        eyebrowEl.innerText = `${timeGreeting} • FocusPulse Studio`;
-    }
-    if (nameSpan) {
-        nameSpan.innerText = firstName;
-    }
-    if (titleEl) {
-        titleEl.innerHTML = `Welcome back, <span id="home-greeting-name">${escapeHtml(firstName)}</span>! 👋`;
-    }
-    if (subEl) {
-        const pendingCnt = (window.appState.tasks || []).filter(t => !t.completed).length;
-        const todayKey = typeof formatDateKey === 'function' ? formatDateKey(new Date()) : '';
-        const habitsLeft = (window.appState.habits || []).filter(h => !(h.logs && h.logs[todayKey])).length;
-        if (pendingCnt > 0 || habitsLeft > 0) {
-            subEl.innerText = `Ready to pick up where you left off? You have ${pendingCnt} pending task${pendingCnt === 1 ? '' : 's'} and ${habitsLeft} habit${habitsLeft === 1 ? '' : 's'} queued for today.`;
-        } else {
-            subEl.innerText = `Ready to pick up where you left off? Start a deep focus session or review your study plan.`;
-        }
+    const subtitle = document.getElementById('home-greeting-subtitle');
+    const pending = (window.appState.tasks || []).filter(t => !t.completed).length;
+    const today = formatDateKey(new Date());
+    const remaining = (window.appState.habits || []).filter(h => !h.logs?.[today]).length;
+    if (pending || remaining) {
+        FPi18n.bind(subtitle, 'home.dailySummary', {
+            tasks: FPi18n.message(pending === 1 ? 'home.pendingOne' : 'home.pendingMany', {count: pending}),
+            habits: FPi18n.message(remaining === 1 ? 'home.habitOne' : 'home.habitMany', {count: remaining})
+        });
+    } else {
+        FPi18n.bind(subtitle, 'home.ready');
     }
 }
 

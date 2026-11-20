@@ -3,12 +3,8 @@
 // ==========================================
 
 const motivationalQuotes = [
-    "Focus is a muscle. The more you practice eliminating distractions, the easier deep work becomes.",
-    "Success is the sum of small efforts, repeated day in and day out.",
-    "Don't watch the clock; do what it does. Keep going.",
-    "The secret of getting ahead is getting started.",
-    "Deep work is the superpower of the 21st century.",
-    "We are what we repeatedly do. Excellence, then, is not an act, but a habit."
+    'home.quote.focus', 'home.quote.effort', 'home.quote.clock',
+    'home.quote.start', 'home.quote.deepWork', 'home.quote.habit'
 ];
 
 let currentTaskFilter = 'all';
@@ -466,6 +462,24 @@ function openHabitFromNextUpBox(habitId) {
     }, 120);
 }
 
+// Persisted categories are editable. Only the built-in labels have translation keys.
+const dashboardTaskCategories = {
+    Studies: 'setup.studies', Fitness: 'setup.fitness', Health: 'setup.health', Personal: 'setup.personal'
+};
+const dashboardSubcategories = {
+    Studies: {General: 'category.general', Exams: 'category.exams', Assignments: 'category.assignments'},
+    Fitness: {Cardio: 'category.cardio', Strength: 'category.strength'},
+    Health: {Hydration: 'category.hydration', Sleep: 'category.sleep'},
+    Personal: {Reading: 'category.reading', Projects: 'category.projects'}
+};
+const dashboardHabitCategories = {
+    Health: 'setup.health', Fitness: 'setup.fitness', Productivity: 'category.productivity',
+    Mindfulness: 'category.mindfulness', Learning: 'category.learning'
+};
+function categoryLabelHtml(value, keys) {
+    return keys && Object.hasOwn(keys, value) ? FPi18n.markup(keys[value]) : escapeHtml(value);
+}
+
 function renderDashboardNextTaskCard(animate = false) {
     const box = document.getElementById('dashboard-next-task-box');
     if (!box) return;
@@ -477,17 +491,17 @@ function renderDashboardNextTaskCard(animate = false) {
         box.innerHTML = `
             <div class="flex items-center justify-between mb-2">
                 <span class="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                    <i class="fa-solid fa-circle-check mr-1"></i> Next Task to Check
+                    <i class="fa-solid fa-circle-check mr-1"></i> ${FPi18n.markup('home.nextTask')}
                 </span>
-                <span class="text-[10px] font-bold" style="color:var(--v-fg3)">All Done 🎉</span>
+                <span class="text-[10px] font-bold" style="color:var(--v-fg3)">${FPi18n.markup('home.allDone')}</span>
             </div>
             <div class="py-2 flex items-center gap-3">
                 <div class="w-10 h-10 rounded-2xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center text-sm shrink-0">
                     <i class="fa-solid fa-check-double"></i>
                 </div>
                 <div class="min-w-0 flex-1">
-                    <p class="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">All tasks completed for today!</p>
-                    <p class="text-[11px] text-slate-600 dark:text-slate-400 font-medium">Click to open Tasks & add a new goal →</p>
+                    <p class="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">${FPi18n.markup('home.tasksDone')}</p>
+                    <p class="text-[11px] text-slate-600 dark:text-slate-400 font-medium">${FPi18n.markup('home.addTaskHint')}</p>
                 </div>
             </div>
         `;
@@ -503,12 +517,12 @@ function renderDashboardNextTaskCard(animate = false) {
         <div class="flex items-center justify-between gap-2 mb-2.5">
             <div class="flex items-center gap-1.5">
                 <span class="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border" style="background:rgba(var(--v-accent-rgb),0.14);color:var(--v-accent);border-color:rgba(var(--v-accent-rgb),0.3);">
-                    <i class="fa-solid fa-list-check mr-1"></i> Next Task to Check
+                    <i class="fa-solid fa-list-check mr-1"></i> ${FPi18n.markup('home.nextTask')}
                 </span>
                 ${candidateTasks.length > 1 ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/50 dark:bg-white/10" style="color:var(--v-fg2)">${nextTaskSlideIndex + 1} / ${candidateTasks.length}</span>` : ''}
             </div>
             <span class="text-[10px] font-bold flex items-center gap-1" style="color:var(--v-fg2)">
-                <span>Go to Tasks</span> <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                <span>${FPi18n.markup('home.goTasks')}</span> <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
             </span>
         </div>
 
@@ -519,22 +533,22 @@ function renderDashboardNextTaskCard(animate = false) {
             <div class="min-w-0 flex-1">
                 <h4 class="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">${escapeHtml(currentTask.title)}</h4>
                 <div class="flex items-center gap-2 mt-1 flex-wrap">
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/60 dark:bg-white/10 text-slate-700 dark:text-slate-300">${escapeHtml(currentTask.category)} • ${escapeHtml(currentTask.subcategory || 'General')}</span>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/60 dark:bg-white/10 text-slate-700 dark:text-slate-300">${categoryLabelHtml(currentTask.category, dashboardTaskCategories)} • ${currentTask.subcategory ? categoryLabelHtml(currentTask.subcategory, dashboardSubcategories[currentTask.category]) : FPi18n.markup('category.general')}</span>
                     <span class="text-[10px] font-bold ${isToday ? 'text-amber-500' : 'text-slate-500 dark:text-slate-400'}">
-                        <i class="fa-regular fa-calendar mr-1"></i>${isToday ? 'Due Today ⚡' : escapeHtml(currentTask.dueDate)}
+                        <i class="fa-regular fa-calendar mr-1"></i>${isToday ? FPi18n.markup('home.dueToday') : FPi18n.markup('stats.date', {date: FPi18n.dateMessage(currentTask.dueDate)})}
                     </span>
                 </div>
             </div>
         </div>
 
         <div class="mt-3 pt-2 border-t border-white/30 dark:border-white/10 flex items-center justify-between gap-2" style="border-color:var(--v-bdr)">
-            <span class="text-[10px] font-semibold" style="color:var(--v-fg3)">Click card to open in Tasks section (won't mark directly)</span>
+            <span class="text-[10px] font-semibold" style="color:var(--v-fg3)">${FPi18n.markup('home.taskHint')}</span>
             ${candidateTasks.length > 1 ? `
                 <div class="flex items-center gap-1.5" onclick="event.stopPropagation()">
                     ${candidateTasks.map((_, idx) => `
                         <button type="button" onclick="selectDashboardTaskSlide(${idx}, event)"
                             class="h-1.5 rounded-full transition-all ${idx === nextTaskSlideIndex ? 'w-4' : 'w-1.5 opacity-40'}"
-                            style="background:var(--v-accent)" title="Task ${idx + 1}"></button>
+                            style="background:var(--v-accent)" ${FPi18n.attributeMarkup('title', 'home.taskSlide', {index: idx + 1})}></button>
                     `).join('')}
                 </div>
             ` : ''}
@@ -553,17 +567,17 @@ function renderDashboardNextHabitCard(animate = false) {
         box.innerHTML = `
             <div class="flex items-center justify-between mb-2">
                 <span class="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                    <i class="fa-solid fa-fire-flame-curved mr-1"></i> Next Habit to Check
+                    <i class="fa-solid fa-fire-flame-curved mr-1"></i> ${FPi18n.markup('home.nextHabit')}
                 </span>
-                <span class="text-[10px] font-bold" style="color:var(--v-fg3)">100% Today 🔥</span>
+                <span class="text-[10px] font-bold" style="color:var(--v-fg3)">${FPi18n.markup('home.perfectToday')}</span>
             </div>
             <div class="py-2 flex items-center gap-3">
                 <div class="w-10 h-10 rounded-2xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center text-sm shrink-0">
                     <i class="fa-solid fa-trophy"></i>
                 </div>
                 <div class="min-w-0 flex-1">
-                    <p class="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">All daily habits completed!</p>
-                    <p class="text-[11px] text-slate-600 dark:text-slate-400 font-medium">Click to view your 7-day Habit Flow grid →</p>
+                    <p class="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">${FPi18n.markup('home.allHabitsDone')}</p>
+                    <p class="text-[11px] text-slate-600 dark:text-slate-400 font-medium">${FPi18n.markup('home.habitsGridHint')}</p>
                 </div>
             </div>
         `;
@@ -579,12 +593,12 @@ function renderDashboardNextHabitCard(animate = false) {
         <div class="flex items-center justify-between gap-2 mb-2.5">
             <div class="flex items-center gap-1.5">
                 <span class="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                    <i class="fa-solid fa-fire-flame-curved mr-1"></i> Next Habit to Check
+                    <i class="fa-solid fa-fire-flame-curved mr-1"></i> ${FPi18n.markup('home.nextHabit')}
                 </span>
                 ${candidateHabits.length > 1 ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/50 dark:bg-white/10" style="color:var(--v-fg2)">${nextHabitSlideIndex + 1} / ${candidateHabits.length}</span>` : ''}
             </div>
             <span class="text-[10px] font-bold flex items-center gap-1" style="color:var(--v-fg2)">
-                <span>Go to Habits</span> <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                <span>${FPi18n.markup('home.goHabits')}</span> <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
             </span>
         </div>
 
@@ -595,20 +609,20 @@ function renderDashboardNextHabitCard(animate = false) {
             <div class="min-w-0 flex-1">
                 <h4 class="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">${escapeHtml(currentHabit.name)}</h4>
                 <div class="flex items-center gap-2 mt-1 flex-wrap">
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/60 dark:bg-white/10 text-slate-700 dark:text-slate-300">${escapeHtml(currentHabit.category)}</span>
-                    <span class="text-[10px] font-bold text-amber-500"><i class="fa-solid fa-fire mr-1"></i>${streak}d streak • Target ${currentHabit.targetPerWeek || 5}d/wk</span>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/60 dark:bg-white/10 text-slate-700 dark:text-slate-300">${categoryLabelHtml(currentHabit.category, dashboardHabitCategories)}</span>
+                    <span class="text-[10px] font-bold text-amber-500"><i class="fa-solid fa-fire mr-1"></i>${FPi18n.markup('home.habitProgress', {days: streak, target: currentHabit.targetPerWeek || 5})}</span>
                 </div>
             </div>
         </div>
 
         <div class="mt-3 pt-2 border-t border-white/30 dark:border-white/10 flex items-center justify-between gap-2" style="border-color:var(--v-bdr)">
-            <span class="text-[10px] font-semibold" style="color:var(--v-fg3)">Click card to open in Habit Flow (won't mark directly)</span>
+            <span class="text-[10px] font-semibold" style="color:var(--v-fg3)">${FPi18n.markup('home.habitHint')}</span>
             ${candidateHabits.length > 1 ? `
                 <div class="flex items-center gap-1.5" onclick="event.stopPropagation()">
                     ${candidateHabits.map((_, idx) => `
                         <button type="button" onclick="selectDashboardHabitSlide(${idx}, event)"
                             class="h-1.5 rounded-full transition-all ${idx === nextHabitSlideIndex ? 'w-4' : 'w-1.5 opacity-40'}"
-                            style="background:var(--v-accent)" title="Habit ${idx + 1}"></button>
+                            style="background:var(--v-accent)" ${FPi18n.attributeMarkup('title', 'home.habitSlide', {index: idx + 1})}></button>
                     `).join('')}
                 </div>
             ` : ''}
@@ -1007,7 +1021,6 @@ window.updateUI = function() {
     const botNavAvatarEl = document.getElementById('bot-nav-account-icon-wrap');
     const removeAvatarBtn = document.getElementById('inline-profile-remove-avatar-btn');
     const presetAvatarsRow = document.getElementById('account-preset-avatars-row');
-    const homeGreetingEl = document.getElementById('home-greeting-name');
 
     const avatarUrl = (state.user && state.user.avatarDataUrl) ? state.user.avatarDataUrl : '';
 
@@ -1049,7 +1062,6 @@ window.updateUI = function() {
                 </button>`;
             }).join('');
     }
-    if (homeGreetingEl) homeGreetingEl.innerText = firstName;
     if (typeof window.updateOnboardingAccountStatusUI === 'function') {
         window.updateOnboardingAccountStatusUI();
     }
@@ -1103,12 +1115,11 @@ window.updateUI = function() {
     // Focus Time stats
     const hrs = Math.floor((state.timer.totalFocusSecs || 0) / 3600);
     const mins = Math.floor(((state.timer.totalFocusSecs || 0) % 3600) / 60);
-    const focusStr = `${hrs}h ${mins}m`;
 
     const sessionCountEl = document.getElementById('timer-session-count');
-    if (sessionCountEl) {
-        sessionCountEl.innerText = `Session ${state.timer.sessionCount} of ${state.timerSettings.sessionsTotal || 4}`;
-    }
+    FPi18n.bind(sessionCountEl, 'timer.session', {
+        current: state.timer.sessionCount, total: state.timerSettings.sessionsTotal || 4
+    });
 
     const countEl = document.getElementById('streak-count');
     if (countEl) countEl.innerText = state.streakCount || 0;
@@ -1125,10 +1136,10 @@ window.updateUI = function() {
     const snapTasks = document.getElementById('home-snap-tasks');
     const snapHabits = document.getElementById('home-snap-habits');
     const snapWater = document.getElementById('home-snap-water');
-    if (snapFocus) snapFocus.innerText = focusStr;
-    if (snapTasks) snapTasks.innerText = `${pendingTasksCount} Pending`;
-    if (snapHabits) snapHabits.innerText = `${habitsDoneToday}/${allHabits.length} Done`;
-    if (snapWater) snapWater.innerText = `${pct}% (${state.waterIntakeMl || 0}ml)`;
+    FPi18n.bind(snapFocus, 'account.focusDuration', {hours: hrs, minutes: mins});
+    FPi18n.bind(snapTasks, 'home.pending', {count: pendingTasksCount});
+    FPi18n.bind(snapHabits, 'home.done', {done: habitsDoneToday, total: allHabits.length});
+    FPi18n.bind(snapWater, 'home.water', {percent: pct, ml: state.waterIntakeMl || 0});
 
     // Account View Counters & Stats Breakdown
     const statFocus = document.getElementById('account-stat-focus');
@@ -1717,11 +1728,8 @@ function saveInlineWaterSettings(e) {
 
 // Motivation Hub
 function rotateQuote() {
-    const quotes = motivationalQuotes;
-    const box = document.getElementById('motivation-quote-box');
-    if (box) {
-        box.innerText = `"${quotes[Math.floor(Math.random() * quotes.length)]}"`;
-    }
+    const key = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
+    FPi18n.bind(document.getElementById('motivation-quote-box'), key);
 }
 
 function copyQuote(btn) {
@@ -1739,12 +1747,11 @@ function copyQuote(btn) {
     }
     const span = btn.querySelector('.copy-text');
     if (span) {
-        const orig = span.innerText;
-        span.innerText = "Copied...";
+        FPi18n.bind(span, 'home.copied');
         span.style.color = "#10b981";
-        setTimeout(() => { span.innerText = orig; span.style.color = ""; }, 1500);
+        setTimeout(() => { FPi18n.bind(span, 'home.copy'); span.style.color = ""; }, 1500);
     }
-    showNotification("Quote Copied", "Motivational quote copied to clipboard!", "success");
+    showNotification(FPi18n.message('home.copiedTitle'), FPi18n.message('home.copiedHint'), "success");
 }
 
 // Active Plans / Schedules

@@ -299,9 +299,9 @@
                     <div>
                         <p id="home-greeting-eyebrow" class="text-[11px] font-extrabold uppercase tracking-widest text-indigo-600 dark:text-indigo-400" style="color:var(--v-fg2)">FocusPulse Studio</p>
                         <h2 id="home-greeting-heading" class="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white mt-0.5">
-                            Welcome back, <span id="home-greeting-name">Scholar</span>! 👋
+                            <span data-i18n="home.welcome">Welcome back,</span> <span id="home-greeting-name" data-i18n="nav.scholar">Scholar</span>! 👋
                         </h2>
-                        <p id="home-greeting-subtitle" class="text-xs text-slate-600 dark:text-slate-400 font-medium">Ready to pick up where you left off? Start a deep focus session, check off daily habits, or customize your space.</p>
+                        <p id="home-greeting-subtitle" class="text-xs text-slate-600 dark:text-slate-400 font-medium" data-i18n="home.intro">Ready to pick up where you left off? Start a deep focus session, check off daily habits, or customize your space.</p>
                     </div>
                 </div>
 
@@ -313,10 +313,10 @@
                         <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pb-6 border-b border-white/40 dark:border-white/10">
                             <div class="text-center sm:text-left">
                                 <div class="flex items-center justify-center sm:justify-start gap-2">
-                                    <span id="timer-mode-badge" class="px-3 py-1 rounded-full text-xs font-bold border" style="background:rgba(var(--v-accent-rgb),0.18);color:var(--v-accent);border-color:rgba(var(--v-accent-rgb),0.42);">Deep Focus</span>
-                                    <span class="text-xs text-slate-700 dark:text-slate-300 font-bold" id="timer-session-count">Session 1 of 4</span>
-                                    <span id="pomo-screenoff-badge" class="hidden items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30" title="Wall-clock + Web Audio Keep-Alive + WakeLock active: Pomodoro continues running even with screen off or minimized to tray">
-                                        <i class="fa-solid fa-shield-heart"></i> <span>Screen-Off Active</span>
+                                    <span id="timer-mode-badge" class="px-3 py-1 rounded-full text-xs font-bold border" style="background:rgba(var(--v-accent-rgb),0.18);color:var(--v-accent);border-color:rgba(var(--v-accent-rgb),0.42);" data-i18n="timer.focus">Deep Focus</span>
+                                    <span class="text-xs text-slate-700 dark:text-slate-300 font-bold" id="timer-session-count" data-i18n="timer.session" data-i18n-params='{"current":1,"total":4}'>Session 1 of 4</span>
+                                    <span id="pomo-screenoff-badge" class="hidden items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30" title="Wall-clock + Web Audio Keep-Alive + WakeLock active: Pomodoro continues running even with screen off or minimized to tray" data-i18n-title="timer.backgroundHint">
+                                        <i class="fa-solid fa-shield-heart"></i> <span data-i18n="timer.background">Screen-Off Active</span>
                                     </span>
                                 </div>
                                 <h2 class="fp-pomo-digits text-5xl sm:text-6xl font-black tracking-tight text-slate-900 dark:text-white mt-3" id="timer-display">25:00</h2>
@@ -324,20 +324,20 @@
                             
                             <div id="timer-slider-container" class="relative flex items-center bg-white/40 dark:bg-white/10 p-1.5 rounded-2xl border border-white/60 dark:border-white/10 shadow-inner isolate w-full sm:w-[290px]">
                                 <button onclick="setTimerMode('pomodoro')" id="slider-btn-pomodoro" class="flex-1 py-2 rounded-xl text-xs font-semibold shadow-sm transition text-center cursor-pointer v-accent-btn">Pomodoro</button>
-                                <button onclick="setTimerMode('short')" id="slider-btn-short" class="flex-1 py-2 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 transition text-center cursor-pointer">Short</button>
-                                <button onclick="setTimerMode('long')" id="slider-btn-long" class="flex-1 py-2 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 transition text-center cursor-pointer">Long</button>
+                                <button onclick="setTimerMode('short')" id="slider-btn-short" class="flex-1 py-2 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 transition text-center cursor-pointer" data-i18n="timer.short">Short</button>
+                                <button onclick="setTimerMode('long')" id="slider-btn-long" class="flex-1 py-2 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 transition text-center cursor-pointer" data-i18n="timer.long">Long</button>
                             </div>
                         </div>
 
                         <div class="flex items-center justify-between pt-6 flex-wrap gap-4">
                             <div class="flex items-center gap-2.5 flex-wrap">
                                 <button onclick="toggleTimer()" id="timer-toggle-btn" class="v-accent-btn px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full text-xs font-extrabold shadow-lg transition flex items-center gap-2">
-                                    <i class="fa-solid fa-play" id="timer-play-icon"></i> <span id="timer-play-text">Start Focus</span>
+                                    <i class="fa-solid fa-play" id="timer-play-icon"></i> <span id="timer-play-text" data-i18n="timer.start">Start Focus</span>
                                 </button>
-                                <button onclick="skipToNextInterval()" class="p-3 bg-white/50 dark:bg-white/10 hover:bg-white/80 text-slate-800 dark:text-slate-200 rounded-full text-xs transition border border-white/60 shadow-sm font-semibold" title="Skip Session">
+                                <button onclick="skipToNextInterval()" class="p-3 bg-white/50 dark:bg-white/10 hover:bg-white/80 text-slate-800 dark:text-slate-200 rounded-full text-xs transition border border-white/60 shadow-sm font-semibold" title="Skip Session" data-i18n-title="timer.skip">
                                     <i class="fa-solid fa-forward-step"></i>
                                 </button>
-                                <button onclick="togglePomoInlineSettings(true)" class="p-3 bg-white/50 dark:bg-white/10 hover:bg-white/80 text-slate-800 dark:text-slate-200 rounded-full text-xs transition border border-white/60 shadow-sm font-semibold" title="Settings & Presets">
+                                <button onclick="togglePomoInlineSettings(true)" class="p-3 bg-white/50 dark:bg-white/10 hover:bg-white/80 text-slate-800 dark:text-slate-200 rounded-full text-xs transition border border-white/60 shadow-sm font-semibold" title="Settings & Presets" data-i18n-title="timer.presets">
                                     <i class="fa-solid fa-gear"></i>
                                 </button>
                             </div>
@@ -347,43 +347,43 @@
                     <div id="pomo-inline-settings" class="hidden space-y-4">
                         <div class="flex items-center justify-between pb-3 border-b border-white/40 dark:border-white/10">
                             <h3 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-                                <i class="fa-solid fa-sliders text-indigo-500"></i> Pomodoro Settings & Presets
+                                <i class="fa-solid fa-sliders text-indigo-500"></i> <span data-i18n="timer.settingsTitle">Pomodoro Settings & Presets</span>
                             </h3>
                             <button onclick="togglePomoInlineSettings(false)" class="px-3 py-1 bg-white/70 dark:bg-white/15 hover:bg-white text-slate-900 dark:text-white rounded-lg text-xs font-bold transition flex items-center gap-1 border border-white/40">
-                                <i class="fa-solid fa-arrow-left"></i> Back
+                                <i class="fa-solid fa-arrow-left"></i> <span data-i18n="timer.back">Back</span>
                             </button>
                         </div>
 
                         <div class="space-y-2">
-                            <label class="text-[11px] font-bold text-slate-700 dark:text-slate-300">Select Preset:</label>
+                            <label class="text-[11px] font-bold text-slate-700 dark:text-slate-300" data-i18n="timer.choosePreset">Select Preset:</label>
                             <div class="fp-auto-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
                                 <button onclick="selectPomoPreset('Normal', 25, 5, 15, 4)" class="p-2.5 bg-white/60 dark:bg-white/10 hover:bg-indigo-600 hover:text-white rounded-xl text-left border border-white/40 transition text-slate-900 dark:text-white font-semibold">
-                                    <p class="font-extrabold text-xs">Normal</p>
-                                    <p class="text-[9px] opacity-90">25m f / 5m b</p>
+                                    <p class="font-extrabold text-xs" data-i18n="settings.preset.normal">Normal</p>
+                                    <p class="text-[9px] opacity-90" data-i18n="timer.presetDuration" data-i18n-params='{"focus":25,"rest":5}'>25m focus / 5m break</p>
                                 </button>
                                 <button onclick="selectPomoPreset('Blitz', 15, 3, 10, 2)" class="p-2.5 bg-white/60 dark:bg-white/10 hover:bg-indigo-600 hover:text-white rounded-xl text-left border border-white/40 transition text-slate-900 dark:text-white font-semibold">
-                                    <p class="font-extrabold text-xs">Blitz</p>
-                                    <p class="text-[9px] opacity-90">15m f / 3m b</p>
+                                    <p class="font-extrabold text-xs" data-i18n="settings.preset.blitz">Blitz</p>
+                                    <p class="text-[9px] opacity-90" data-i18n="timer.presetDuration" data-i18n-params='{"focus":15,"rest":3}'>15m focus / 3m break</p>
                                 </button>
                                 <button onclick="selectPomoPreset('Quick Rev', 45, 10, 20, 3)" class="p-2.5 bg-white/60 dark:bg-white/10 hover:bg-indigo-600 hover:text-white rounded-xl text-left border border-white/40 transition text-slate-900 dark:text-white font-semibold">
-                                    <p class="font-extrabold text-xs">Quick Rev</p>
-                                    <p class="text-[9px] opacity-90">45m f / 10m b</p>
+                                    <p class="font-extrabold text-xs" data-i18n="settings.preset.review">Quick Rev</p>
+                                    <p class="text-[9px] opacity-90" data-i18n="timer.presetDuration" data-i18n-params='{"focus":45,"rest":10}'>45m focus / 10m break</p>
                                 </button>
                                 <button onclick="selectPomoPreset('Extra+', 60, 5, 15, 4)" class="p-2.5 bg-white/60 dark:bg-white/10 hover:bg-indigo-600 hover:text-white rounded-xl text-left border border-white/40 transition text-slate-900 dark:text-white font-semibold">
-                                    <p class="font-extrabold text-xs">Extra+</p>
-                                    <p class="text-[9px] opacity-90">60m f / 15m b</p>
+                                    <p class="font-extrabold text-xs" data-i18n="settings.preset.extra">Extra+</p>
+                                    <p class="text-[9px] opacity-90" data-i18n="timer.presetDuration" data-i18n-params='{"focus":60,"rest":5}'>60m focus / 5m break</p>
                                 </button>
                             </div>
                         </div>
 
                         <form onsubmit="saveInlinePomoSettings(event)" class="space-y-3 text-xs pt-2 border-t border-white/20">
                             <div class="fp-auto-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                                <div><label class="block text-slate-700 dark:text-slate-300 mb-1 font-semibold">Focus Min</label><input type="number" id="inline-focus-input" min="1" max="120" value="25" required class="w-full bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl px-2.5 py-2 text-slate-900 dark:text-white font-bold"></div>
-                                <div><label class="block text-slate-700 dark:text-slate-300 mb-1 font-semibold">Short Min</label><input type="number" id="inline-short-input" min="1" max="30" value="5" required class="w-full bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl px-2.5 py-2 text-slate-900 dark:text-white font-bold"></div>
-                                <div><label class="block text-slate-700 dark:text-slate-300 mb-1 font-semibold">Long Min</label><input type="number" id="inline-long-input" min="1" max="60" value="15" required class="w-full bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl px-2.5 py-2 text-slate-900 dark:text-white font-bold"></div>
-                                <div><label class="block text-slate-700 dark:text-slate-300 mb-1 font-semibold">Sessions</label><input type="number" id="inline-sessions-input" min="1" max="10" value="4" required class="w-full bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl px-2.5 py-2 text-slate-900 dark:text-white font-bold"></div>
+                                <div><label for="inline-focus-input" class="block text-slate-700 dark:text-slate-300 mb-1 font-semibold" data-i18n="timer.focusMin">Focus Min</label><input type="number" id="inline-focus-input" min="1" max="120" value="25" required class="w-full bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl px-2.5 py-2 text-slate-900 dark:text-white font-bold"></div>
+                                <div><label for="inline-short-input" class="block text-slate-700 dark:text-slate-300 mb-1 font-semibold" data-i18n="timer.shortMin">Short Min</label><input type="number" id="inline-short-input" min="1" max="30" value="5" required class="w-full bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl px-2.5 py-2 text-slate-900 dark:text-white font-bold"></div>
+                                <div><label for="inline-long-input" class="block text-slate-700 dark:text-slate-300 mb-1 font-semibold" data-i18n="timer.longMin">Long Min</label><input type="number" id="inline-long-input" min="1" max="60" value="15" required class="w-full bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl px-2.5 py-2 text-slate-900 dark:text-white font-bold"></div>
+                                <div><label for="inline-sessions-input" class="block text-slate-700 dark:text-slate-300 mb-1 font-semibold" data-i18n="timer.sessions">Sessions</label><input type="number" id="inline-sessions-input" min="1" max="10" value="4" required class="w-full bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl px-2.5 py-2 text-slate-900 dark:text-white font-bold"></div>
                             </div>
-                            <button type="submit" class="v-accent-btn w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition shadow-md">Save Settings</button>
+                            <button type="submit" class="v-accent-btn w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition shadow-md" data-i18n="timer.save">Save Settings</button>
                         </form>
                     </div>
                 </div>
@@ -398,35 +398,35 @@
                 <div class="fp-auto-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div onclick="switchAppView('account')" class="glass-panel p-4 rounded-2xl cursor-pointer glass-panel-hover space-y-1.5">
                         <div class="flex items-center justify-between text-indigo-500 text-[11px] font-extrabold uppercase tracking-wider">
-                            <span>Focus Logged</span>
+                            <span data-i18n="home.focusLogged">Focus Logged</span>
                             <i class="fa-solid fa-clock"></i>
                         </div>
-                        <p id="home-snap-focus" class="text-xl font-extrabold text-slate-900 dark:text-white">1h 0m</p>
-                        <p class="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">View stats →</p>
+                        <p id="home-snap-focus" class="text-xl font-extrabold text-slate-900 dark:text-white" data-i18n="account.focusDuration" data-i18n-params='{"hours":1,"minutes":0}'>1h 0m</p>
+                        <p class="text-[10px] text-slate-500 dark:text-slate-400 font-semibold" data-i18n="home.viewStats">View stats →</p>
                     </div>
                     <div onclick="switchAppView('tasks')" class="glass-panel p-4 rounded-2xl cursor-pointer glass-panel-hover space-y-1.5">
                         <div class="flex items-center justify-between text-violet-500 text-[11px] font-extrabold uppercase tracking-wider">
-                            <span>Smart Tasks</span>
+                            <span data-i18n="home.tasks">Smart Tasks</span>
                             <i class="fa-solid fa-list-check"></i>
                         </div>
-                        <p id="home-snap-tasks" class="text-xl font-extrabold text-slate-900 dark:text-white">2 Pending</p>
-                        <p class="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">Open tasks →</p>
+                        <p id="home-snap-tasks" class="text-xl font-extrabold text-slate-900 dark:text-white" data-i18n="home.pending" data-i18n-params='{"count":2}'>2 Pending</p>
+                        <p class="text-[10px] text-slate-500 dark:text-slate-400 font-semibold" data-i18n="home.openTasks">Open tasks →</p>
                     </div>
                     <div onclick="switchAppView('habits')" class="glass-panel p-4 rounded-2xl cursor-pointer glass-panel-hover space-y-1.5">
                         <div class="flex items-center justify-between text-amber-500 text-[11px] font-extrabold uppercase tracking-wider">
-                            <span>Habits Today</span>
+                            <span data-i18n="home.habits">Habits Today</span>
                             <i class="fa-solid fa-fire-flame-curved"></i>
                         </div>
-                        <p id="home-snap-habits" class="text-xl font-extrabold text-slate-900 dark:text-white">4/5 Done</p>
-                        <p class="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">Check-in grid →</p>
+                        <p id="home-snap-habits" class="text-xl font-extrabold text-slate-900 dark:text-white" data-i18n="home.done" data-i18n-params='{"done":4,"total":5}'>4/5 Done</p>
+                        <p class="text-[10px] text-slate-500 dark:text-slate-400 font-semibold" data-i18n="home.checkins">Check-in grid →</p>
                     </div>
                     <div onclick="switchAppView('plans')" class="glass-panel p-4 rounded-2xl cursor-pointer glass-panel-hover space-y-1.5">
                         <div class="flex items-center justify-between text-sky-500 text-[11px] font-extrabold uppercase tracking-wider">
-                            <span>Hydration</span>
+                            <span data-i18n="home.hydration">Hydration</span>
                             <i class="fa-solid fa-glass-water"></i>
                         </div>
-                        <p id="home-snap-water" class="text-xl font-extrabold text-slate-900 dark:text-white">0% (0ml)</p>
-                        <p class="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">Log water →</p>
+                        <p id="home-snap-water" class="text-xl font-extrabold text-slate-900 dark:text-white" data-i18n="home.water" data-i18n-params='{"percent":0,"ml":0}'>0% (0ml)</p>
+                        <p class="text-[10px] text-slate-500 dark:text-slate-400 font-semibold" data-i18n="home.logWater">Log water →</p>
                     </div>
                 </div>
 
@@ -437,18 +437,18 @@
                             <div class="w-8 h-8 rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xs">
                                 <i class="fa-solid fa-fire"></i>
                             </div>
-                            <h3 class="font-bold text-sm text-slate-900 dark:text-white">Motivation Hub</h3>
+                            <h3 class="font-bold text-sm text-slate-900 dark:text-white" data-i18n="home.motivation">Motivation Hub</h3>
                         </div>
                         <div class="flex items-center gap-2">
-                            <button onclick="copyQuote(this)" class="text-xs text-slate-900 dark:text-white bg-white/80 dark:bg-white/20 hover:bg-white px-2.5 py-1 rounded-lg transition font-bold flex items-center gap-1 border border-white/50 shadow-sm" title="Copy quote">
-                                <i class="fa-solid fa-copy"></i> <span class="copy-text">Copy</span>
+                            <button onclick="copyQuote(this)" class="text-xs text-slate-900 dark:text-white bg-white/80 dark:bg-white/20 hover:bg-white px-2.5 py-1 rounded-lg transition font-bold flex items-center gap-1 border border-white/50 shadow-sm" title="Copy quote" data-i18n-title="home.copyQuote">
+                                <i class="fa-solid fa-copy"></i> <span class="copy-text" data-i18n="home.copy">Copy</span>
                             </button>
                             <button onclick="rotateQuote()" class="text-xs text-amber-800 dark:text-amber-300 hover:underline font-bold flex items-center gap-1">
-                                <i class="fa-solid fa-sparkles text-[10px]"></i> New Spark
+                                <i class="fa-solid fa-sparkles text-[10px]"></i> <span data-i18n="home.newQuote">New Spark</span>
                             </button>
                         </div>
                     </div>
-                    <blockquote class="bg-amber-500/10 border border-amber-500/25 p-4 rounded-2xl text-xs text-slate-900 dark:text-slate-100 font-semibold italic leading-relaxed shadow-inner" id="motivation-quote-box">
+                    <blockquote class="bg-amber-500/10 border border-amber-500/25 p-4 rounded-2xl text-xs text-slate-900 dark:text-slate-100 font-semibold italic leading-relaxed shadow-inner" id="motivation-quote-box" data-i18n="home.quote.focus">
                         "Focus is a muscle. The more you practice eliminating distractions, the easier deep work becomes."
                     </blockquote>
                 </div>
@@ -601,13 +601,13 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div class="bg-white/50 dark:bg-white/5 border border-white/60 dark:border-white/10 p-4 rounded-2xl space-y-2.5 shadow-sm">
                             <div class="flex items-center justify-between">
-                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">Today's Goals</span>
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400" data-i18n="stats.todayGoals">Today's Goals</span>
                                 <div class="w-7 h-7 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center text-xs"><i class="fa-solid fa-circle-check"></i></div>
                             </div>
                             <div class="flex items-baseline justify-between">
                                 <div>
                                     <span id="habit-kpi-today-count" class="text-2xl font-extrabold text-slate-900 dark:text-white">0</span>
-                                    <span id="habit-kpi-today-total" class="text-xs font-semibold text-slate-600 dark:text-slate-400 ml-1">/ 5 completed</span>
+                                    <span id="habit-kpi-today-total" class="text-xs font-semibold text-slate-600 dark:text-slate-400 ml-1" data-i18n="stats.todayTotal" data-i18n-params='{"total":5}'>/ 5 completed</span>
                                 </div>
                                 <span id="habit-kpi-today-pct" class="text-xs font-extrabold text-emerald-600 dark:text-emerald-400">0%</span>
                             </div>
@@ -618,12 +618,12 @@
 
                         <div class="bg-white/50 dark:bg-white/5 border border-white/60 dark:border-white/10 p-4 rounded-2xl space-y-2.5 shadow-sm">
                             <div class="flex items-center justify-between">
-                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">Weekly Target Rate</span>
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400" data-i18n="stats.weeklyRate">Weekly Target Rate</span>
                                 <div class="w-7 h-7 rounded-xl bg-indigo-500/15 text-indigo-500 flex items-center justify-center text-xs"><i class="fa-solid fa-chart-line"></i></div>
                             </div>
                             <div class="flex items-baseline gap-2">
                                 <span id="habit-kpi-weekly-rate" class="text-2xl font-extrabold text-slate-900 dark:text-white">0%</span>
-                                <span class="text-xs font-semibold text-slate-600 dark:text-slate-400">of weekly targets</span>
+                                <span class="text-xs font-semibold text-slate-600 dark:text-slate-400" data-i18n="stats.ofTargets">of weekly targets</span>
                             </div>
                             <div class="w-full h-2 rounded-full bg-white/70 dark:bg-white/10 overflow-hidden">
                                 <div id="habit-kpi-weekly-bar" class="h-full bg-indigo-500 transition-all duration-500 rounded-full" style="width: 0%"></div>
@@ -632,35 +632,35 @@
 
                         <div class="bg-white/50 dark:bg-white/5 border border-white/60 dark:border-white/10 p-4 rounded-2xl space-y-2.5 shadow-sm">
                             <div class="flex items-center justify-between">
-                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">Best Active Streak</span>
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400" data-i18n="stats.bestActive">Best Active Streak</span>
                                 <div class="w-7 h-7 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center text-xs"><i class="fa-solid fa-fire"></i></div>
                             </div>
                             <div class="flex items-baseline gap-2">
                                 <span id="habit-kpi-best-streak" class="text-2xl font-extrabold text-slate-900 dark:text-white">0</span>
-                                <span class="text-xs font-semibold text-slate-600 dark:text-slate-400">days in a row</span>
+                                <span class="text-xs font-semibold text-slate-600 dark:text-slate-400" data-i18n="stats.consecutive">days in a row</span>
                             </div>
                             <div class="flex items-center justify-between pt-1">
                                 <p class="text-[11px] text-slate-600 dark:text-slate-400 font-medium flex items-center gap-1">
-                                    <i class="fa-solid fa-bolt text-amber-500"></i> Protect your chain!
+                                    <i class="fa-solid fa-bolt text-amber-500"></i> <span data-i18n="stats.protect">Protect your chain!</span>
                                 </p>
-                                <button onclick="restoreMissedStreak()" class="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30 transition flex items-center gap-1" title="Restore Missed Streak (1 safeguard per week)">
-                                    <i class="fa-solid fa-shield-halved text-amber-500"></i> Restore Missed Streak (1/wk)
+                                <button onclick="restoreMissedStreak()" class="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30 transition flex items-center gap-1" title="Restore Missed Streak (1 safeguard per week)" data-i18n-title="stats.restoreHint">
+                                    <i class="fa-solid fa-shield-halved text-amber-500"></i> <span data-i18n="stats.restore">Restore Missed Streak (1/wk)</span>
                                 </button>
                             </div>
                         </div>
 
                         <div class="bg-white/50 dark:bg-white/5 border border-white/60 dark:border-white/10 p-4 rounded-2xl space-y-2.5 shadow-sm">
                             <div class="flex items-center justify-between">
-                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">Weekly Check-ins</span>
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400" data-i18n="stats.weeklyCheckins">Weekly Check-ins</span>
                                 <div class="w-7 h-7 rounded-xl bg-rose-500/15 text-rose-500 flex items-center justify-center text-xs"><i class="fa-solid fa-award"></i></div>
                             </div>
                             <div class="flex items-baseline gap-2">
                                 <span id="habit-kpi-checkins" class="text-2xl font-extrabold text-slate-900 dark:text-white">0</span>
-                                <span class="text-xs font-semibold text-slate-600 dark:text-slate-400">completed logs</span>
+                                <span class="text-xs font-semibold text-slate-600 dark:text-slate-400" data-i18n="stats.checkinsUnit">completed logs</span>
                             </div>
                             <div class="flex items-center justify-between text-[11px]">
-                                <span id="habit-kpi-date-range" class="text-slate-600 dark:text-slate-400 font-medium">This Week</span>
-                                <button onclick="markAllHabitsToday()" class="font-bold text-indigo-600 dark:text-indigo-400 hover:underline">Complete all today</button>
+                                <span id="habit-kpi-date-range" class="text-slate-600 dark:text-slate-400 font-medium" data-i18n="stats.thisWeek">This Week</span>
+                                <button onclick="markAllHabitsToday()" class="font-bold text-indigo-600 dark:text-indigo-400 hover:underline" data-i18n="stats.completeToday">Complete all today</button>
                             </div>
                         </div>
                     </div>
@@ -670,18 +670,18 @@
                         <div class="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0" id="habit-category-pills"></div>
                         <div class="flex items-center justify-between sm:justify-end gap-2">
                             <div class="flex items-center rounded-xl bg-white/70 dark:bg-[#050508] border border-white/60 dark:border-white/10 p-1">
-                                <button onclick="changeHabitWeekOffset(-1)" class="p-1.5 rounded-lg hover:bg-indigo-500/15 text-slate-700 dark:text-slate-300 transition" title="Previous Week">
+                                <button onclick="changeHabitWeekOffset(-1)" class="p-1.5 rounded-lg hover:bg-indigo-500/15 text-slate-700 dark:text-slate-300 transition" title="Previous Week" data-i18n-title="stats.previousWeek">
                                     <i class="fa-solid fa-chevron-left text-xs"></i>
                                 </button>
                                 <div class="px-3 flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
                                     <i class="fa-regular fa-calendar text-indigo-500"></i>
-                                    <span id="habit-week-range-label">Current Week</span>
+                                    <span id="habit-week-range-label" data-i18n="stats.currentWeek">Current Week</span>
                                 </div>
-                                <button onclick="changeHabitWeekOffset(1)" class="p-1.5 rounded-lg hover:bg-indigo-500/15 text-slate-700 dark:text-slate-300 transition" title="Next Week">
+                                <button onclick="changeHabitWeekOffset(1)" class="p-1.5 rounded-lg hover:bg-indigo-500/15 text-slate-700 dark:text-slate-300 transition" title="Next Week" data-i18n-title="stats.nextWeek">
                                     <i class="fa-solid fa-chevron-right text-xs"></i>
                                 </button>
                             </div>
-                            <button id="habit-jump-today-btn" onclick="changeHabitWeekOffset(0)" class="hidden px-3 py-1.5 rounded-xl bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 text-xs font-bold border border-indigo-500/30">
+                            <button id="habit-jump-today-btn" onclick="changeHabitWeekOffset(0)" class="hidden px-3 py-1.5 rounded-xl bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 text-xs font-bold border border-indigo-500/30" data-i18n="stats.jumpToday">
                                 Jump to Today
                             </button>
                         </div>
@@ -709,20 +709,20 @@
                                     <div>
                                         <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                             <i class="fa-solid fa-chart-column text-indigo-500"></i>
-                                            Weekly Completion & Consistency Chart
+                                            <span data-i18n="stats.weekChart">Weekly Completion & Consistency Chart</span>
                                         </h3>
-                                        <p class="text-[11px] text-slate-600 dark:text-slate-400 font-medium">Daily percentage of completed habits across the selected week</p>
+                                        <p class="text-[11px] text-slate-600 dark:text-slate-400 font-medium" data-i18n="stats.chartHint">Daily percentage of completed habits across the selected week</p>
                                     </div>
-                                    <span id="habit-chart-range-badge" class="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20">Week</span>
+                                    <span id="habit-chart-range-badge" class="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20" data-i18n="stats.week">Week</span>
                                 </div>
                                 <div id="habit-weekly-bar-chart" class="grid grid-cols-7 gap-3 sm:gap-4 items-end h-44 pt-4 px-2"></div>
                             </div>
                             <div class="mt-4 pt-3 border-t border-white/40 dark:border-white/10 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-600 dark:text-slate-400 font-medium">
                                 <div class="flex items-center gap-4">
-                                    <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-emerald-400 inline-block"></span> 100% Perfect Day</span>
-                                    <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-indigo-500 inline-block"></span> In Progress</span>
+                                    <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-emerald-400 inline-block"></span> <span data-i18n="stats.perfectDay">100% Perfect Day</span></span>
+                                    <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-indigo-500 inline-block"></span> <span data-i18n="stats.inProgress">In Progress</span></span>
                                 </div>
-                                <span><i class="fa-solid fa-circle-info text-indigo-500 mr-1"></i> Click any day square above to update live</span>
+                                <span><i class="fa-solid fa-circle-info text-indigo-500 mr-1"></i> <span data-i18n="stats.chartAction">Click any day square above to update live</span></span>
                             </div>
                         </div>
 
@@ -731,15 +731,15 @@
                                 <div class="mb-4">
                                     <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                         <i class="fa-solid fa-fire text-amber-500"></i>
-                                        Streak Leaderboard
+                                        <span data-i18n="stats.leaderboard">Streak Leaderboard</span>
                                     </h3>
-                                    <p class="text-[11px] text-slate-600 dark:text-slate-400 font-medium">Your strongest active habit chains</p>
+                                    <p class="text-[11px] text-slate-600 dark:text-slate-400 font-medium" data-i18n="stats.strongest">Your strongest active habit chains</p>
                                 </div>
                                 <div id="habit-streak-leaderboard" class="space-y-3.5"></div>
                             </div>
                             <div class="mt-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center gap-2.5 text-[11px] text-slate-800 dark:text-slate-200 font-medium">
                                 <i class="fa-solid fa-trophy text-amber-500 text-sm shrink-0"></i>
-                                <span>Personal best records are saved permanently even if an active chain resets!</span>
+                                <span data-i18n="stats.recordHint">Personal best records are saved permanently even if an active chain resets!</span>
                             </div>
                         </div>
                     </div>

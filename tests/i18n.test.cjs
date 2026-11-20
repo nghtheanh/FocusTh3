@@ -64,3 +64,38 @@ test('message parameters preserve user input, escape markup and follow the selec
     delete catalogs.vi.messages['auth.welcome'];
     assert.equal(i18n.resolve(notice), 'Welcome, ' + name + '! 👋');
 });
+
+test('a selected week is reformatted from its original calendar dates after a switch', () => {
+    const en = load('en').FPi18n;
+    const vi = load('vi').FPi18n;
+    const options = {month: 'short', day: 'numeric'};
+    const week = en.message('stats.dateRange', {
+        start: en.dateMessage('2024-02-26', options),
+        end: en.dateMessage('2024-03-03', options)
+    });
+    const stored = JSON.stringify(week);
+    assert.equal(en.resolve(week), 'Feb 26 – Mar 3');
+    assert.equal(vi.resolve(JSON.parse(stored)),
+        vi.formatDate('2024-02-26', options) + ' – ' + vi.formatDate('2024-03-03', options));
+    assert.equal(JSON.stringify(week), stored);
+    const tooltip = vi.attributeMarkup('title', 'stats.markDay', {
+        name: 'Read "<b>"', day: vi.dateMessage('2024-02-29', {weekday: 'short'}),
+        date: vi.dateMessage('2024-02-29')
+    });
+    assert.match(tooltip, /29\/2\/2024/);
+    assert.match(tooltip, /&quot;&lt;b&gt;&quot;/);
+    assert.doesNotMatch(tooltip, /<b>|undefined/);
+});
+
+test('rebinding the same timer label replaces its previous key and parameters', () => {
+    const vi = load('vi').FPi18n;
+    const element = {dataset: {}, textContent: '', getAttribute() { return null; }};
+    vi.bind(element, 'timer.session', {current: 2, total: 4});
+    assert.equal(element.textContent, 'Phiên 2/4');
+    vi.bind(element, 'timer.pause');
+    assert.equal(element.textContent, 'Tạm dừng');
+    assert.equal(element.dataset.i18n, 'timer.pause');
+    assert.equal(element.dataset.i18nParams, undefined);
+    vi.bind(element, 'timer.start');
+    assert.equal(element.textContent, 'Bắt đầu');
+});

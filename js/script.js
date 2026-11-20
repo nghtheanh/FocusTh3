@@ -129,6 +129,14 @@ function releasePomodoroWakeLock() {
     } catch (e) {}
 }
 
+function timerModeKey(mode) {
+    return mode === 'pomodoro' ? 'timer.focus' : (mode === 'short' ? 'timer.shortBreak' : 'timer.longBreak');
+}
+
+window.addEventListener('focuspulse:languagechange', () => {
+    if (navigator.mediaSession?.metadata) updatePomodoroMediaSession();
+});
+
 function updatePomodoroMediaSession() {
     try {
         if ('mediaSession' in navigator && window.appState && window.appState.timer) {
@@ -136,11 +144,11 @@ function updatePomodoroMediaSession() {
             const mins = Math.floor((t.secondsLeft || 0) / 60);
             const secs = (t.secondsLeft || 0) % 60;
             const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-            const modeLabel = t.mode === 'pomodoro' ? 'Deep Focus' : (t.mode === 'short' ? 'Short Break' : 'Long Break');
+            const modeLabel = FPi18n.translate(timerModeKey(t.mode));
             navigator.mediaSession.metadata = new MediaMetadata({
                 title: `${modeLabel} — ${timeStr}`,
-                artist: 'FocusPulse Pomodoro Timer',
-                album: `Session ${t.sessionCount} of ${window.appState.timerSettings.sessionsTotal || 4}`
+                artist: FPi18n.translate('timer.mediaArtist'),
+                album: FPi18n.translate('timer.session', {current: t.sessionCount, total: window.appState.timerSettings.sessionsTotal || 4})
             });
             navigator.mediaSession.playbackState = t.isRunning ? 'playing' : 'paused';
         }
@@ -156,7 +164,7 @@ function updatePomodoroRunningUI(isRunning) {
     if (isRunning) {
         if (btn) btn.className = "px-6 py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-full text-xs font-extrabold shadow-lg transition flex items-center gap-2";
         if (icon) icon.className = "fa-solid fa-pause";
-        if (txt) txt.innerText = "Pause";
+        FPi18n.bind(txt, 'timer.pause');
         if (screenOffBadge) {
             screenOffBadge.classList.remove('hidden');
             screenOffBadge.classList.add('inline-flex');
@@ -164,7 +172,7 @@ function updatePomodoroRunningUI(isRunning) {
     } else {
         if (btn) btn.className = "v-accent-btn px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full text-xs font-extrabold shadow-lg transition flex items-center gap-2";
         if (icon) icon.className = "fa-solid fa-play";
-        if (txt) txt.innerText = "Start Focus";
+        FPi18n.bind(txt, 'timer.start');
         if (screenOffBadge) {
             screenOffBadge.classList.add('hidden');
             screenOffBadge.classList.remove('inline-flex');
@@ -201,7 +209,7 @@ function syncTimerModeAccentUI() {
 
     const badge = document.getElementById('timer-mode-badge');
     if (badge) {
-        badge.innerText = mode === 'pomodoro' ? 'Deep Focus' : (mode === 'short' ? 'Short Break' : 'Long Break');
+        FPi18n.bind(badge, timerModeKey(mode));
         badge.style.background = 'rgba(var(--v-accent-rgb), 0.18)';
         badge.style.color = 'var(--v-accent)';
         badge.style.borderColor = 'rgba(var(--v-accent-rgb), 0.42)';
@@ -254,15 +262,17 @@ function handlePomodoroTimeUp() {
 
     // Update browser/window title briefly so tray/taskbar also shows alert
     try {
-        document.title = finishedMode === 'pomodoro' ? "🔔 TIME'S UP! — FocusPulse" : "⚡ BREAK OVER! — FocusPulse";
-        setTimeout(() => { document.title = "FocusPulse"; }, 12000);
+        const title = document.querySelector('title');
+        FPi18n.bind(title, finishedMode === 'pomodoro' ? 'timer.focusEndTitle' : 'timer.breakEndTitle');
+        setTimeout(() => {
+            delete title.dataset.i18n;
+            document.title = 'FocusPulse';
+        }, 12000);
     } catch (e) {}
 
     showNotification(
-        finishedMode === 'pomodoro' ? "Pomodoro Time's Up! 🎉" : "Break Finished! ⚡",
-        finishedMode === 'pomodoro'
-            ? "Great deep focus session! Your timer finished — time to recharge and hydrate."
-            : "Break time is up! Ready for your next Deep Focus block?",
+        FPi18n.message(finishedMode === 'pomodoro' ? 'timer.focusFinished' : 'timer.breakFinished'),
+        FPi18n.message(finishedMode === 'pomodoro' ? 'timer.focusFinishedHint' : 'timer.breakFinishedHint'),
         "timer",
         true
     );
@@ -358,7 +368,9 @@ function creditDailyStreak() {
     window.appState.lastActiveDate = todayStr;
     saveState();
     window.updateUI();
-    showNotification("Daily Streak +1 🔥", `You're on a ${window.appState.streakCount}-day FocusPulse streak!`, "success");
+    showNotification(FPi18n.message('stats.streakCredit'), FPi18n.message('stats.streakCreditHint', {
+        days: window.appState.streakCount
+    }), 'success');
 }
 
 function restoreMissedStreak() {
@@ -577,5 +589,7 @@ function saveInlinePomoSettings(e) {
     togglePomoInlineSettings(false);
     saveState();
     window.updateUI();
-    showNotification("Timer Saved", `Configured ${window.appState.timerSettings.pomodoro}m Focus / ${window.appState.timerSettings.short}m Break.`, "success");
+    showNotification(FPi18n.message('timer.saved'), FPi18n.message('timer.savedHint', {
+        focus: window.appState.timerSettings.pomodoro, rest: window.appState.timerSettings.short
+    }), 'success');
 }
