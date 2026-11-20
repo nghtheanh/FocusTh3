@@ -107,7 +107,8 @@ function calcHabitBestStreak(logs, currentStreak) {
 
 function toggleHabitDayCheck(habitId, dateKey, isFuture) {
     if (isFuture) {
-        showNotification("Future Date", "Cannot log habit completion for future dates!", "warning");
+        showNotification(FPi18n.message('habits.future'),
+            FPi18n.message('habits.futureHint'), "warning");
         return;
     }
     const habit = (window.appState.habits || []).find(h => h.id === habitId);
@@ -120,14 +121,16 @@ function toggleHabitDayCheck(habitId, dateKey, isFuture) {
             habit.completedToday = false;
             habit.completedAt = null;
         }
-        showNotification("Habit Unmarked", `Unchecked "${habit.name}" for ${dateKey}.`, "info");
+        showNotification(FPi18n.message('habits.unmarked'),
+            FPi18n.message('habits.unmarkedBody', {name: habitNameMessage(habit), date: FPi18n.dateMessage(dateKey)}), "info");
     } else {
         habit.logs[dateKey] = true;
         if (dateKey === todayKey) {
             habit.completedToday = true;
             habit.completedAt = Date.now();
         }
-        showNotification("Habit Logged!", `Great job completing "${habit.name}"!`, "habit");
+        showNotification(FPi18n.message('habits.logged'),
+            FPi18n.message('habits.loggedBody', {name: habitNameMessage(habit)}), "habit");
     }
     if (typeof sweepCompletedHabitsToHistory === 'function') {
         sweepCompletedHabitsToHistory();
@@ -167,7 +170,8 @@ function resetSampleHabitsData() {
     selectedHabitCategory = 'All';
     saveState();
     window.updateUI();
-    showNotification("Sample Habits Restored", "Habit tracker has been reset to sample routines.", "info");
+    showNotification(FPi18n.message('habits.samplesRestored'),
+        FPi18n.message('habits.samplesRestoredBody'), "info");
 }
 
 function openAddHabitModal() {
@@ -175,7 +179,7 @@ function openAddHabitModal() {
     if (!modal) return;
     document.getElementById('new-habit-name-input').value = '';
     document.getElementById('new-habit-target-input').value = 5;
-    document.getElementById('new-habit-target-label').innerText = '5 days';
+    updateHabitTargetLabel(5);
     selectedNewHabitEmoji = '💧';
     selectedNewHabitColor = 'emerald';
     renderHabitModalPickers();
@@ -199,7 +203,7 @@ function selectHabitColor(color) {
 
 function updateHabitTargetLabel(val) {
     const lbl = document.getElementById('new-habit-target-label');
-    if (lbl) lbl.innerText = `${val} day${Number(val) > 1 ? 's' : ''}`;
+    FPi18n.bind(lbl, Number(val) === 1 ? 'habits.oneDay' : 'habits.days', {days: Number(val)});
 }
 
 function renderHabitModalPickers() {
@@ -213,13 +217,15 @@ function renderHabitModalPickers() {
             }">${emoji}</button>
         `).join('');
     }
+    const colorLabels = {emerald: 'appearance.emerald', violet: 'appearance.violet',
+        blue: 'habits.color.blue', amber: 'habits.color.amber', rose: 'habits.color.rose'};
     const colorContainer = document.getElementById('habit-color-picker');
     if (colorContainer) {
         colorContainer.innerHTML = Object.keys(HABIT_COLOR_THEMES).map(colorKey => {
             const theme = HABIT_COLOR_THEMES[colorKey];
             const isSelected = selectedNewHabitColor === colorKey;
             return `
-                <button type="button" onclick="selectHabitColor('${colorKey}')" class="w-8 h-8 rounded-full ${theme.bg} flex items-center justify-center transition ${
+                <button type="button" data-i18n-aria-label="${colorLabels[colorKey]}" aria-pressed="${isSelected}" onclick="selectHabitColor('${colorKey}')" class="w-8 h-8 rounded-full ${theme.bg} flex items-center justify-center transition ${
                     isSelected ? 'ring-4 ring-offset-2 ring-indigo-500 scale-110' : 'opacity-70 hover:opacity-100'
                 }">
                     ${isSelected ? '<i class="fa-solid fa-check text-white text-xs"></i>' : ''}
@@ -251,7 +257,8 @@ function handleAddHabitSubmit(e) {
     saveState();
     closeAddHabitModal();
     renderHabitsSection();
-    showNotification("Habit Created", `Added "${newHabit.name}" to your Habit Flow tracker!`, "success");
+    showNotification(FPi18n.message('habits.created'),
+        FPi18n.message('habits.createdBody', {name: newHabit.name}), "success");
 }
 
 function promptDeleteHabit(habitId) {
@@ -259,7 +266,7 @@ function promptDeleteHabit(habitId) {
     if (!habit) return;
     habitPendingDeleteId = habitId;
     const titleEl = document.getElementById('delete-habit-modal-name');
-    if (titleEl) titleEl.innerText = `Delete "${habit.name}"?`;
+    FPi18n.bind(titleEl, 'habits.deleteNamed', {name: habitNameMessage(habit)});
     const modal = document.getElementById('habit-delete-modal');
     if (modal) modal.classList.remove('hidden');
 }
@@ -277,7 +284,8 @@ function confirmDeleteHabitAction() {
     saveState();
     closeDeleteHabitModal();
     renderHabitsSection();
-    if (habit) showNotification("Habit Removed", `Deleted "${habit.name}".`, "info");
+    if (habit) showNotification(FPi18n.message('habits.removed'),
+        FPi18n.message('habits.removedBody', {name: habitNameMessage(habit)}), "info");
 }
 
 function renderHabitsSection() {
@@ -358,7 +366,7 @@ function renderHabitsSection() {
                 active
                     ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/30'
                     : 'bg-white/50 dark:bg-white/10 text-slate-700 dark:text-slate-300 hover:bg-white/80'
-            }">${cat}</button>`;
+            }">${categoryLabelHtml(cat, habitCategoryKeys)}</button>`;
         }).join('');
     }
 
@@ -366,7 +374,7 @@ function renderHabitsSection() {
     const theadRow = document.getElementById('habit-table-header-row');
     if (theadRow) {
         theadRow.innerHTML = `
-            <th class="py-3.5 pl-5 pr-3 w-64 text-left">Habit & Weekly Target</th>
+            <th class="py-3.5 pl-5 pr-3 w-64 text-left">${FPi18n.markup('habits.habitAndGoal')}</th>
             ${weekDays.map(day => `
                 <th class="py-2.5 px-1.5 text-center w-14">
                     <div class="inline-flex flex-col items-center justify-center px-2 py-1 rounded-xl ${
@@ -377,8 +385,8 @@ function renderHabitsSection() {
                     </div>
                 </th>
             `).join('')}
-            <th class="py-3.5 px-3 text-center w-24">Streak</th>
-            <th class="py-3.5 px-3 text-center w-32">Weekly Goal</th>
+            <th class="py-3.5 px-3 text-center w-24">${FPi18n.markup('habits.streak')}</th>
+            <th class="py-3.5 px-3 text-center w-32">${FPi18n.markup('habits.weeklyGoal')}</th>
             <th class="py-3.5 pl-2 pr-5 text-right w-12"></th>
         `;
     }
@@ -391,10 +399,10 @@ function renderHabitsSection() {
                 <tr>
                     <td colspan="11" class="py-10 text-center">
                         <div class="max-w-xs mx-auto space-y-2">
-                            <p class="text-sm font-bold text-slate-800 dark:text-white">No habits in this view</p>
-                            <p class="text-xs text-slate-600 dark:text-slate-400">Add a daily habit or switch category filters to track your consistency.</p>
+                            <p class="text-sm font-bold text-slate-800 dark:text-white">${FPi18n.markup('habits.empty')}</p>
+                            <p class="text-xs text-slate-600 dark:text-slate-400">${FPi18n.markup('habits.emptyHint')}</p>
                             <button onclick="openAddHabitModal()" class="mt-2 inline-flex items-center gap-1.5 text-xs font-bold bg-indigo-600 text-white px-3.5 py-2 rounded-xl hover:bg-indigo-500 transition">
-                                <i class="fa-solid fa-plus"></i> Add First Habit
+                                <i class="fa-solid fa-plus"></i> ${FPi18n.markup('habits.first')}
                             </button>
                         </div>
                     </td>
@@ -412,10 +420,10 @@ function renderHabitsSection() {
                                     ${habit.icon || '⚡'}
                                 </div>
                                 <div class="min-w-0">
-                                    <p class="font-bold text-xs text-slate-900 dark:text-white truncate">${escapeHtml(habit.name)}</p>
+                                    <p class="font-bold text-xs text-slate-900 dark:text-white truncate">${FPi18n.messageHtml(habitNameMessage(habit))}</p>
                                     <div class="flex items-center gap-2 mt-1">
-                                        <span class="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-white/60 dark:bg-white/10 text-slate-700 dark:text-slate-300">${escapeHtml(habit.category)}</span>
-                                        <span class="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Target: ${habit.targetPerWeek}d/wk</span>
+                                        <span class="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-white/60 dark:bg-white/10 text-slate-700 dark:text-slate-300">${categoryLabelHtml(habit.category, habitCategoryKeys)}</span>
+                                        <span class="text-[10px] text-slate-600 dark:text-slate-400 font-medium">${FPi18n.markup('habits.target', {days: habit.targetPerWeek})}</span>
                                     </div>
                                 </div>
                             </div>
@@ -426,7 +434,7 @@ function renderHabitsSection() {
                                 <td class="py-2.5 px-1.5 text-center">
                                     <button onclick="toggleHabitDayCheck('${habit.id}', '${day.key}', ${day.isFuture})"
                                         ${day.isFuture ? 'disabled' : ''}
-                                        ${FPi18n.attributeMarkup('title', 'stats.markDay', {name: habit.name, day: day.weekday, date: FPi18n.dateMessage(day.key)})}
+                                        ${FPi18n.attributeMarkup('title', 'stats.markDay', {name: habitNameMessage(habit), day: day.weekday, date: FPi18n.dateMessage(day.key)})}
                                         class="w-9 h-9 rounded-xl inline-flex items-center justify-center transition-all duration-200 ${
                                             day.isFuture
                                                 ? 'bg-slate-200/40 dark:bg-white/5 border border-white/20 opacity-30 cursor-not-allowed'
@@ -443,9 +451,9 @@ function renderHabitsSection() {
                             <div class="inline-flex flex-col items-center">
                                 <div class="flex items-center gap-1 font-extrabold text-xs ${habit.currentStreak > 0 ? 'text-amber-500' : 'text-slate-400'}">
                                     <i class="fa-solid fa-fire"></i>
-                                    <span>${habit.currentStreak}d</span>
+                                    <span>${FPi18n.markup('account.streakDays', {days: habit.currentStreak})}</span>
                                 </div>
-                                <span class="text-[9px] text-slate-500 dark:text-slate-400 font-semibold">Best: ${habit.bestStreak}d</span>
+                                <span class="text-[9px] text-slate-500 dark:text-slate-400 font-semibold">${FPi18n.markup('habits.best', {days: habit.bestStreak})}</span>
                             </div>
                         </td>
                         <td class="py-3.5 px-3">
@@ -460,7 +468,7 @@ function renderHabitsSection() {
                             </div>
                         </td>
                         <td class="py-3.5 pl-2 pr-5 text-right">
-                            <button onclick="promptDeleteHabit('${habit.id}')" class="p-2 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition" title="Delete Habit">
+                            <button onclick="promptDeleteHabit('${habit.id}')" class="p-2 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition" title="Delete Habit" data-i18n-title="habits.delete">
                                 <i class="fa-solid fa-trash-can text-xs"></i>
                             </button>
                         </td>
@@ -477,10 +485,10 @@ function renderHabitsSection() {
         if (filtered.length === 0) {
             mobileList.innerHTML = `
                 <div class="p-8 text-center glass-panel rounded-2xl border border-white/40 dark:border-white/10 space-y-2">
-                    <p class="text-sm font-bold text-slate-800 dark:text-white">No habits in this view</p>
-                    <p class="text-xs text-slate-600 dark:text-slate-400">Add a daily habit or change filter categories.</p>
+                    <p class="text-sm font-bold text-slate-800 dark:text-white">${FPi18n.markup('habits.empty')}</p>
+                    <p class="text-xs text-slate-600 dark:text-slate-400">${FPi18n.markup('habits.emptyMobileHint')}</p>
                     <button onclick="openAddHabitModal()" class="mt-2 inline-flex items-center gap-1.5 text-xs font-bold bg-indigo-600 text-white px-3.5 py-2 rounded-xl">
-                        <i class="fa-solid fa-plus"></i> Add First Habit
+                        <i class="fa-solid fa-plus"></i> ${FPi18n.markup('habits.first')}
                     </button>
                 </div>
             `;
@@ -497,20 +505,20 @@ function renderHabitsSection() {
                                     ${habit.icon || '⚡'}
                                 </div>
                                 <div class="min-w-0">
-                                    <h4 class="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white truncate leading-tight">${escapeHtml(habit.name)}</h4>
+                                    <h4 class="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white truncate leading-tight">${FPi18n.messageHtml(habitNameMessage(habit))}</h4>
                                     <p class="text-[10px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                                        <span>${escapeHtml(habit.category)}</span>
+                                        <span>${categoryLabelHtml(habit.category, habitCategoryKeys)}</span>
                                         <span class="mx-1">•</span>
-                                        <span>Target: ${habit.targetPerWeek}d/wk</span>
+                                        <span>${FPi18n.markup('habits.target', {days: habit.targetPerWeek})}</span>
                                     </p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-2 shrink-0">
                                 <div class="flex items-center gap-1 font-extrabold text-xs ${habit.currentStreak > 0 ? 'text-amber-500' : 'text-slate-400'}">
                                     <i class="fa-solid fa-fire text-[11px]"></i>
-                                    <span>${habit.currentStreak}d</span>
+                                    <span>${FPi18n.markup('account.streakDays', {days: habit.currentStreak})}</span>
                                 </div>
-                                <button type="button" onclick="promptDeleteHabit('${habit.id}')" class="p-1.5 text-slate-400 hover:text-rose-500 transition" title="Delete Habit" aria-label="Delete Habit">
+                                <button type="button" onclick="promptDeleteHabit('${habit.id}')" class="p-1.5 text-slate-400 hover:text-rose-500 transition" title="Delete Habit" data-i18n-title="habits.delete" aria-label="Delete Habit" data-i18n-aria-label="habits.delete">
                                     <i class="fa-solid fa-trash-can text-xs"></i>
                                 </button>
                             </div>
@@ -526,7 +534,7 @@ function renderHabitsSection() {
                                         <button type="button"
                                             onclick="toggleHabitDayCheck('${habit.id}', '${day.key}', ${day.isFuture})"
                                             ${day.isFuture ? 'disabled' : ''}
-                                            ${FPi18n.attributeMarkup('title', 'stats.habitDay', {name: habit.name, day: day.weekday, number: day.dayNumber})}
+                                            ${FPi18n.attributeMarkup('title', 'stats.habitDay', {name: habitNameMessage(habit), day: day.weekday, number: day.dayNumber})}
                                             class="relative w-full aspect-square max-w-[44px] max-h-[44px] rounded-xl flex items-center justify-center transition-all duration-200 ${
                                                 day.isFuture
                                                     ? 'bg-slate-200/40 dark:bg-white/5 border border-white/20 opacity-30 cursor-not-allowed'
@@ -555,8 +563,8 @@ function renderHabitsSection() {
 
                         <!-- Progress Bar & Target Met Indicator -->
                         <div class="flex items-center justify-between gap-2 pt-1 border-t border-white/30 dark:border-white/10 text-[10px] font-bold text-slate-500 dark:text-slate-400">
-                            <span>Weekly Progress: ${habit.weeklyCompletions}/${habit.targetPerWeek} (${habit.weeklyProgress}%)</span>
-                            <span class="${goalMet ? 'text-emerald-500 font-extrabold' : ''}">${goalMet ? '✓ Target Met' : `${habit.targetPerWeek - habit.weeklyCompletions} left`}</span>
+                            <span>${FPi18n.markup('habits.progress', {done: habit.weeklyCompletions, total: habit.targetPerWeek, percent: habit.weeklyProgress})}</span>
+                            <span class="${goalMet ? 'text-emerald-500 font-extrabold' : ''}">${goalMet ? FPi18n.markup('habits.goalMet') : FPi18n.markup('habits.remaining', {count: habit.targetPerWeek - habit.weeklyCompletions})}</span>
                         </div>
                     </div>
                 `;
@@ -605,7 +613,7 @@ function renderHabitsSection() {
                         <div class="flex items-center justify-between text-xs">
                             <span class="font-bold text-slate-900 dark:text-white flex items-center gap-2 truncate pr-2">
                                 <span>${habit.icon || '⚡'}</span>
-                                <span class="truncate">${escapeHtml(habit.name)}</span>
+                                <span class="truncate">${FPi18n.messageHtml(habitNameMessage(habit))}</span>
                             </span>
                             <span class="font-extrabold text-amber-500 shrink-0 flex items-center gap-1">
                                 <i class="fa-solid fa-fire"></i> ${FPi18n.markup('account.streakDays', {days: habit.currentStreak})}

@@ -359,8 +359,9 @@ function runScheduledNotificationChecks() {
             saveState();
             if ((window.appState.waterIntakeMl || 0) < (window.appState.dailyWaterGoalMl || 2500)) {
                 showNotification(
-                    "Hydration Reminder 💧",
-                    `Time for a ${window.appState.glassSizeMl || 250}ml glass of water! (${window.appState.waterIntakeMl || 0}/${window.appState.dailyWaterGoalMl || 2500}ml today)`,
+                    FPi18n.message('water.reminder'),
+                    FPi18n.message('water.reminderBody', {size: window.appState.glassSizeMl || 250,
+                        intake: window.appState.waterIntakeMl || 0, goal: window.appState.dailyWaterGoalMl || 2500}),
                     "info",
                     true
                 );
@@ -377,8 +378,9 @@ function runScheduledNotificationChecks() {
                 window.appState.lastTaskReminderAt = now;
                 saveState();
                 showNotification(
-                    `Task Due Today 📋 (${dueTasks.length})`,
-                    `Next up: "${dueTasks[0].title}" (${dueTasks[0].course || dueTasks[0].category}). Start a 25m Pomodoro to knock it out!`,
+                    FPi18n.message('tasks.reminder', {count: dueTasks.length}),
+                    FPi18n.message('tasks.reminderBody', {title: taskTitleMessage(dueTasks[0]),
+                        category: dueTasks[0].course || categoryMessage(dueTasks[0].category, taskCategoryKeys)}),
                     "task",
                     true
                 );
@@ -396,8 +398,8 @@ function runScheduledNotificationChecks() {
                 window.appState.lastHabitReminderAt = now;
                 saveState();
                 showNotification(
-                    `Protect Your ${window.appState.streakCount || 1}-Day Streak 🔥`,
-                    `You have ${uncheckedHabits.length} habit(s) left for today — next up: "${uncheckedHabits[0].name}".`,
+                    FPi18n.message('habits.reminder', {days: window.appState.streakCount || 1}),
+                    FPi18n.message('habits.reminderBody', {count: uncheckedHabits.length, name: habitNameMessage(uncheckedHabits[0])}),
                     "habit",
                     true
                 );

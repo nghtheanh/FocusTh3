@@ -99,3 +99,44 @@ test('rebinding the same timer label replaces its previous key and parameters', 
     vi.bind(element, 'timer.start');
     assert.equal(element.textContent, 'Bắt đầu');
 });
+
+function loadModuleUI(language) {
+    const {FPi18n, FocusPulseLocales} = load(language);
+    const context = vm.createContext({
+        FPi18n,
+        window: {FocusPulseLocales, addEventListener() {}},
+        document: {addEventListener() {}}
+    });
+    vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/ui.js'), 'utf8'), context);
+    return context;
+}
+
+test('only identified sample records translate a matching name', () => {
+    const ui = loadModuleUI('vi');
+    const title = "Plan today's top priorities";
+    assert.equal(ui.FPi18n.resolve(ui.taskTitleMessage({id: '1', title})), 'Lên danh sách việc ưu tiên hôm nay');
+    assert.equal(ui.taskTitleMessage({id: 'task-2', title}), title);
+    for (const id of ['1', 'sched-ob-1', 'sched-balanced-123']) {
+        assert.equal(ui.FPi18n.resolve(ui.scheduleNameMessage({id, presetName: 'Balanced Weekdays'})),
+            ui.FPi18n.translate('auth.balancedWeekdays'));
+    }
+    assert.equal(ui.scheduleNameMessage({id: '123', presetName: 'Balanced Weekdays'}), 'Balanced Weekdays');
+    assert.equal(ui.scheduleNameMessage({id: '2', presetName: 'My <Plan>'}), 'My <Plan>');
+});
+
+test('the plan editor loads saved weekday codes, including legacy ranges', () => {
+    const ui = loadModuleUI('vi');
+    const inputs = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(value => ({value}));
+    ui.document.querySelectorAll = () => inputs;
+    for (const [days, expected] of [
+        ['Sat, Sun', ['Sat', 'Sun']],
+        ['Mon - Fri', ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']],
+        ['Fri – Mon', ['Mon', 'Fri', 'Sat', 'Sun']]
+    ]) {
+        ui.populateScheduleDays(days);
+        assert.deepEqual(inputs.filter(input => input.checked).map(input => input.value), expected);
+        assert.ok(inputs.every(input => input.checked === input.defaultChecked));
+    }
+    assert.match(ui.scheduleDaysHtml('Sat, Sun'), /Thứ 7/);
+    assert.match(ui.scheduleDaysHtml('Sat, Sun'), /CN/);
+});

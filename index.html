@@ -466,21 +466,21 @@
                                     <i class="fa-solid fa-list-check"></i>
                                 </div>
                                 <div>
-                                    <h3 class="font-extrabold text-base text-slate-900 dark:text-white">Smart Task Tracker</h3>
-                                    <p class="text-xs text-slate-600 dark:text-slate-400 font-medium">Click anywhere near the tick box or task title to mark complete</p>
+                                    <h3 class="font-extrabold text-base text-slate-900 dark:text-white" data-i18n="tasks.heading">Smart Task Tracker</h3>
+                                    <p class="text-xs text-slate-600 dark:text-slate-400 font-medium" data-i18n="tasks.tickHint">Click anywhere near the tick box or task title to mark complete</p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-2 flex-wrap">
-                                <button onclick="toggleTaskHistoryView(true)" id="task-history-corner-btn" class="px-3 py-1.5 bg-white/50 dark:bg-white/10 hover:bg-white/85 text-slate-900 dark:text-white rounded-full text-[11px] font-bold transition border border-white/60 shadow-sm flex items-center gap-1.5" title="Completed Task History (Auto-moves tasks marked complete for 24h+)">
+                                <button onclick="toggleTaskHistoryView(true)" id="task-history-corner-btn" class="px-3 py-1.5 bg-white/50 dark:bg-white/10 hover:bg-white/85 text-slate-900 dark:text-white rounded-full text-[11px] font-bold transition border border-white/60 shadow-sm flex items-center gap-1.5" title="Completed Task History (Auto-moves tasks marked complete for 24h+)" data-i18n-title="tasks.historyTip">
                                     <i class="fa-solid fa-clock-rotate-left text-indigo-500" style="color:var(--v-accent)"></i>
-                                    <span>History</span>
+                                    <span data-i18n="tasks.history">History</span>
                                     <span id="task-history-count-badge" class="px-1.5 py-0.2 rounded-full text-[10px] font-extrabold" style="background:rgba(var(--v-accent-rgb),0.18);color:var(--v-accent)">2</span>
                                 </button>
-                                <button onclick="openCategoryManagerModal()" class="px-3.5 py-2 bg-white/50 dark:bg-white/10 hover:bg-white/85 text-slate-900 dark:text-white rounded-full text-xs font-bold transition border border-white/60 shadow-sm" title="Manage Categories">
-                                    <i class="fa-solid fa-folder-plus text-indigo-500 mr-1" style="color:var(--v-accent)"></i> Categories
+                                <button onclick="openCategoryManagerModal()" class="px-3.5 py-2 bg-white/50 dark:bg-white/10 hover:bg-white/85 text-slate-900 dark:text-white rounded-full text-xs font-bold transition border border-white/60 shadow-sm" title="Manage Categories" data-i18n-title="tasks.manage">
+                                    <i class="fa-solid fa-folder-plus text-indigo-500 mr-1" style="color:var(--v-accent)"></i> <span data-i18n="tasks.categories">Categories</span>
                                 </button>
                                 <button onclick="toggleTaskInlineForm(true)" class="v-accent-btn px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full text-xs font-bold transition shadow-md flex items-center gap-1.5">
-                                    <i class="fa-solid fa-plus text-[10px]"></i> Add Task
+                                    <i class="fa-solid fa-plus text-[10px]"></i> <span data-i18n="tasks.add">Add Task</span>
                                 </button>
                             </div>
                         </div>
@@ -488,14 +488,14 @@
                         <!-- Search & Filter Bar -->
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div class="flex gap-1.5 overflow-x-auto pb-1 sm:pb-0 text-xs">
-                                <button onclick="setTaskFilter('all')" id="filter-all" class="px-3 py-1.5 rounded-xl font-bold bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30 transition whitespace-nowrap">All Tasks</button>
-                                <button onclick="setTaskFilter('due-soon')" id="filter-due-soon" class="px-3 py-1.5 rounded-xl font-medium text-slate-700 dark:text-slate-300 hover:bg-white/50 transition whitespace-nowrap">Due Soon ⚡</button>
-                                <button onclick="setTaskFilter('pending')" id="filter-pending" class="px-3 py-1.5 rounded-xl font-medium text-slate-700 dark:text-slate-300 hover:bg-white/50 transition whitespace-nowrap">Pending</button>
-                                <button onclick="setTaskFilter('completed')" id="filter-completed" class="px-3 py-1.5 rounded-xl font-medium text-slate-700 dark:text-slate-300 hover:bg-white/50 transition whitespace-nowrap">Completed</button>
+                                <button onclick="setTaskFilter('all')" id="filter-all" class="px-3 py-1.5 rounded-xl font-bold bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30 transition whitespace-nowrap" data-i18n="tasks.all">All Tasks</button>
+                                <button onclick="setTaskFilter('due-soon')" id="filter-due-soon" class="px-3 py-1.5 rounded-xl font-medium text-slate-700 dark:text-slate-300 hover:bg-white/50 transition whitespace-nowrap" data-i18n="tasks.dueSoon">Due Soon ⚡</button>
+                                <button onclick="setTaskFilter('pending')" id="filter-pending" class="px-3 py-1.5 rounded-xl font-medium text-slate-700 dark:text-slate-300 hover:bg-white/50 transition whitespace-nowrap" data-i18n="tasks.pending">Pending</button>
+                                <button onclick="setTaskFilter('completed')" id="filter-completed" class="px-3 py-1.5 rounded-xl font-medium text-slate-700 dark:text-slate-300 hover:bg-white/50 transition whitespace-nowrap" data-i18n="tasks.completed">Completed</button>
                             </div>
                             <div class="relative w-full sm:w-60">
                                 <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
-                                <input type="text" id="task-search-input" oninput="handleTaskSearchInput(this.value)" placeholder="Search tasks or categories..." class="w-full bg-white/70 dark:bg-[#050508] border border-white/60 dark:border-white/10 rounded-full pl-8 pr-3 py-2 text-xs text-slate-900 dark:text-white font-semibold focus:outline-none focus:border-indigo-500">
+                                <input type="text" id="task-search-input" oninput="handleTaskSearchInput(this.value)" placeholder="Search tasks or categories..." data-i18n-placeholder="tasks.search" class="w-full bg-white/70 dark:bg-[#050508] border border-white/60 dark:border-white/10 rounded-full pl-8 pr-3 py-2 text-xs text-slate-900 dark:text-white font-semibold focus:outline-none focus:border-indigo-500">
                             </div>
                         </div>
 
@@ -505,20 +505,20 @@
 
                     <div id="task-inline-form-view" class="hidden space-y-4">
                         <div class="flex items-center justify-between pb-3 border-b border-white/40 dark:border-white/10">
-                            <h3 id="inline-task-modal-title" class="font-bold text-sm text-slate-900 dark:text-white">Add New Task</h3>
+                            <h3 id="inline-task-modal-title" class="font-bold text-sm text-slate-900 dark:text-white" data-i18n="tasks.create">Add New Task</h3>
                             <button onclick="toggleTaskInlineForm(false)" class="px-3 py-1 bg-white/70 dark:bg-white/15 hover:bg-white text-slate-900 dark:text-white rounded-lg text-xs font-bold transition flex items-center gap-1 border border-white/40">
-                                <i class="fa-solid fa-arrow-left"></i> Back
+                                <i class="fa-solid fa-arrow-left"></i> <span data-i18n="timer.back">Back</span>
                             </button>
                         </div>
                         <form onsubmit="handleInlineTaskSubmit(event)" class="space-y-3 text-xs">
-                            <div><label class="block text-slate-700 dark:text-slate-300 mb-1 font-semibold">Task Title</label><input type="text" id="inline-task-title" required class="w-full bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white font-bold"></div>
+                            <div><label class="block text-slate-700 dark:text-slate-300 mb-1 font-semibold" data-i18n="tasks.title">Task Title</label><input type="text" id="inline-task-title" required class="w-full bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white font-bold"></div>
                             <div class="fp-auto-grid grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
-                                    <label class="block text-slate-700 dark:text-slate-300 mb-1 font-semibold">Category</label>
+                                    <label class="block text-slate-700 dark:text-slate-300 mb-1 font-semibold" data-i18n="tasks.category">Category</label>
                                     <select id="inline-task-cat" onchange="updateInlineSubcatDropdown()" class="w-full bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white font-bold appearance-none"></select>
                                 </div>
                                 <div>
-                                    <label class="block text-slate-700 dark:text-slate-300 mb-1 font-semibold">Sub-Category</label>
+                                    <label class="block text-slate-700 dark:text-slate-300 mb-1 font-semibold" data-i18n="tasks.subcategory">Sub-Category</label>
                                     <select id="inline-task-subcat" class="w-full bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white font-bold appearance-none"></select>
                                 </div>
                             </div>
@@ -530,18 +530,18 @@
                                         <span class="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-extrabold" style="background:rgba(var(--v-accent-rgb),0.15);color:var(--v-accent);">
                                             <i class="fa-solid fa-graduation-cap"></i>
                                         </span>
-                                        <span class="font-extrabold text-xs uppercase tracking-wider text-slate-900 dark:text-white">Courses</span>
-                                        <span class="text-[10px] font-semibold" style="color:var(--v-fg3)">(Select subject profile for Active Courses)</span>
+                                        <span class="font-extrabold text-xs uppercase tracking-wider text-slate-900 dark:text-white" data-i18n="tasks.courses">Courses</span>
+                                        <span class="text-[10px] font-semibold" style="color:var(--v-fg3)" data-i18n="tasks.courseHint">(Select subject profile for Active Courses)</span>
                                     </div>
-                                    <button type="button" onclick="openCourseSettingsSection()" class="text-[10px] font-extrabold hover:underline" style="color:var(--v-accent)">
+                                    <button type="button" onclick="openCourseSettingsSection()" class="text-[10px] font-extrabold hover:underline" style="color:var(--v-accent)" data-i18n="tasks.manageCourses">
                                         + Add / Edit Courses
                                     </button>
                                 </div>
                                 <div id="inline-task-course-buttons" class="flex items-center gap-2.5 flex-wrap"></div>
                             </div>
-                            <div><label class="block text-slate-700 dark:text-slate-300 mb-1 font-semibold">Due Date</label><input type="date" id="inline-task-due" required class="w-full bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white font-bold"></div>
-                            <div><label class="block text-slate-700 dark:text-slate-300 mb-1 font-semibold">Description</label><textarea id="inline-task-desc" rows="2" class="w-full bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl p-3 text-slate-900 dark:text-white font-medium resize-none"></textarea></div>
-                            <button type="submit" class="v-accent-btn w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-md transition">Save Task</button>
+                            <div><label class="block text-slate-700 dark:text-slate-300 mb-1 font-semibold" data-i18n="tasks.due">Due Date</label><input type="date" id="inline-task-due" required class="w-full bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white font-bold"></div>
+                            <div><label class="block text-slate-700 dark:text-slate-300 mb-1 font-semibold" data-i18n="tasks.description">Description</label><textarea id="inline-task-desc" rows="2" class="w-full bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl p-3 text-slate-900 dark:text-white font-medium resize-none"></textarea></div>
+                            <button type="submit" class="v-accent-btn w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-md transition" data-i18n="tasks.save">Save Task</button>
                         </form>
                     </div>
 
@@ -553,16 +553,16 @@
                                     <i class="fa-solid fa-clock-rotate-left"></i>
                                 </div>
                                 <div>
-                                    <h3 class="font-extrabold text-sm text-slate-900 dark:text-white">Completed Task History (24h+ Archive)</h3>
-                                    <p class="text-[11px] text-slate-600 dark:text-slate-400 font-medium">Tasks that stay marked completed for 24 hours automatically move here</p>
+                                    <h3 class="font-extrabold text-sm text-slate-900 dark:text-white" data-i18n="tasks.archiveHeading">Completed Task History (24h+ Archive)</h3>
+                                    <p class="text-[11px] text-slate-600 dark:text-slate-400 font-medium" data-i18n="tasks.archiveHint">Tasks that stay marked completed for 24 hours automatically move here</p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-2">
                                 <button onclick="clearAllTaskHistory()" class="px-3 py-1.5 bg-rose-500/15 hover:bg-rose-500/25 text-rose-700 dark:text-rose-300 rounded-xl text-[11px] font-bold border border-rose-500/30 transition">
-                                    <i class="fa-solid fa-trash-can mr-1"></i> Clear History
+                                    <i class="fa-solid fa-trash-can mr-1"></i> <span data-i18n="tasks.clearHistory">Clear History</span>
                                 </button>
                                 <button onclick="toggleTaskHistoryView(false)" class="px-3 py-1.5 bg-white/70 dark:bg-white/15 hover:bg-white text-slate-900 dark:text-white rounded-xl text-xs font-bold transition flex items-center gap-1 border border-white/40">
-                                    <i class="fa-solid fa-arrow-left"></i> Back to Tasks
+                                    <i class="fa-solid fa-arrow-left"></i> <span data-i18n="tasks.backToList">Back to Tasks</span>
                                 </button>
                             </div>
                         </div>
@@ -584,15 +584,15 @@
                             </div>
                             <div>
                                 <div class="flex items-center gap-2 flex-wrap">
-                                    <h2 class="text-base font-extrabold text-slate-900 dark:text-white">Habit Flow Tracker</h2>
+                                    <h2 class="text-base font-extrabold text-slate-900 dark:text-white" data-i18n="habits.heading">Habit Flow Tracker</h2>
                                     
                                 </div>
-                                <p class="text-xs text-slate-600 dark:text-slate-400 font-medium">Build daily consistency, track weekly targets, and grow your habit chains</p>
+                                <p class="text-xs text-slate-600 dark:text-slate-400 font-medium" data-i18n="habits.intro">Build daily consistency, track weekly targets, and grow your habit chains</p>
                             </div>
                         </div>
                         <div class="flex items-center gap-2 flex-wrap">
                             <button onclick="openAddHabitModal()" class="v-accent-btn px-4 py-2 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg transition flex items-center gap-1.5">
-                                <i class="fa-solid fa-plus"></i> <span>New Habit</span>
+                                <i class="fa-solid fa-plus"></i> <span data-i18n="habits.new">New Habit</span>
                             </button>
                         </div>
                     </div>
@@ -761,11 +761,11 @@
                                         <i class="fa-solid fa-glass-water"></i>
                                     </div>
                                     <div>
-                                        <h3 class="font-extrabold text-sm text-slate-900 dark:text-white">Stay Hydrated</h3>
-                                        <p class="text-[11px] text-slate-600 dark:text-slate-400 font-medium">Daily fluid intake & reminder interval</p>
+                                        <h3 class="font-extrabold text-sm text-slate-900 dark:text-white" data-i18n="water.heading">Stay Hydrated</h3>
+                                        <p class="text-[11px] text-slate-600 dark:text-slate-400 font-medium" data-i18n="water.hint">Daily fluid intake & reminder interval</p>
                                     </div>
                                 </div>
-                                <span class="text-xs font-extrabold text-sky-800 dark:text-sky-300 bg-sky-500/15 px-3 py-1 rounded-full border border-sky-500/30" id="water-stat-text">0 / 2500 ml</span>
+                                <span class="text-xs font-extrabold text-sky-800 dark:text-sky-300 bg-sky-500/15 px-3 py-1 rounded-full border border-sky-500/30" id="water-stat-text" data-i18n="water.amount" data-i18n-params='{"intake":0,"goal":2500}'>0 / 2500 ml</span>
                             </div>
 
                             <div class="space-y-2 pt-2">
@@ -773,34 +773,34 @@
                                     <div id="water-progress-bar" class="bg-sky-500 h-full transition-all duration-500" style="width: 0%;"></div>
                                 </div>
                                 <p class="text-xs text-slate-800 dark:text-slate-200 font-semibold flex justify-between pt-1">
-                                    <span>Glass Size: <strong id="glass-size-label">250 ml</strong></span>
-                                    <span>Reminder Interval: <strong id="water-interval-label">90m</strong></span>
+                                    <span><span data-i18n="water.sizeLabel">Glass Size:</span> <strong id="glass-size-label" data-i18n="water.glass" data-i18n-params='{"size":250}'>250 ml</strong></span>
+                                    <span><span data-i18n="water.intervalLabel">Reminder Interval:</span> <strong id="water-interval-label" data-i18n="water.minutes" data-i18n-params='{"minutes":90}'>90m</strong></span>
                                 </p>
                             </div>
                         </div>
 
                         <div id="hydration-inline-settings" class="hidden space-y-3 text-xs">
                             <div class="flex items-center justify-between pb-2 border-b border-white/30 dark:border-white/10">
-                                <h4 class="font-bold text-slate-900 dark:text-white">Hydration Settings</h4>
-                                <button onclick="toggleWaterInlineSettings(false)" class="px-2.5 py-1 bg-white/70 dark:bg-white/15 hover:bg-white text-slate-900 dark:text-white rounded-lg text-[11px] font-bold border border-white/40"><i class="fa-solid fa-arrow-left"></i> Back</button>
+                                <h4 class="font-bold text-slate-900 dark:text-white" data-i18n="water.settings">Hydration Settings</h4>
+                                <button onclick="toggleWaterInlineSettings(false)" class="px-2.5 py-1 bg-white/70 dark:bg-white/15 hover:bg-white text-slate-900 dark:text-white rounded-lg text-[11px] font-bold border border-white/40"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="timer.back">Back</span></button>
                             </div>
                             <form onsubmit="saveInlineWaterSettings(event)" class="space-y-2.5">
-                                <div><label class="block text-slate-800 dark:text-slate-200 mb-0.5 font-bold">Daily Goal (ml)</label><input type="number" id="inline-water-goal" value="2500" required class="w-full bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl px-2.5 py-1.5 text-slate-900 dark:text-white font-bold"></div>
-                                <div><label class="block text-slate-800 dark:text-slate-200 mb-0.5 font-bold">Glass Size (ml)</label><input type="number" id="inline-water-size" value="250" required class="w-full bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl px-2.5 py-1.5 text-slate-900 dark:text-white font-bold"></div>
-                                <div><label class="block text-slate-800 dark:text-slate-200 mb-0.5 font-bold">Notification Interval (mins)</label><input type="number" id="inline-water-interval" min="5" max="360" value="90" required class="w-full bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl px-2.5 py-1.5 text-slate-900 dark:text-white font-bold"></div>
-                                <button type="submit" class="v-accent-btn w-full py-2 bg-sky-500 hover:bg-sky-400 text-white rounded-xl font-bold shadow-md">Save Settings</button>
+                                <div><label class="block text-slate-800 dark:text-slate-200 mb-0.5 font-bold" data-i18n="water.goal">Daily Goal (ml)</label><input type="number" id="inline-water-goal" value="2500" required class="w-full bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl px-2.5 py-1.5 text-slate-900 dark:text-white font-bold"></div>
+                                <div><label class="block text-slate-800 dark:text-slate-200 mb-0.5 font-bold" data-i18n="water.size">Glass Size (ml)</label><input type="number" id="inline-water-size" value="250" required class="w-full bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl px-2.5 py-1.5 text-slate-900 dark:text-white font-bold"></div>
+                                <div><label class="block text-slate-800 dark:text-slate-200 mb-0.5 font-bold" data-i18n="water.interval">Notification Interval (mins)</label><input type="number" id="inline-water-interval" min="5" max="360" value="90" required class="w-full bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl px-2.5 py-1.5 text-slate-900 dark:text-white font-bold"></div>
+                                <button type="submit" class="v-accent-btn w-full py-2 bg-sky-500 hover:bg-sky-400 text-white rounded-xl font-bold shadow-md" data-i18n="timer.save">Save Settings</button>
                             </form>
                         </div>
 
                         <div class="fp-auto-btn-grid grid grid-cols-1 xs:grid-cols-3 sm:grid-cols-3 gap-2.5 pt-4">
                             <button onclick="logWaterGlass()" class="v-accent-btn py-3 px-2 bg-sky-500 hover:bg-sky-400 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center justify-center gap-1.5">
-                                <i class="fa-solid fa-plus text-[10px]"></i> Drink
+                                <i class="fa-solid fa-plus text-[10px]"></i> <span data-i18n="water.drink">Drink</span>
                             </button>
-                            <button onclick="resetWaterIntake()" class="py-3 px-2 bg-rose-500/15 hover:bg-rose-500/25 text-rose-800 dark:text-rose-300 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 border border-rose-500/30 shadow-sm" title="Reset Hydration">
-                                <i class="fa-solid fa-arrow-rotate-left"></i> Reset
+                            <button onclick="resetWaterIntake()" class="py-3 px-2 bg-rose-500/15 hover:bg-rose-500/25 text-rose-800 dark:text-rose-300 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 border border-rose-500/30 shadow-sm" title="Reset Hydration" data-i18n-title="water.resetTip">
+                                <i class="fa-solid fa-arrow-rotate-left"></i> <span data-i18n="water.reset">Reset</span>
                             </button>
                             <button onclick="toggleWaterInlineSettings(true)" class="py-3 px-2 bg-white/70 dark:bg-white/10 hover:bg-white text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold transition border border-white/60 shadow-sm flex items-center justify-center gap-1">
-                                <i class="fa-solid fa-gear"></i> Set
+                                <i class="fa-solid fa-gear"></i> <span data-i18n="water.set">Set</span>
                             </button>
                         </div>
                     </div>
@@ -814,12 +814,12 @@
                                         <i class="fa-solid fa-calendar-days"></i>
                                     </div>
                                     <div>
-                                        <h3 class="font-extrabold text-sm text-slate-900 dark:text-white">Active Study Plans</h3>
-                                        <p class="text-[11px] text-slate-600 dark:text-slate-400 font-medium">Recurring daily & weekly study schedules</p>
+                                        <h3 class="font-extrabold text-sm text-slate-900 dark:text-white" data-i18n="plans.heading">Active Study Plans</h3>
+                                        <p class="text-[11px] text-slate-600 dark:text-slate-400 font-medium" data-i18n="plans.hint">Recurring daily & weekly study schedules</p>
                                     </div>
                                 </div>
                                 <button onclick="openScheduleModal()" class="v-accent-btn px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
-                                    <i class="fa-solid fa-plus"></i> Add
+                                    <i class="fa-solid fa-plus"></i> <span data-i18n="plans.add">Add</span>
                                 </button>
                             </div>
                             <div id="schedules-container" class="space-y-3 max-h-[320px] overflow-y-auto pr-1 pt-3"></div>
@@ -1822,43 +1822,43 @@
         <div class="glass-panel max-w-md w-full p-6 rounded-3xl shadow-2xl space-y-4">
             <div class="flex items-center justify-between pb-3 border-b border-white/40 dark:border-white/10">
                 <h3 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-                    <i class="fa-solid fa-fire-flame-curved text-indigo-500"></i> Create New Habit
+                    <i class="fa-solid fa-fire-flame-curved text-indigo-500"></i> <span data-i18n="habits.create">Create New Habit</span>
                 </h3>
-                <button onclick="closeAddHabitModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200/80 dark:bg-white/10 text-slate-700 dark:text-slate-200"><i class="fa-solid fa-xmark"></i></button>
+                <button onclick="closeAddHabitModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200/80 dark:bg-white/10 text-slate-700 dark:text-slate-200" aria-label="Close" data-i18n-aria-label="nav.close"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <form onsubmit="handleAddHabitSubmit(event)" class="space-y-4 text-xs">
                 <div>
-                    <label class="block text-slate-700 dark:text-slate-300 mb-1 font-bold">Habit Title *</label>
-                    <input type="text" id="new-habit-name-input" required placeholder="e.g., Drink 2L Water, Read 20 Pages..." class="w-full bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white font-bold">
+                    <label class="block text-slate-700 dark:text-slate-300 mb-1 font-bold" data-i18n="habits.name">Habit Title *</label>
+                    <input type="text" id="new-habit-name-input" required placeholder="e.g., Drink 2L Water, Read 20 Pages..." data-i18n-placeholder="habits.example" class="w-full bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white font-bold">
                 </div>
                 <div class="fp-auto-grid grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-slate-700 dark:text-slate-300 mb-1 font-bold">Category</label>
+                        <label class="block text-slate-700 dark:text-slate-300 mb-1 font-bold" data-i18n="tasks.category">Category</label>
                         <select id="new-habit-category-input" class="w-full bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl px-3 py-2.5 text-slate-900 dark:text-white font-bold">
-                            <option value="Health">Health</option>
-                            <option value="Fitness">Fitness</option>
-                            <option value="Productivity">Productivity</option>
-                            <option value="Mindfulness">Mindfulness</option>
-                            <option value="Learning">Learning</option>
+                            <option value="Health" data-i18n="setup.health">Health</option>
+                            <option value="Fitness" data-i18n="setup.fitness">Fitness</option>
+                            <option value="Productivity" data-i18n="category.productivity">Productivity</option>
+                            <option value="Mindfulness" data-i18n="category.mindfulness">Mindfulness</option>
+                            <option value="Learning" data-i18n="category.learning">Learning</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-slate-700 dark:text-slate-300 mb-1 font-bold">Weekly Goal: <span id="new-habit-target-label" class="text-indigo-600 dark:text-indigo-400">5 days</span></label>
+                        <label class="block text-slate-700 dark:text-slate-300 mb-1 font-bold"><span data-i18n="habits.goalLabel">Weekly Goal:</span> <span id="new-habit-target-label" class="text-indigo-600 dark:text-indigo-400" data-i18n="habits.days" data-i18n-params='{"days":5}'>5 days</span></label>
                         <input type="range" id="new-habit-target-input" min="1" max="7" value="5" oninput="updateHabitTargetLabel(this.value)" class="w-full accent-indigo-600 mt-2 cursor-pointer">
-                        <div class="flex justify-between text-[10px] text-slate-500 px-1"><span>1d</span><span>4d</span><span>7d</span></div>
+                        <div class="flex justify-between text-[10px] text-slate-500 px-1"><span data-i18n="account.streakDays" data-i18n-params='{"days":1}'>1d</span><span data-i18n="account.streakDays" data-i18n-params='{"days":4}'>4d</span><span data-i18n="account.streakDays" data-i18n-params='{"days":7}'>7d</span></div>
                     </div>
                 </div>
                 <div>
-                    <label class="block text-slate-700 dark:text-slate-300 mb-1.5 font-bold">Choose Icon</label>
+                    <label class="block text-slate-700 dark:text-slate-300 mb-1.5 font-bold" data-i18n="habits.icon">Choose Icon</label>
                     <div id="habit-emoji-picker" class="grid grid-cols-6 gap-2"></div>
                 </div>
                 <div>
-                    <label class="block text-slate-700 dark:text-slate-300 mb-1.5 font-bold">Accent Color</label>
+                    <label class="block text-slate-700 dark:text-slate-300 mb-1.5 font-bold" data-i18n="habits.accent">Accent Color</label>
                     <div id="habit-color-picker" class="flex items-center gap-3"></div>
                 </div>
                 <div class="pt-2 flex gap-2">
-                    <button type="button" onclick="closeAddHabitModal()" class="flex-1 py-2.5 bg-white/60 dark:bg-white/10 text-slate-800 dark:text-slate-200 rounded-xl font-bold border border-white/40">Cancel</button>
-                    <button type="submit" class="v-accent-btn flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-md">Save Habit</button>
+                    <button type="button" onclick="closeAddHabitModal()" class="flex-1 py-2.5 bg-white/60 dark:bg-white/10 text-slate-800 dark:text-slate-200 rounded-xl font-bold border border-white/40" data-i18n="account.cancel">Cancel</button>
+                    <button type="submit" class="v-accent-btn flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-md" data-i18n="habits.save">Save Habit</button>
                 </div>
             </form>
         </div>
@@ -1871,12 +1871,12 @@
                 <i class="fa-solid fa-trash-can"></i>
             </div>
             <div>
-                <h3 id="delete-habit-modal-name" class="font-bold text-sm text-slate-900 dark:text-white">Delete Habit?</h3>
-                <p class="text-xs text-slate-700 dark:text-slate-300 mt-1 leading-relaxed">This will remove the habit and its check-in history from your tracker.</p>
+                <h3 id="delete-habit-modal-name" class="font-bold text-sm text-slate-900 dark:text-white" data-i18n="habits.deleteQuestion">Delete Habit?</h3>
+                <p class="text-xs text-slate-700 dark:text-slate-300 mt-1 leading-relaxed" data-i18n="habits.deleteHint">This will remove the habit and its check-in history from your tracker.</p>
             </div>
             <div class="flex gap-2 pt-2">
-                <button type="button" onclick="closeDeleteHabitModal()" class="flex-1 py-2.5 bg-white/60 dark:bg-white/10 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold">Keep Habit</button>
-                <button type="button" onclick="confirmDeleteHabitAction()" class="flex-1 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold shadow-md">Yes, Delete</button>
+                <button type="button" onclick="closeDeleteHabitModal()" class="flex-1 py-2.5 bg-white/60 dark:bg-white/10 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold" data-i18n="habits.keep">Keep Habit</button>
+                <button type="button" onclick="confirmDeleteHabitAction()" class="flex-1 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold shadow-md" data-i18n="habits.confirmDelete">Yes, Delete</button>
             </div>
         </div>
     </div>
@@ -2050,46 +2050,46 @@
     <div id="category-manage-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 hidden">
         <div class="glass-panel max-w-md w-full p-6 rounded-3xl shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
             <div class="flex items-center justify-between pb-3 border-b border-white/40 dark:border-white/10">
-                <h3 class="font-bold text-sm text-slate-900 dark:text-white">Manage Categories & Subcategories</h3>
-                <button onclick="closeCategoryManagerModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200/80 dark:bg-white/10 text-slate-700"><i class="fa-solid fa-xmark"></i></button>
+                <h3 class="font-bold text-sm text-slate-900 dark:text-white" data-i18n="tasks.manageHeading">Manage Categories & Subcategories</h3>
+                <button onclick="closeCategoryManagerModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200/80 dark:bg-white/10 text-slate-700" aria-label="Close" data-i18n-aria-label="nav.close"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="space-y-4 text-xs">
                 <div>
-                    <label class="block text-slate-800 dark:text-slate-200 mb-1 font-semibold">Add New Category</label>
+                    <label class="block text-slate-800 dark:text-slate-200 mb-1 font-semibold" data-i18n="tasks.newCategory">Add New Category</label>
                     <div class="flex gap-2">
-                        <input type="text" id="new-category-name" placeholder="Category name..." class="flex-1 bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-medium">
-                        <button onclick="addNewCategory()" class="v-accent-btn px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold">Add</button>
+                        <input type="text" id="new-category-name" placeholder="Category name..." data-i18n-placeholder="tasks.categoryPlaceholder" class="flex-1 bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-medium">
+                        <button onclick="addNewCategory()" class="v-accent-btn px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold" data-i18n="plans.add">Add</button>
                     </div>
                 </div>
                 <div>
-                    <label class="block text-slate-800 dark:text-slate-200 mb-1 font-semibold">Add Subcategory</label>
+                    <label class="block text-slate-800 dark:text-slate-200 mb-1 font-semibold" data-i18n="tasks.newSub">Add Subcategory</label>
                     <div class="flex gap-2 mb-2">
                         <select id="manage-cat-select" class="bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl px-2 py-1.5 text-slate-900 dark:text-white font-medium"></select>
-                        <input type="text" id="new-subcategory-name" placeholder="Subcategory..." class="flex-1 bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-medium">
-                        <button onclick="addNewSubcategory()" class="v-accent-btn px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold">Add Sub</button>
+                        <input type="text" id="new-subcategory-name" placeholder="Subcategory..." data-i18n-placeholder="tasks.subPlaceholder" class="flex-1 bg-white/70 dark:bg-[#050508] border border-white/60 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-medium">
+                        <button onclick="addNewSubcategory()" class="v-accent-btn px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold" data-i18n="tasks.addSub">Add Sub</button>
                     </div>
                 </div>
                 <div id="category-structure-list" class="space-y-2 pt-2 border-t border-white/20"></div>
             </div>
-            <button onclick="closeCategoryManagerModal()" class="v-accent-btn w-full py-2.5 bg-indigo-600 text-white rounded-xl font-semibold">Done</button>
+            <button onclick="closeCategoryManagerModal()" class="v-accent-btn w-full py-2.5 bg-indigo-600 text-white rounded-xl font-semibold" data-i18n="tasks.done">Done</button>
         </div>
     </div>
 
     <div id="task-view-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 hidden">
         <div class="glass-panel max-w-sm w-full p-6 rounded-3xl shadow-2xl space-y-4">
             <div class="flex items-center justify-between pb-3 border-b border-white/40 dark:border-white/10">
-                <h3 id="view-task-title" class="font-bold text-sm text-slate-900 dark:text-white truncate">Task Details</h3>
-                <button onclick="closeTaskViewModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200/80 dark:bg-white/10 text-slate-700"><i class="fa-solid fa-xmark"></i></button>
+                <h3 id="view-task-title" class="font-bold text-sm text-slate-900 dark:text-white truncate"><span data-i18n="tasks.details">Task Details</span></h3>
+                <button onclick="closeTaskViewModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200/80 dark:bg-white/10 text-slate-700" aria-label="Close" data-i18n-aria-label="nav.close"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="space-y-2 text-xs text-slate-800 dark:text-slate-200 font-medium">
-                <p><strong>Category:</strong> <span id="view-task-cat"></span></p>
-                <p><strong>Sub-Category:</strong> <span id="view-task-subcat"></span></p>
-                <p id="view-task-course-row"><strong>Course:</strong> <span id="view-task-course"></span></p>
-                <p><strong>Due Date:</strong> <span id="view-task-due"></span></p>
-                <p><strong>Description:</strong></p>
+                <p><strong data-i18n="tasks.detailCategory">Category:</strong> <span id="view-task-cat"></span></p>
+                <p><strong data-i18n="tasks.detailSub">Sub-Category:</strong> <span id="view-task-subcat"></span></p>
+                <p id="view-task-course-row"><strong data-i18n="tasks.detailCourse">Course:</strong> <span id="view-task-course"></span></p>
+                <p><strong data-i18n="tasks.detailDue">Due Date:</strong> <span id="view-task-due"></span></p>
+                <p><strong data-i18n="tasks.detailDescription">Description:</strong></p>
                 <p id="view-task-desc" class="bg-white/50 dark:bg-white/5 p-3 rounded-xl border border-white/20 whitespace-pre-wrap"></p>
             </div>
-            <button onclick="closeTaskViewModal()" class="v-accent-btn w-full py-2.5 bg-indigo-600 text-white rounded-xl font-semibold">Close</button>
+            <button onclick="closeTaskViewModal()" class="v-accent-btn w-full py-2.5 bg-indigo-600 text-white rounded-xl font-semibold" data-i18n="nav.close">Close</button>
         </div>
     </div>
 
@@ -2257,30 +2257,30 @@
     <div id="schedule-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 hidden">
         <div class="glass-panel max-w-sm w-full p-6 rounded-3xl shadow-2xl space-y-4">
             <div class="flex items-center justify-between pb-3 border-b border-white/40 dark:border-white/10">
-                <h3 id="sched-modal-title" class="font-bold text-sm text-slate-900 dark:text-white">Add Active Plan</h3>
-                <button onclick="closeScheduleModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200/80 dark:bg-white/10 text-slate-700"><i class="fa-solid fa-xmark"></i></button>
+                <h3 id="sched-modal-title" class="font-bold text-sm text-slate-900 dark:text-white" data-i18n="plans.create">Add Active Plan</h3>
+                <button onclick="closeScheduleModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200/80 dark:bg-white/10 text-slate-700" aria-label="Close" data-i18n-aria-label="nav.close"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <form onsubmit="handleScheduleSubmit(event)" class="space-y-3.5 text-xs">
-                <div><label class="block text-slate-700 dark:text-slate-300 mb-1 font-medium">Plan Name / Preset</label><input type="text" id="sched-name-input" placeholder="e.g. Balanced Weekdays" value="Balanced Weekdays" required class="w-full bg-white/50 dark:bg-[#050508] border border-white/60 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white font-medium"></div>
+                <div><label class="block text-slate-700 dark:text-slate-300 mb-1 font-medium" data-i18n="plans.name">Plan Name / Preset</label><input type="text" id="sched-name-input" placeholder="e.g. Balanced Weekdays" data-i18n-placeholder="plans.example" value="Balanced Weekdays" required class="w-full bg-white/50 dark:bg-[#050508] border border-white/60 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white font-medium"></div>
                 <div class="fp-auto-grid grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div><label class="block text-slate-700 dark:text-slate-300 mb-1 font-medium">Daily Hours</label><input type="number" id="sched-hours-input" min="1" max="16" value="3" required class="w-full bg-white/50 dark:bg-[#050508] border border-white/60 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white font-medium"></div>
-                    <div><label class="block text-slate-700 dark:text-slate-300 mb-1 font-medium">Target Sessions</label><input type="number" id="sched-sessions-input" min="1" max="16" value="3" required class="w-full bg-white/50 dark:bg-[#050508] border border-white/60 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white font-medium"></div>
+                    <div><label class="block text-slate-700 dark:text-slate-300 mb-1 font-medium" data-i18n="plans.hours">Daily Hours</label><input type="number" id="sched-hours-input" min="1" max="16" value="3" required class="w-full bg-white/50 dark:bg-[#050508] border border-white/60 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white font-medium"></div>
+                    <div><label class="block text-slate-700 dark:text-slate-300 mb-1 font-medium" data-i18n="plans.sessions">Target Sessions</label><input type="number" id="sched-sessions-input" min="1" max="16" value="3" required class="w-full bg-white/50 dark:bg-[#050508] border border-white/60 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white font-medium"></div>
                 </div>
                 <div>
-                    <label class="block text-slate-700 dark:text-slate-300 mb-1 font-medium">Applicable Days of Week</label>
+                    <label class="block text-slate-700 dark:text-slate-300 mb-1 font-medium" data-i18n="plans.weekdays">Applicable Days of Week</label>
                     <div class="grid grid-cols-4 gap-1.5 pt-1 text-slate-800 dark:text-slate-200 font-medium" id="sched-days-checkboxes">
-                        <label class="flex items-center gap-1.5 bg-white/40 dark:bg-white/5 px-2 py-1.5 rounded-lg cursor-pointer"><input type="checkbox" name="sched-day" value="Mon" checked class="rounded text-indigo-600"> Mon</label>
-                        <label class="flex items-center gap-1.5 bg-white/40 dark:bg-white/5 px-2 py-1.5 rounded-lg cursor-pointer"><input type="checkbox" name="sched-day" value="Tue" checked class="rounded text-indigo-600"> Tue</label>
-                        <label class="flex items-center gap-1.5 bg-white/40 dark:bg-white/5 px-2 py-1.5 rounded-lg cursor-pointer"><input type="checkbox" name="sched-day" value="Wed" checked class="rounded text-indigo-600"> Wed</label>
-                        <label class="flex items-center gap-1.5 bg-white/40 dark:bg-white/5 px-2 py-1.5 rounded-lg cursor-pointer"><input type="checkbox" name="sched-day" value="Thu" checked class="rounded text-indigo-600"> Thu</label>
-                        <label class="flex items-center gap-1.5 bg-white/40 dark:bg-white/5 px-2 py-1.5 rounded-lg cursor-pointer"><input type="checkbox" name="sched-day" value="Fri" checked class="rounded text-indigo-600"> Fri</label>
-                        <label class="flex items-center gap-1.5 bg-white/40 dark:bg-white/5 px-2 py-1.5 rounded-lg cursor-pointer"><input type="checkbox" name="sched-day" value="Sat" class="rounded text-indigo-600"> Sat</label>
-                        <label class="flex items-center gap-1.5 bg-white/40 dark:bg-white/5 px-2 py-1.5 rounded-lg cursor-pointer"><input type="checkbox" name="sched-day" value="Sun" class="rounded text-indigo-600"> Sun</label>
+                        <label class="flex items-center gap-1.5 bg-white/40 dark:bg-white/5 px-2 py-1.5 rounded-lg cursor-pointer"><input type="checkbox" name="sched-day" value="Mon" checked class="rounded text-indigo-600"> <span data-i18n="plans.mon">Mon</span></label>
+                        <label class="flex items-center gap-1.5 bg-white/40 dark:bg-white/5 px-2 py-1.5 rounded-lg cursor-pointer"><input type="checkbox" name="sched-day" value="Tue" checked class="rounded text-indigo-600"> <span data-i18n="plans.tue">Tue</span></label>
+                        <label class="flex items-center gap-1.5 bg-white/40 dark:bg-white/5 px-2 py-1.5 rounded-lg cursor-pointer"><input type="checkbox" name="sched-day" value="Wed" checked class="rounded text-indigo-600"> <span data-i18n="plans.wed">Wed</span></label>
+                        <label class="flex items-center gap-1.5 bg-white/40 dark:bg-white/5 px-2 py-1.5 rounded-lg cursor-pointer"><input type="checkbox" name="sched-day" value="Thu" checked class="rounded text-indigo-600"> <span data-i18n="plans.thu">Thu</span></label>
+                        <label class="flex items-center gap-1.5 bg-white/40 dark:bg-white/5 px-2 py-1.5 rounded-lg cursor-pointer"><input type="checkbox" name="sched-day" value="Fri" checked class="rounded text-indigo-600"> <span data-i18n="plans.fri">Fri</span></label>
+                        <label class="flex items-center gap-1.5 bg-white/40 dark:bg-white/5 px-2 py-1.5 rounded-lg cursor-pointer"><input type="checkbox" name="sched-day" value="Sat" class="rounded text-indigo-600"> <span data-i18n="plans.sat">Sat</span></label>
+                        <label class="flex items-center gap-1.5 bg-white/40 dark:bg-white/5 px-2 py-1.5 rounded-lg cursor-pointer"><input type="checkbox" name="sched-day" value="Sun" class="rounded text-indigo-600"> <span data-i18n="plans.sun">Sun</span></label>
                     </div>
                 </div>
                 <div class="pt-2 flex gap-2">
-                    <button type="button" onclick="closeScheduleModal()" class="flex-1 py-2.5 bg-white/60 dark:bg-white/10 text-slate-800 dark:text-slate-200 rounded-xl border border-white/40 font-medium">Cancel</button>
-                    <button type="submit" class="v-accent-btn flex-1 py-2.5 bg-indigo-600 text-white rounded-xl shadow-md font-semibold">Save Plan</button>
+                    <button type="button" onclick="closeScheduleModal()" class="flex-1 py-2.5 bg-white/60 dark:bg-white/10 text-slate-800 dark:text-slate-200 rounded-xl border border-white/40 font-medium" data-i18n="account.cancel">Cancel</button>
+                    <button type="submit" class="v-accent-btn flex-1 py-2.5 bg-indigo-600 text-white rounded-xl shadow-md font-semibold" data-i18n="plans.save">Save Plan</button>
                 </div>
             </form>
         </div>

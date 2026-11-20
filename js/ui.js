@@ -350,17 +350,20 @@ function getTaskDueTimestamp(dueDateStr) {
     return isNaN(t) ? Number.MAX_SAFE_INTEGER : t;
 }
 
-function getTaskDaysLeftLabel(dueDateStr) {
+function getTaskDueMessage(dueDateStr) {
     if (!dueDateStr) return '';
     const todayMidnight = new Date();
     todayMidnight.setHours(0, 0, 0, 0);
     const dueMs = getTaskDueTimestamp(dueDateStr);
     if (dueMs === Number.MAX_SAFE_INTEGER) return dueDateStr;
     const diffDays = Math.round((dueMs - todayMidnight.getTime()) / 86400000);
-    if (diffDays < 0) return `${dueDateStr} (${Math.abs(diffDays)}d overdue)`;
-    if (diffDays === 0) return `${dueDateStr} (Today)`;
-    if (diffDays === 1) return `${dueDateStr} (1d left)`;
-    return `${dueDateStr} (${diffDays}d left)`;
+    const date = FPi18n.dateMessage(dueDateStr);
+    if (diffDays === 0) return FPi18n.message('tasks.today', {date});
+    return FPi18n.message(diffDays < 0 ? 'tasks.overdue' : 'tasks.daysLeft', {date, days: Math.abs(diffDays)});
+}
+
+function getTaskDaysLeftLabel(dueDateStr) {
+    return FPi18n.resolve(getTaskDueMessage(dueDateStr));
 }
 
 function sortTasksByDateLeftAndCompletion(tasksArray) {
@@ -463,22 +466,91 @@ function openHabitFromNextUpBox(habitId) {
 }
 
 // Persisted categories are editable. Only the built-in labels have translation keys.
-const dashboardTaskCategories = {
+const taskCategoryKeys = {
+    'Not Selected': 'tasks.unselected',
     Studies: 'setup.studies', Fitness: 'setup.fitness', Health: 'setup.health', Personal: 'setup.personal'
 };
-const dashboardSubcategories = {
+const taskSubcategoryKeys = {
     Studies: {General: 'category.general', Exams: 'category.exams', Assignments: 'category.assignments'},
     Fitness: {Cardio: 'category.cardio', Strength: 'category.strength'},
     Health: {Hydration: 'category.hydration', Sleep: 'category.sleep'},
     Personal: {Reading: 'category.reading', Projects: 'category.projects'}
 };
-const dashboardHabitCategories = {
+const habitCategoryKeys = {
+    Personal: 'setup.personal', All: 'habits.all',
     Health: 'setup.health', Fitness: 'setup.fitness', Productivity: 'category.productivity',
     Mindfulness: 'category.mindfulness', Learning: 'category.learning'
 };
-function categoryLabelHtml(value, keys) {
-    return keys && Object.hasOwn(keys, value) ? FPi18n.markup(keys[value]) : escapeHtml(value);
+function categoryMessage(value, keys) {
+    if (value === 'Not Selected') return FPi18n.message('tasks.unselected');
+    return keys && Object.hasOwn(keys, value) ? FPi18n.message(keys[value]) : value;
 }
+
+function categoryLabelHtml(value, keys) {
+    return FPi18n.messageHtml(categoryMessage(value, keys));
+}
+
+function subcategoryMessage(category, subcategory) {
+    if (!subcategory || subcategory === 'General') return FPi18n.message('category.general');
+    return categoryMessage(subcategory, taskSubcategoryKeys[category]);
+}
+
+function categoryOption(value, label) {
+    const binding = typeof label === 'object' ? ' data-i18n="' + label.key + '"' : '';
+    return '<option value="' + escapeHtml(value) + '"' + binding + '>' + escapeHtml(FPi18n.resolve(label)) + '</option>';
+}
+
+// Only known sample records use catalog labels. A matching title on a user's own record is literal text.
+function sampleText(value, key) {
+    return key && value === window.FocusPulseLocales.en.messages[key] ? FPi18n.message(key) : value;
+}
+
+function taskTitleMessage(task) {
+    return sampleText(task.title, task.id === '1' && 'tasks.sampleTitle');
+}
+
+function taskDescriptionMessage(task) {
+    return sampleText(task.description, task.id === '1' && 'tasks.sampleDescription');
+}
+
+function habitNameMessage(habit) {
+    // Onboarding suggestion records carry an explicit flag. Manually created habits omit it.
+    if (habit.isDefaultHabit === false && /^h-\d+-[a-z0-9]+$/.test(habit.id)) {
+        const suggestion = QUICK_HABIT_SUGGESTIONS.find(item => item.name === habit.name && item.category === habit.category);
+        return suggestion ? FPi18n.message(suggestion.nameKey) : habit.name;
+    }
+    if (!habit.isDefaultHabit) return habit.name;
+    const key = {'h-1': 'auth.morningHydration500ml', 'h-2': 'auth.sleepOnTime'}[habit.id];
+    return sampleText(habit.name, key);
+}
+
+// Localize a suggested value until the first keystroke. Preserve the original value on an untouched edit.
+function fillSuggestedField(input, label, original) {
+    delete input.dataset.suggestionKey;
+    delete input.dataset.originalValue;
+    if (label && typeof label === 'object') {
+        input.dataset.suggestionKey = label.key;
+        if (original !== undefined) input.dataset.originalValue = original;
+    }
+    input.value = FPi18n.resolve(label);
+}
+
+function readSuggestedField(input) {
+    return input.dataset.originalValue ?? input.value;
+}
+
+document.addEventListener('input', event => {
+    if (event.target.dataset?.suggestionKey) {
+        delete event.target.dataset.suggestionKey;
+        delete event.target.dataset.originalValue;
+    }
+});
+window.addEventListener('focuspulse:languagechange', () => {
+    for (const input of document.querySelectorAll('[data-suggestion-key]')) {
+        input.value = FPi18n.translate(input.dataset.suggestionKey);
+    }
+    if (currentTaskSearch) renderTasksList();
+});
 
 function renderDashboardNextTaskCard(animate = false) {
     const box = document.getElementById('dashboard-next-task-box');
@@ -531,9 +603,9 @@ function renderDashboardNextTaskCard(animate = false) {
                 <i class="fa-regular fa-square-check text-base"></i>
             </div>
             <div class="min-w-0 flex-1">
-                <h4 class="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">${escapeHtml(currentTask.title)}</h4>
+                <h4 class="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">${FPi18n.messageHtml(taskTitleMessage(currentTask))}</h4>
                 <div class="flex items-center gap-2 mt-1 flex-wrap">
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/60 dark:bg-white/10 text-slate-700 dark:text-slate-300">${categoryLabelHtml(currentTask.category, dashboardTaskCategories)} • ${currentTask.subcategory ? categoryLabelHtml(currentTask.subcategory, dashboardSubcategories[currentTask.category]) : FPi18n.markup('category.general')}</span>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/60 dark:bg-white/10 text-slate-700 dark:text-slate-300">${categoryLabelHtml(currentTask.category, taskCategoryKeys)} • ${FPi18n.messageHtml(subcategoryMessage(currentTask.category, currentTask.subcategory))}</span>
                     <span class="text-[10px] font-bold ${isToday ? 'text-amber-500' : 'text-slate-500 dark:text-slate-400'}">
                         <i class="fa-regular fa-calendar mr-1"></i>${isToday ? FPi18n.markup('home.dueToday') : FPi18n.markup('stats.date', {date: FPi18n.dateMessage(currentTask.dueDate)})}
                     </span>
@@ -607,9 +679,9 @@ function renderDashboardNextHabitCard(animate = false) {
                 ${currentHabit.icon || '⚡'}
             </div>
             <div class="min-w-0 flex-1">
-                <h4 class="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">${escapeHtml(currentHabit.name)}</h4>
+                <h4 class="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">${FPi18n.messageHtml(habitNameMessage(currentHabit))}</h4>
                 <div class="flex items-center gap-2 mt-1 flex-wrap">
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/60 dark:bg-white/10 text-slate-700 dark:text-slate-300">${categoryLabelHtml(currentHabit.category, dashboardHabitCategories)}</span>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/60 dark:bg-white/10 text-slate-700 dark:text-slate-300">${categoryLabelHtml(currentHabit.category, habitCategoryKeys)}</span>
                     <span class="text-[10px] font-bold text-amber-500"><i class="fa-solid fa-fire mr-1"></i>${FPi18n.markup('home.habitProgress', {days: streak, target: currentHabit.targetPerWeek || 5})}</span>
                 </div>
             </div>
@@ -1085,7 +1157,7 @@ window.updateUI = function() {
                 const coursePendingCount = getPendingTaskCountForCourse(c.name);
                 const isSelectedCourse = (activeMainTab === 'tasks' && currentTaskCourseFilter === c.name);
                 return `
-                    <button onclick="filterTasksByCourseFromSidebar('${escapeHtml(c.name)}')" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-2xl hover:bg-white/5 transition text-left border ${isSelectedCourse ? 'border-indigo-500/50 bg-indigo-500/10' : 'border-transparent'}">
+                    <button data-value="${escapeHtml(c.name)}" onclick="filterTasksByCourseFromSidebar(this.dataset.value)" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-2xl hover:bg-white/5 transition text-left border ${isSelectedCourse ? 'border-indigo-500/50 bg-indigo-500/10' : 'border-transparent'}">
                         <span class="w-8 h-8 rounded-xl flex items-center justify-center text-[11px] font-black uppercase shrink-0" style="background:${col}22;color:${col};border:1.5px solid ${col}55;">
                             ${escapeHtml(twoLetters)}
                         </span>
@@ -1108,9 +1180,9 @@ window.updateUI = function() {
     const glassLbl = document.getElementById('glass-size-label');
     const intervalLbl = document.getElementById('water-interval-label');
     if (waterBar) waterBar.style.width = pct + '%';
-    if (waterStat) waterStat.innerText = `${state.waterIntakeMl || 0} / ${state.dailyWaterGoalMl || 2500} ml`;
-    if (glassLbl) glassLbl.innerText = `${state.glassSizeMl || 250} ml`;
-    if (intervalLbl) intervalLbl.innerText = `${state.waterReminderIntervalMin || 90}m`;
+    FPi18n.bind(waterStat, 'water.amount', {intake: state.waterIntakeMl || 0, goal: state.dailyWaterGoalMl || 2500});
+    FPi18n.bind(glassLbl, 'water.glass', {size: state.glassSizeMl || 250});
+    FPi18n.bind(intervalLbl, 'water.minutes', {minutes: state.waterReminderIntervalMin || 90});
 
     // Focus Time stats
     const hrs = Math.floor((state.timer.totalFocusSecs || 0) / 3600);
@@ -1192,7 +1264,7 @@ window.updateUI = function() {
     const histCount = (state.taskHistory || []).length;
     const histBadge = document.getElementById('task-history-count-badge');
     if (histBadge) {
-        histBadge.innerText = histCount;
+        FPi18n.bind(histBadge, 'stats.number', {value: histCount});
     }
 
     renderDashboardNextUpRow();
@@ -1259,7 +1331,8 @@ function archiveCompletedTaskNow(taskId) {
     window.appState.tasks.splice(idx, 1);
     saveState();
     window.updateUI();
-    showNotification("Moved to Task History", `"${task.title}" was archived to Task History.`, "info");
+    showNotification(FPi18n.message('tasks.archived'),
+        FPi18n.message('tasks.archivedBody', {title: taskTitleMessage(task)}), "info");
 }
 
 function restoreTaskFromHistory(histId) {
@@ -1274,21 +1347,24 @@ function restoreTaskFromHistory(histId) {
     });
     saveState();
     window.updateUI();
-    showNotification("Task Restored", `Restored "${item.title}" to active tasks.`, "success");
+    showNotification(FPi18n.message('tasks.restored'),
+        FPi18n.message('tasks.restoredBody', {title: taskTitleMessage(item)}), "success");
 }
 
 function deleteTaskFromHistory(histId) {
     window.appState.taskHistory = (window.appState.taskHistory || []).filter(t => t.id !== histId);
     saveState();
     window.updateUI();
-    showNotification("History Item Deleted", "Removed task from history.", "info");
+    showNotification(FPi18n.message('tasks.historyDeleted'),
+        FPi18n.message('tasks.historyDeletedBody'), "info");
 }
 
 function clearAllTaskHistory() {
     window.appState.taskHistory = [];
     saveState();
     window.updateUI();
-    showNotification("History Cleared", "Cleared all archived tasks from Task History.", "info");
+    showNotification(FPi18n.message('tasks.historyCleared'),
+        FPi18n.message('tasks.historyClearedBody'), "info");
 }
 
 function renderTaskHistoryList() {
@@ -1299,17 +1375,17 @@ function renderTaskHistoryList() {
         container.innerHTML = `
             <div class="text-center py-10 space-y-2">
                 <i class="fa-solid fa-clock-rotate-left text-2xl opacity-40" style="color:var(--v-fg2)"></i>
-                <p class="text-xs font-bold" style="color:var(--v-fg)">No archived tasks in History yet</p>
-                <p class="text-[11px]" style="color:var(--v-fg2)">Any task marked completed for 24 hours automatically moves here.</p>
+                <p class="text-xs font-bold" style="color:var(--v-fg)">${FPi18n.markup('tasks.emptyHistory')}</p>
+                <p class="text-[11px]" style="color:var(--v-fg2)">${FPi18n.markup('tasks.emptyHistoryHint')}</p>
             </div>
         `;
         return;
     }
 
     container.innerHTML = hist.map(item => {
-        const completedDateStr = item.completedAt
-            ? new Date(item.completedAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-            : item.dueDate;
+        const date = item.completedAt
+            ? FPi18n.dateMessage(item.completedAt, {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'})
+            : FPi18n.dateMessage(item.dueDate);
         return `
             <div class="glass-panel p-3.5 rounded-2xl flex items-center justify-between gap-3 border" style="border-color:var(--v-bdr2)">
                 <div class="flex items-center gap-3 min-w-0 flex-1">
@@ -1317,18 +1393,18 @@ function renderTaskHistoryList() {
                         <i class="fa-solid fa-check-double text-xs"></i>
                     </div>
                     <div class="min-w-0 flex-1">
-                        <h4 class="text-xs sm:text-sm font-bold line-through opacity-80 truncate" style="color:var(--v-fg)">${escapeHtml(item.title)}</h4>
+                        <h4 class="text-xs sm:text-sm font-bold line-through opacity-80 truncate" style="color:var(--v-fg)">${FPi18n.messageHtml(taskTitleMessage(item))}</h4>
                         <div class="flex items-center gap-2 mt-1 flex-wrap text-[10px]" style="color:var(--v-fg2)">
-                            <span class="px-2 py-0.5 rounded bg-white/50 dark:bg-white/10 font-semibold">${escapeHtml(item.category)} (${escapeHtml(item.subcategory || 'General')})</span>
-                            <span><i class="fa-regular fa-clock mr-1"></i>Completed: ${escapeHtml(completedDateStr)} (24h+ History)</span>
+                            <span class="px-2 py-0.5 rounded bg-white/50 dark:bg-white/10 font-semibold">${categoryLabelHtml(item.category, taskCategoryKeys)} (${FPi18n.messageHtml(subcategoryMessage(item.category, item.subcategory))})</span>
+                            <span><i class="fa-regular fa-clock mr-1"></i>${FPi18n.markup('tasks.historyDate', {date})}</span>
                         </div>
                     </div>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
-                    <button onclick="restoreTaskFromHistory('${item.id}')" class="px-2.5 py-1.5 rounded-xl text-[10px] font-bold border transition hover:opacity-90" style="border-color:var(--v-bdr2);color:var(--v-fg);background:var(--v-bg3)" title="Restore to Active Tasks">
-                        <i class="fa-solid fa-rotate-left mr-1"></i>Restore
+                    <button onclick="restoreTaskFromHistory('${item.id}')" class="px-2.5 py-1.5 rounded-xl text-[10px] font-bold border transition hover:opacity-90" style="border-color:var(--v-bdr2);color:var(--v-fg);background:var(--v-bg3)" title="Restore to Active Tasks" data-i18n-title="tasks.restoreTip">
+                        <i class="fa-solid fa-rotate-left mr-1"></i>${FPi18n.markup('tasks.restore')}
                     </button>
-                    <button onclick="deleteTaskFromHistory('${item.id}')" class="p-1.5 text-slate-400 hover:text-rose-500 transition" title="Delete Permanently">
+                    <button onclick="deleteTaskFromHistory('${item.id}')" class="p-1.5 text-slate-400 hover:text-rose-500 transition" title="Delete Permanently" data-i18n-title="tasks.deletePermanently">
                         <i class="fa-solid fa-trash-can text-xs"></i>
                     </button>
                 </div>
@@ -1359,7 +1435,9 @@ function renderTasksList() {
             (t.title || '').toLowerCase().includes(currentTaskSearch) ||
             (t.category || '').toLowerCase().includes(currentTaskSearch) ||
             (t.subcategory || '').toLowerCase().includes(currentTaskSearch) ||
-            (t.course || '').toLowerCase().includes(currentTaskSearch)
+            (t.course || '').toLowerCase().includes(currentTaskSearch) ||
+            [taskTitleMessage(t), categoryMessage(t.category, taskCategoryKeys), subcategoryMessage(t.category, t.subcategory)]
+                .some(label => FPi18n.resolve(label).toLowerCase().includes(currentTaskSearch))
         );
     }
 
@@ -1377,7 +1455,7 @@ function renderTasksList() {
     });
 
     if (filtered.length === 0) {
-        container.innerHTML = `<div class="text-center py-10 text-slate-500 dark:text-slate-400 text-xs font-medium">No tasks found matching this filter.</div>`;
+        container.innerHTML = `<div class="text-center py-10 text-slate-500 dark:text-slate-400 text-xs font-medium">${FPi18n.markup('tasks.noMatch')}</div>`;
         return;
     }
 
@@ -1395,27 +1473,27 @@ function renderTasksList() {
             <div id="task-row-${t.id}" onclick="highlightTaskRow(this)" class="glass-panel p-3 sm:p-3.5 rounded-2xl flex items-center justify-between gap-2 glass-panel-hover transition cursor-pointer outline-none ${isNearDeadline ? 'ring-1 ring-amber-500/50 bg-amber-500/5' : ''} ${isHighlighted ? 'ring-2 ring-indigo-500' : ''}">
                 <!-- Expanded Tick-Box Hit Zone -->
                 <div onclick="event.stopPropagation(); toggleTaskComplete('${t.id}'); highlightTaskRow(this.parentElement);"
-                     title="Click anywhere here to mark/unmark task"
+                     title="Click anywhere here to mark/unmark task" data-i18n-title="tasks.toggleTip"
                      class="task-tick-zone flex items-center gap-3.5 flex-1 min-w-0 py-1.5 px-2.5 -my-1 -ml-1 rounded-xl hover:bg-indigo-500/10 dark:hover:bg-indigo-500/15 select-none">
                     <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-white/75 dark:bg-white/10 border border-indigo-500/30 shrink-0 shadow-sm">
-                        <input type="checkbox" ${t.completed ? 'checked' : ''}
+                        <input type="checkbox" ${FPi18n.attributeMarkup('aria-label', 'tasks.toggleNamed', {title: taskTitleMessage(t)})} ${t.completed ? 'checked' : ''}
                                onclick="event.stopPropagation(); toggleTaskComplete('${t.id}');"
                                class="task-checkbox-visual w-5 h-5 rounded-md accent-indigo-600 cursor-pointer pointer-events-none">
                     </div>
                     <div class="truncate flex-1">
-                        <h4 class="text-xs sm:text-sm font-bold truncate ${t.completed ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-900 dark:text-white'}">${escapeHtml(t.title)}</h4>
+                        <h4 class="text-xs sm:text-sm font-bold truncate ${t.completed ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-900 dark:text-white'}">${FPi18n.messageHtml(taskTitleMessage(t))}</h4>
                         <div class="flex items-center gap-2 mt-1 flex-wrap">
-                            <span class="text-[10px] bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 font-semibold px-2 py-0.5 rounded">${escapeHtml(t.category)} (${escapeHtml(t.subcategory || 'General')})</span>${getTaskCourseBadgeHtml(t)}
-                            <span class="text-[10px] ${isNearDeadline ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-slate-600 dark:text-slate-400 font-medium'}"><i class="fa-regular fa-calendar mr-1"></i>${escapeHtml(getTaskDaysLeftLabel(t.dueDate))} ${isNearDeadline ? '⚡' : ''}</span>
-                            ${t.completed ? `<span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-clock-rotate-left mr-1"></i>History in ~${hoursLeftToArchive}h</span>` : ''}
+                            <span class="text-[10px] bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 font-semibold px-2 py-0.5 rounded">${categoryLabelHtml(t.category, taskCategoryKeys)} (${FPi18n.messageHtml(subcategoryMessage(t.category, t.subcategory))})</span>${getTaskCourseBadgeHtml(t)}
+                            <span class="text-[10px] ${isNearDeadline ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-slate-600 dark:text-slate-400 font-medium'}"><i class="fa-regular fa-calendar mr-1"></i>${FPi18n.messageHtml(getTaskDueMessage(t.dueDate))} ${isNearDeadline ? '⚡' : ''}</span>
+                            ${t.completed ? `<span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-clock-rotate-left mr-1"></i>${FPi18n.markup('tasks.archiveIn', {hours: hoursLeftToArchive})}</span>` : ''}
                         </div>
                     </div>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0 pl-1" onclick="event.stopPropagation()">
-                    ${t.completed ? `<button onclick="archiveCompletedTaskNow('${t.id}')" class="px-2 py-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 rounded-lg text-[10px] font-bold border border-emerald-500/30" title="Archive to History now"><i class="fa-solid fa-box-archive"></i></button>` : ''}
-                    <button onclick="viewTask('${t.id}')" class="px-2.5 py-1.5 bg-white/70 dark:bg-white/10 hover:bg-white text-slate-800 dark:text-slate-200 rounded-lg text-[10px] font-semibold border border-white/50">View</button>
-                    <button onclick="editTask('${t.id}')" class="v-accent-btn px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-[10px] font-semibold">Edit</button>
-                    <button onclick="deleteTask('${t.id}')" class="p-1.5 text-slate-500 dark:text-slate-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                    ${t.completed ? `<button onclick="archiveCompletedTaskNow('${t.id}')" class="px-2 py-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 rounded-lg text-[10px] font-bold border border-emerald-500/30" title="Archive to History now" data-i18n-title="tasks.archiveNow"><i class="fa-solid fa-box-archive"></i></button>` : ''}
+                    <button onclick="viewTask('${t.id}')" class="px-2.5 py-1.5 bg-white/70 dark:bg-white/10 hover:bg-white text-slate-800 dark:text-slate-200 rounded-lg text-[10px] font-semibold border border-white/50">${FPi18n.markup('tasks.view')}</button>
+                    <button onclick="editTask('${t.id}')" class="v-accent-btn px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-[10px] font-semibold">${FPi18n.markup('courses.edit')}</button>
+                    <button ${FPi18n.attributeMarkup('aria-label', 'tasks.deleteNamed', {title: taskTitleMessage(t)})} onclick="deleteTask('${t.id}')" class="p-1.5 text-slate-500 dark:text-slate-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-xs"></i></button>
                 </div>
             </div>
         `;
@@ -1449,10 +1527,8 @@ function toggleTaskComplete(id) {
             }, 5050);
         }
         showNotification(
-            task.completed ? "Task Completed! ✅" : "Task Reopened",
-            task.completed
-                ? `Marked "${task.title}" complete.`
-                : `Unmarked "${task.title}".`,
+            FPi18n.message(task.completed ? 'tasks.checked' : 'tasks.reopened'),
+            FPi18n.message(task.completed ? 'tasks.checkedBody' : 'tasks.reopenedBody', {title: taskTitleMessage(task)}),
             task.completed ? "task" : "info"
         );
     }
@@ -1463,15 +1539,16 @@ function deleteTask(id) {
     window.appState.tasks = (window.appState.tasks || []).filter(t => t.id !== id);
     saveState();
     window.updateUI();
-    if (task) showNotification("Task Deleted", `Removed "${task.title}".`, "info");
+    if (task) showNotification(FPi18n.message('tasks.deleted'),
+        FPi18n.message('tasks.deletedBody', {title: taskTitleMessage(task)}), "info");
 }
 
 function viewTask(id) {
     const t = (window.appState.tasks || []).find(x => x.id === id);
     if (!t) return;
-    document.getElementById('view-task-title').innerText = t.title;
-    document.getElementById('view-task-cat').innerText = t.category;
-    document.getElementById('view-task-subcat').innerText = t.subcategory || 'General';
+    document.getElementById('view-task-title').innerHTML = FPi18n.messageHtml(taskTitleMessage(t));
+    document.getElementById('view-task-cat').innerHTML = FPi18n.messageHtml(categoryMessage(t.category, taskCategoryKeys));
+    document.getElementById('view-task-subcat').innerHTML = FPi18n.messageHtml(subcategoryMessage(t.category, t.subcategory));
     const courseRowEl = document.getElementById('view-task-course-row');
     const courseValEl = document.getElementById('view-task-course');
     if (courseRowEl && courseValEl) {
@@ -1482,8 +1559,8 @@ function viewTask(id) {
             courseRowEl.classList.add('hidden');
         }
     }
-    document.getElementById('view-task-due').innerText = t.dueDate;
-    document.getElementById('view-task-desc').innerText = t.description || 'No description provided.';
+    FPi18n.bind(document.getElementById('view-task-due'), 'stats.date', {date: FPi18n.dateMessage(t.dueDate)});
+    document.getElementById('view-task-desc').innerHTML = FPi18n.messageHtml(taskDescriptionMessage(t) || FPi18n.message('tasks.noDescription'));
     document.getElementById('task-view-modal').classList.remove('hidden');
 }
 
@@ -1500,21 +1577,21 @@ function toggleTaskInlineForm(open, isEdit = false, taskId = null) {
         updateCategoryDropdowns();
         if (isEdit && taskId) {
             editingTaskId = taskId;
-            document.getElementById('inline-task-modal-title').innerText = 'Edit Task';
+            FPi18n.bind(document.getElementById('inline-task-modal-title'), 'tasks.edit');
             const t = window.appState.tasks.find(x => x.id === taskId);
             if (t) {
-                document.getElementById('inline-task-title').value = t.title;
+                fillSuggestedField(document.getElementById('inline-task-title'), taskTitleMessage(t), t.title);
                 document.getElementById('inline-task-cat').value = t.category || 'Not Selected';
                 selectedInlineTaskCourse = t.course || ((window.appState.courses && window.appState.courses[0]) ? window.appState.courses[0].name : '');
                 updateInlineSubcatDropdown();
                 document.getElementById('inline-task-subcat').value = t.subcategory || 'Not Selected';
                 document.getElementById('inline-task-due').value = t.dueDate;
-                document.getElementById('inline-task-desc').value = t.description || '';
+                fillSuggestedField(document.getElementById('inline-task-desc'), taskDescriptionMessage(t), t.description);
             }
         } else {
             editingTaskId = null;
-            document.getElementById('inline-task-modal-title').innerText = 'Add New Task';
-            document.getElementById('inline-task-title').value = '';
+            FPi18n.bind(document.getElementById('inline-task-modal-title'), 'tasks.create');
+            fillSuggestedField(document.getElementById('inline-task-title'), '');
             // Set Category & Sub-Category to "Not Selected" by default when adding a new task
             const catSelect = document.getElementById('inline-task-cat');
             if (catSelect) catSelect.value = 'Not Selected';
@@ -1525,7 +1602,7 @@ function toggleTaskInlineForm(open, isEdit = false, taskId = null) {
             const subSelect = document.getElementById('inline-task-subcat');
             if (subSelect) subSelect.value = 'Not Selected';
             document.getElementById('inline-task-due').value = formatDateKey(new Date());
-            document.getElementById('inline-task-desc').value = '';
+            fillSuggestedField(document.getElementById('inline-task-desc'), '');
         }
         syncAllCustomSelects();
     } else {
@@ -1543,7 +1620,7 @@ function updateInlineSubcatDropdown() {
         ? window.appState.subcategories[catVal]
         : [];
     const optionsList = ['Not Selected', ...rawSubs.filter(s => s !== 'Not Selected')];
-    subSelect.innerHTML = optionsList.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+    subSelect.innerHTML = optionsList.map(s => categoryOption(s, subcategoryMessage(catVal, s))).join('');
     subSelect.value = 'Not Selected';
     renderInlineTaskCourseSquareButtons();
     if (typeof syncCustomSelect === 'function') {
@@ -1553,13 +1630,13 @@ function updateInlineSubcatDropdown() {
 
 function handleInlineTaskSubmit(e) {
     e.preventDefault();
-    const title = document.getElementById('inline-task-title').value.trim();
+    const title = readSuggestedField(document.getElementById('inline-task-title')).trim();
     const rawCat = document.getElementById('inline-task-cat').value;
     const rawSubcat = document.getElementById('inline-task-subcat').value;
     const category = (!rawCat || rawCat === 'Not Selected') ? 'Not Selected' : rawCat;
     const subcategory = (!rawSubcat || rawSubcat === 'Not Selected') ? 'Not Selected' : rawSubcat;
     const dueDate = document.getElementById('inline-task-due').value || formatDateKey(new Date());
-    const description = document.getElementById('inline-task-desc').value;
+    const description = readSuggestedField(document.getElementById('inline-task-desc'));
 
     const assignedCourse = (category === 'Studies')
         ? (selectedInlineTaskCourse || ((window.appState.courses && window.appState.courses[0]) ? window.appState.courses[0].name : ''))
@@ -1576,7 +1653,8 @@ function handleInlineTaskSubmit(e) {
             t.description = description;
         }
         editingTaskId = null;
-        showNotification("Task Updated", `Saved changes to "${title}"${assignedCourse ? ' (' + assignedCourse + ')' : ''}.`, "success");
+        showNotification(FPi18n.message('tasks.updated'),
+            FPi18n.message(assignedCourse ? 'tasks.updatedCourse' : 'tasks.updatedBody', {title: t ? taskTitleMessage(t) : title, course: assignedCourse}), "success");
     } else {
         window.appState.tasks.unshift({
             id: Date.now().toString(),
@@ -1589,7 +1667,8 @@ function handleInlineTaskSubmit(e) {
             completed: false,
             completedAt: null
         });
-        showNotification("Task Added", `Added "${title}"${assignedCourse ? ' under ' + assignedCourse : ''} to Smart Task Tracker.`, "success");
+        showNotification(FPi18n.message('tasks.added'),
+            FPi18n.message(assignedCourse ? 'tasks.addedCourse' : 'tasks.addedBody', {title, course: assignedCourse}), "success");
     }
     saveState();
     toggleTaskInlineForm(false);
@@ -1605,7 +1684,7 @@ function updateCategoryDropdowns() {
     if (!catSelect) return;
     const currentVal = catSelect.value;
     const cats = ['Not Selected', ...(window.appState.categories || []).filter(c => c !== 'Not Selected')];
-    catSelect.innerHTML = cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    catSelect.innerHTML = cats.map(c => categoryOption(c, categoryMessage(c, taskCategoryKeys))).join('');
     if (currentVal && cats.includes(currentVal)) {
         catSelect.value = currentVal;
     } else {
@@ -1623,7 +1702,8 @@ function addNewCategory() {
     input.value = '';
     saveState();
     window.updateUI();
-    showNotification("Category Added", `Created category "${name}".`, "success");
+    showNotification(FPi18n.message('tasks.categoryAdded'),
+        FPi18n.message('tasks.categoryAddedBody', {name}), "success");
 }
 
 function addNewSubcategory() {
@@ -1636,7 +1716,8 @@ function addNewSubcategory() {
     input.value = '';
     saveState();
     window.updateUI();
-    showNotification("Subcategory Added", `Added "${sub}" under ${cat}.`, "success");
+    showNotification(FPi18n.message('tasks.subAdded'),
+        FPi18n.message('tasks.subAddedBody', {name: sub, category: categoryMessage(cat, taskCategoryKeys)}), "success");
 }
 
 function deleteCategory(cat) {
@@ -1659,18 +1740,22 @@ function renderCategoryManagerList() {
     const manageCatSelect = document.getElementById('manage-cat-select');
     if (!manageList || !manageCatSelect) return;
 
-    manageCatSelect.innerHTML = (window.appState.categories || []).map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    const previousCategory = manageCatSelect.value;
+    manageCatSelect.innerHTML = (window.appState.categories || []).map(c => categoryOption(c, categoryMessage(c, taskCategoryKeys))).join('');
+
+    if ((window.appState.categories || []).includes(previousCategory)) manageCatSelect.value = previousCategory;
+    if (document.getElementById('fp-custom-wrap-manage-cat-select')) syncCustomSelect('manage-cat-select', 'fa-solid fa-layer-group');
 
     manageList.innerHTML = (window.appState.categories || []).map(c => `
         <div class="bg-white/40 dark:bg-white/5 p-2.5 rounded-xl border border-white/20 space-y-1">
             <div class="flex justify-between items-center font-bold text-slate-800 dark:text-slate-200">
-                <span>${escapeHtml(c)}</span>
-                <button onclick="deleteCategory('${escapeHtml(c)}')" class="text-red-500 hover:underline text-[10px]">Delete Cat</button>
+                <span>${categoryLabelHtml(c, taskCategoryKeys)}</span>
+                <button data-value="${escapeHtml(c)}" onclick="deleteCategory(this.dataset.value)" class="text-red-500 hover:underline text-[10px]">${FPi18n.markup('tasks.removeCategory')}</button>
             </div>
             <div class="pl-3 flex flex-wrap gap-1">
                 ${(window.appState.subcategories[c] || []).map(s => `
                     <span class="inline-flex items-center gap-1 bg-white/60 dark:bg-white/10 px-2 py-0.5 rounded text-[10px] text-slate-800 dark:text-slate-200 font-medium">
-                        ${escapeHtml(s)} <button onclick="deleteSubcategory('${escapeHtml(c)}', '${escapeHtml(s)}')" class="text-red-400 hover:text-red-600">×</button>
+                        ${FPi18n.messageHtml(subcategoryMessage(c, s))} <button data-category="${escapeHtml(c)}" data-value="${escapeHtml(s)}" onclick="deleteSubcategory(this.dataset.category, this.dataset.value)" class="text-red-400 hover:text-red-600">×</button>
                     </span>
                 `).join('')}
             </div>
@@ -1685,14 +1770,16 @@ function logWaterGlass() {
     window.appState.lastWaterReminderAt = Date.now();
     saveState();
     window.updateUI();
-    showNotification("Hydration Logged 💧", `+${added} ml added! Total: ${window.appState.waterIntakeMl} ml.`, "success");
+    showNotification(FPi18n.message('water.logged'),
+        FPi18n.message('water.loggedBody', {added, total: window.appState.waterIntakeMl}), "success");
 }
 
 function resetWaterIntake() {
     window.appState.waterIntakeMl = 0;
     saveState();
     window.updateUI();
-    showNotification("Hydration Reset", "Daily water counter reset to 0 ml.", "info");
+    showNotification(FPi18n.message('water.resetTitle'),
+        FPi18n.message('water.resetBody'), "info");
 }
 
 function toggleWaterInlineSettings(open) {
@@ -1723,7 +1810,10 @@ function saveInlineWaterSettings(e) {
     toggleWaterInlineSettings(false);
     saveState();
     window.updateUI();
-    showNotification("Hydration Updated", `Goal set to ${window.appState.dailyWaterGoalMl}ml (${window.appState.glassSizeMl}ml glass, reminder every ${window.appState.waterReminderIntervalMin || 90}m).`, "success");
+    showNotification(FPi18n.message('water.updated'),
+        FPi18n.message('water.updatedBody', {
+            goal: window.appState.dailyWaterGoalMl, size: window.appState.glassSizeMl, minutes: window.appState.waterReminderIntervalMin || 90
+        }), "success");
 }
 
 // Motivation Hub
@@ -1755,21 +1845,53 @@ function copyQuote(btn) {
 }
 
 // Active Plans / Schedules
+const scheduleDayKeys = {Mon: 'plans.mon', Tue: 'plans.tue', Wed: 'plans.wed', Thu: 'plans.thu',
+    Fri: 'plans.fri', Sat: 'plans.sat', Sun: 'plans.sun'};
+
+function scheduleDaysHtml(days) {
+    // Keep delimiters and any free-form text from older backups; translate only calendar tokens.
+    return (days || 'Mon - Fri').split(/\b(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/).map(part =>
+        categoryLabelHtml(part, scheduleDayKeys)).join('');
+}
+
+function scheduleNameMessage(plan) {
+    const keys = {'Balanced Weekdays': 'auth.balancedWeekdays', 'Weekend Deep Review': 'plans.weekendReview',
+        'Light Daily Flow': 'setup.lightDailyFlow', 'Exam Sprint': 'setup.examSprint'};
+    const preset = plan.id === 'sched-ob-1' || (/^sched-balanced-\d+$/.test(plan.id) && plan.presetName === 'Balanced Weekdays') ||
+        (plan.id === '1' && plan.presetName === 'Balanced Weekdays') ||
+        (plan.id === '2' && plan.presetName === 'Weekend Deep Review');
+    return preset && Object.hasOwn(keys, plan.presetName) ? FPi18n.message(keys[plan.presetName]) : plan.presetName;
+}
+
+function populateScheduleDays(days) {
+    const raw = days || 'Mon - Fri';
+    const tokens = Object.keys(scheduleDayKeys);
+    const range = raw.split(/\s*[-–]\s*/);
+    const [start, end] = range.map(day => tokens.indexOf(day));
+    const selected = range.length === 2 && start >= 0 && end >= 0
+        ? tokens.slice(start).concat(tokens.slice(0, start)).slice(0, (end - start + 7) % 7 + 1)
+        : raw.split(',').map(day => day.trim());
+    for (const input of document.querySelectorAll('input[name="sched-day"]')) {
+        input.checked = selected.includes(input.value);
+        input.defaultChecked = input.checked;
+    }
+}
+
 function renderSchedules() {
     const container = document.getElementById('schedules-container');
     if (!container) return;
     if (!window.appState.schedules || window.appState.schedules.length === 0) {
-        container.innerHTML = '<p class="text-xs text-slate-600 dark:text-slate-400 font-semibold text-center py-4">No active plans.</p>';
+        container.innerHTML = `<p class="text-xs text-slate-600 dark:text-slate-400 font-semibold text-center py-4">${FPi18n.markup('plans.empty')}</p>`;
         return;
     }
     container.innerHTML = window.appState.schedules.map(s => `
         <div class="bg-white/50 dark:bg-white/[0.04] border border-white/60 dark:border-white/10 p-3.5 rounded-2xl text-xs space-y-1 relative group">
             <div class="absolute top-2.5 right-2.5 flex gap-1.5 opacity-80 group-hover:opacity-100 transition">
-                <button onclick="editSchedule('${s.id}')" class="text-indigo-500 hover:text-indigo-700 p-1" title="Edit Plan"><i class="fa-solid fa-pen text-[10px]"></i></button>
-                <button onclick="deleteSchedule('${s.id}')" class="text-red-500 hover:text-red-700 p-1" title="Delete Plan"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                <button onclick="editSchedule('${s.id}')" class="text-indigo-500 hover:text-indigo-700 p-1" title="Edit Plan" data-i18n-title="plans.editTip"><i class="fa-solid fa-pen text-[10px]"></i></button>
+                <button onclick="deleteSchedule('${s.id}')" class="text-red-500 hover:text-red-700 p-1" title="Delete Plan" data-i18n-title="plans.deleteTip"><i class="fa-solid fa-trash text-[10px]"></i></button>
             </div>
-            <p class="font-bold" style="color:var(--v-accent)">${escapeHtml(s.presetName)}</p>
-            <p class="text-slate-800 dark:text-slate-200 font-semibold">${s.hours} Hours / ${s.sessions} Sessions (${escapeHtml(s.days || 'Mon - Fri')})</p>
+            <p class="font-bold" style="color:var(--v-accent)">${FPi18n.messageHtml(scheduleNameMessage(s))}</p>
+            <p class="text-slate-800 dark:text-slate-200 font-semibold">${FPi18n.markup('plans.summary', {hours: s.hours, sessions: s.sessions})} (${scheduleDaysHtml(s.days)})</p>
         </div>
     `).join('');
 }
@@ -1778,16 +1900,18 @@ function openScheduleModal(isEdit = false, schedId = null) {
     editingScheduleId = schedId;
     const titleEl = document.getElementById('sched-modal-title');
     if (isEdit && schedId) {
-        titleEl.innerText = 'Edit Active Plan';
+        FPi18n.bind(titleEl, 'plans.edit');
         const s = window.appState.schedules.find(x => x.id === schedId);
         if (s) {
-            document.getElementById('sched-name-input').value = s.presetName;
+            fillSuggestedField(document.getElementById('sched-name-input'), scheduleNameMessage(s), s.presetName);
+            populateScheduleDays(s.days);
             document.getElementById('sched-hours-input').value = s.hours;
             document.getElementById('sched-sessions-input').value = s.sessions;
         }
     } else {
-        titleEl.innerText = 'Add Active Plan';
-        document.getElementById('sched-name-input').value = 'Balanced Weekdays';
+        FPi18n.bind(titleEl, 'plans.create');
+        fillSuggestedField(document.getElementById('sched-name-input'), FPi18n.message('auth.balancedWeekdays'), 'Balanced Weekdays');
+        populateScheduleDays();
         document.getElementById('sched-hours-input').value = '3';
         document.getElementById('sched-sessions-input').value = '3';
     }
@@ -1800,20 +1924,32 @@ function editSchedule(id) {
 
 function handleScheduleSubmit(e) {
     e.preventDefault();
-    const name = document.getElementById('sched-name-input').value.trim();
+    const nameInput = document.getElementById('sched-name-input');
+    const name = readSuggestedField(nameInput).trim();
     const hours = parseInt(document.getElementById('sched-hours-input').value) || 3;
     const sessions = parseInt(document.getElementById('sched-sessions-input').value) || 3;
-    const checkedDays = Array.from(document.querySelectorAll('input[name="sched-day"]:checked')).map(el => el.value);
+    const boxes = Array.from(document.querySelectorAll('input[name="sched-day"]'));
+    const checkedDays = boxes.filter(el => el.checked).map(el => el.value);
     const days = checkedDays.length > 0 ? checkedDays.join(', ') : 'Mon - Fri';
 
     if (editingScheduleId) {
         const s = window.appState.schedules.find(x => x.id === editingScheduleId);
-        if (s) { s.presetName = name; s.hours = hours; s.sessions = sessions; s.days = days; }
+        if (s) {
+            s.presetName = name;
+            s.hours = hours;
+            s.sessions = sessions;
+            if (boxes.some(el => el.checked !== el.defaultChecked)) s.days = days;
+        }
         editingScheduleId = null;
-        showNotification("Plan Updated", `Updated "${name}" study schedule.`, "success");
+        showNotification(FPi18n.message('plans.updated'),
+            FPi18n.message('plans.updatedBody', {name: s ? scheduleNameMessage(s) : name}), "success");
     } else {
-        window.appState.schedules.push({ id: Date.now().toString(), presetName: name, hours, sessions, days });
-        showNotification("Plan Added", `Added "${name}" to Active Plans.`, "success");
+        // Mark a newly accepted preset so a manually entered name with identical text stays literal.
+        const id = nameInput.dataset.suggestionKey ? 'sched-balanced-' + Date.now() : Date.now().toString();
+        const plan = {id, presetName: name, hours, sessions, days};
+        window.appState.schedules.push(plan);
+        showNotification(FPi18n.message('plans.added'),
+            FPi18n.message('plans.addedBody', {name: scheduleNameMessage(plan)}), "success");
     }
     saveState();
     closeScheduleModal();
@@ -1824,7 +1960,8 @@ function deleteSchedule(id) {
     window.appState.schedules = window.appState.schedules.filter(s => s.id !== id);
     saveState();
     window.updateUI();
-    showNotification("Plan Removed", "Study schedule removed.", "info");
+    showNotification(FPi18n.message('plans.removed'),
+        FPi18n.message('plans.removedBody'), "info");
 }
 
 // Account & Profile Update
@@ -2005,13 +2142,14 @@ function syncCustomSelect(selectId, iconClass = 'fa-solid fa-folder') {
     const options = Array.from(selectEl.options || []);
     const selectedValue = selectEl.value || (options[0] ? options[0].value : '');
     const selectedOpt = options.find(o => o.value === selectedValue) || options[0];
-    const selectedLabel = selectedOpt ? selectedOpt.textContent : 'Select...';
+    const optionHtml = opt => opt?.dataset.i18n ? FPi18n.markup(opt.dataset.i18n)
+        : opt ? escapeHtml(opt.textContent) : FPi18n.markup('tasks.select');
 
     if (triggerBtn) {
         triggerBtn.innerHTML = `
             <span class="flex items-center gap-2 truncate">
                 <i class="${iconClass} text-[11px]" style="color:var(--v-accent)"></i>
-                <span class="truncate">${escapeHtml(selectedLabel)}</span>
+                <span class="truncate">${optionHtml(selectedOpt)}</span>
             </span>
             <i class="fa-solid fa-chevron-down fp-select-chevron"></i>
         `;
@@ -2022,9 +2160,9 @@ function syncCustomSelect(selectId, iconClass = 'fa-solid fa-folder') {
             const isSel = opt.value === selectedValue;
             return `
                 <button type="button"
-                    onclick="event.stopPropagation(); chooseCustomSelectOption('${selectId}', '${escapeHtml(opt.value)}')"
+                    data-value="${escapeHtml(opt.value)}" onclick="event.stopPropagation(); chooseCustomSelectOption('${selectId}', this.dataset.value)"
                     class="fp-custom-select-option ${isSel ? 'selected' : ''}">
-                    <span class="truncate">${escapeHtml(opt.textContent)}</span>
+                    <span class="truncate">${optionHtml(opt)}</span>
                     ${isSel ? '<i class="fa-solid fa-check text-[10px]" style="color:var(--v-accent)"></i>' : ''}
                 </button>
             `;
@@ -2541,7 +2679,7 @@ function renderInlineTaskCourseSquareButtons() {
     if (courses.length === 0) {
         containerEl.innerHTML = `
             <div class="text-xs py-2 px-3 rounded-xl border" style="border-color:var(--v-bdr2);color:var(--v-fg2);">
-                No courses added yet. <button type="button" onclick="openCourseSettingsSection()" class="font-extrabold underline" style="color:var(--v-accent)">Add courses in Settings</button>
+                ${FPi18n.markup('tasks.noCourses')} <button type="button" onclick="openCourseSettingsSection()" class="font-extrabold underline" style="color:var(--v-accent)">${FPi18n.markup('tasks.addCourses')}</button>
             </div>
         `;
         return;
@@ -2558,13 +2696,13 @@ function renderInlineTaskCourseSquareButtons() {
         const pendingCnt = getPendingTaskCountForCourse(c.name);
         return `
             <button type="button"
-                onclick="selectInlineTaskCourse('${escapeHtml(c.name)}')"
+                data-value="${escapeHtml(c.name)}" onclick="selectInlineTaskCourse(this.dataset.value)"
                 class="fp-course-sq-btn ${isSel ? 'active' : ''}">
                 <div class="fp-course-sq-avatar" style="background:${col}24;color:${col};border:1.5px solid ${col}66;">
                     ${escapeHtml(twoLetters)}
                 </div>
                 <span class="text-[11px] font-extrabold truncate w-full" style="color:var(--v-fg)">${escapeHtml(c.name)}</span>
-                <span class="text-[9px] font-bold" style="color:${pendingCnt > 0 ? col : 'var(--v-fg3)'}">${pendingCnt} pending</span>
+                <span class="text-[9px] font-bold" style="color:${pendingCnt > 0 ? col : 'var(--v-fg3)'}">${FPi18n.markup('home.pending', {count: pendingCnt})}</span>
             </button>
         `;
     }).join('');
@@ -2610,7 +2748,7 @@ function renderTaskCoursesFilterBar() {
     const pillsHtml = [
         `<button type="button" onclick="setTaskCourseFilter('all')" class="px-3 py-1.5 rounded-xl text-[11px] font-extrabold transition whitespace-nowrap flex items-center gap-1.5 border ${allActive ? 'v-accent-btn' : ''}" style="${allActive ? '' : 'border-color:var(--v-bdr2);background:var(--v-bg0);color:var(--v-fg2);'}">
             <i class="fa-solid fa-layer-group text-[10px]"></i>
-            <span>All Courses (${allStudiesPending})</span>
+            <span>${FPi18n.markup('tasks.allCourses', {count: allStudiesPending})}</span>
         </button>`
     ].concat(courses.map(c => {
         const col = c.color || '#5f5bf6';
@@ -2618,14 +2756,14 @@ function renderTaskCoursesFilterBar() {
         const cnt = getPendingTaskCountForCourse(c.name);
         const isActive = (currentTaskCourseFilter === c.name);
         return `
-            <button type="button" onclick="setTaskCourseFilter('${escapeHtml(c.name)}')"
+            <button type="button" data-value="${escapeHtml(c.name)}" onclick="setTaskCourseFilter(this.dataset.value)"
                 class="px-3 py-1.5 rounded-xl text-[11px] font-extrabold transition whitespace-nowrap flex items-center gap-2 border ${isActive ? 'v-accent-btn' : ''}"
                 style="${isActive ? '' : `border-color:var(--v-bdr2);background:var(--v-bg0);color:var(--v-fg);`}">
                 <span class="w-5 h-5 rounded-md flex items-center justify-center text-[9px] font-black uppercase" style="background:${isActive ? 'rgba(255,255,255,0.2)' : col + '25'};color:${isActive ? '#fff' : col};">
                     ${escapeHtml(twoLetters)}
                 </span>
                 <span>${escapeHtml(c.name)}</span>
-                <span class="px-1.5 py-0.2 rounded-full text-[9px] font-black" style="background:${isActive ? 'rgba(255,255,255,0.22)' : col + '22'};color:${isActive ? '#fff' : col};">${cnt}</span>
+                <span class="px-1.5 py-0.2 rounded-full text-[9px] font-black" style="background:${isActive ? 'rgba(255,255,255,0.22)' : col + '22'};color:${isActive ? '#fff' : col};">${FPi18n.markup('stats.number', {value: cnt})}</span>
             </button>
         `;
     })).join('');

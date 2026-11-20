@@ -428,8 +428,8 @@ function sweepCompletedTasksToHistory() {
         saveState();
         if (typeof showNotification === 'function') {
             showNotification(
-                "Task Archived to History",
-                `${movedCount} completed task${movedCount > 1 ? 's' : ''} (24h+) moved to Task History.`,
+                FPi18n.message('tasks.autoArchived'),
+                FPi18n.message(movedCount === 1 ? 'tasks.autoArchivedOne' : 'tasks.autoArchivedMany', {count: movedCount}),
                 "info"
             );
         }
