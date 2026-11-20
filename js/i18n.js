@@ -15,27 +15,67 @@
     }
     document.documentElement.lang = currentLanguage;
 
+    const locale = () => ({en: 'en-US', vi: 'vi-VN'}[currentLanguage] || currentLanguage);
+    const formatNumber = (value, options) => new Intl.NumberFormat(locale(), options).format(value);
+    function formatDate(value, options) {
+        if (value == null || value === '') return '';
+        const calendarDate = typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
+        const date = new Date(calendarDate ? value + 'T00:00:00' : value);
+        return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat(locale(), options).format(date);
+    }
+
+    // Messages can be retained by an open dialog or toast and resolved again after a switch.
+    const message = (key, params = {}) => ({key, params});
+    function resolve(value) {
+        if (value && typeof value === 'object' && hasOwn(value, 'key')) return translate(value.key, value.params);
+        return value == null ? '' : String(value);
+    }
+
     function translate(key, params = {}) {
+        if (typeof key !== 'string') return '';
         const messages = catalogs[currentLanguage].messages;
         const fallback = catalogs[defaultLanguage].messages;
         const catalog = hasOwn(messages, key) ? messages : fallback;
         if (!hasOwn(catalog, key)) return key;
         return catalog[key].replace(/\{(\w+)\}/g, (placeholder, name) =>
-            hasOwn(params, name) ? String(params[name]) : placeholder
+            hasOwn(params, name) ? (typeof params[name] === 'number' ? formatNumber(params[name]) : resolve(params[name])) : placeholder
         );
     }
 
+    const escape = text => String(text).replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[c]);
+
+    function markup(key, params) {
+        const args = params ? ' data-i18n-params="' + escape(JSON.stringify(params)) + '"' : '';
+        return '<span data-i18n="' + escape(key) + '"' + args + '>' + escape(translate(key, params)) + '</span>';
+    }
+
+    function messageHtml(value) {
+        return value && typeof value === 'object' ? markup(value.key, value.params) : escape(resolve(value));
+    }
+
+    const attributes = ['title', 'aria-label', 'placeholder', 'alt'];
+    const selector = ['[data-i18n]', ...attributes.map(a => '[data-i18n-' + a + ']')].join(',');
+    function applyLabel(element) {
+        const params = element.dataset.i18nParams ? JSON.parse(element.dataset.i18nParams) : {};
+        if (element.dataset.i18n) {
+            const text = translate(element.dataset.i18n, params);
+            if (element.textContent !== text) element.textContent = text;
+        }
+        for (const attribute of attributes) {
+            const key = element.getAttribute('data-i18n-' + attribute);
+            if (key) element.setAttribute(attribute, translate(key, params));
+        }
+    }
+
+    function apply(root) {
+        if (root.nodeType === 1 && root.matches(selector)) applyLabel(root);
+        root.querySelectorAll(selector).forEach(applyLabel);
+    }
+
     function refreshLabels() {
-        // Mark leaf nodes only, so updating a label preserves icons, controls and drafts.
-        for (const element of document.querySelectorAll('[data-i18n]')) {
-            element.textContent = translate(element.dataset.i18n);
-        }
-        for (const attribute of ['title', 'aria-label', 'placeholder', 'alt']) {
-            const binding = 'data-i18n-' + attribute;
-            for (const element of document.querySelectorAll('[' + binding + ']')) {
-                element.setAttribute(attribute, translate(element.getAttribute(binding)));
-            }
-        }
+        apply(document);
         for (const select of document.querySelectorAll('[data-language-select]')) {
             select.value = currentLanguage;
             select.title = translate('language.current', {language: catalogs[currentLanguage].name});
@@ -57,7 +97,8 @@
         return true;
     }
 
-    window.FPi18n = {getCurrentLanguage: () => currentLanguage, setLanguage, translate};
+    window.FPi18n = {getCurrentLanguage: () => currentLanguage, setLanguage, translate,
+        message, resolve, markup, messageHtml, apply, formatDate, formatNumber, getLocale: locale};
 
     document.addEventListener('DOMContentLoaded', () => {
         for (const select of document.querySelectorAll('[data-language-select]')) {
@@ -69,5 +110,30 @@
             select.addEventListener('change', () => setLanguage(select.value));
         }
         refreshLabels();
+        document.addEventListener('invalid', event => {
+            const input = event.target;
+            if (!input.closest('#fp-onboarding-shell, #view-section-account, #account-modal, #view-section-settings, #settings-modal')) return;
+            const validity = input.validity;
+            if (!validity || validity.customError) return;
+            let key = 'validation.invalid';
+            if (validity.valueMissing) key = 'validation.required';
+            else if (validity.typeMismatch && input.type === 'email') key = 'validation.email';
+            else if (validity.tooShort) key = 'validation.minLength';
+            else if (validity.rangeUnderflow) key = 'validation.minimum';
+            else if (validity.rangeOverflow) key = 'validation.maximum';
+            input.setCustomValidity(translate(key, {
+                min: validity.tooShort ? input.minLength : input.min, max: input.max
+            }));
+            // Let the browser display the message, then return validation to the native constraints.
+            Promise.resolve().then(() => input.setCustomValidity(''));
+        }, true);
+        // Each renderer owns its DOM. Only hydrate marked nodes it inserts, never redraw its form.
+        new MutationObserver(records => {
+            for (const record of records) {
+                for (const node of record.addedNodes) {
+                    if (node.nodeType === 1 && node.isConnected) apply(node);
+                }
+            }
+        }).observe(document.body, {childList: true, subtree: true});
     });
 })();

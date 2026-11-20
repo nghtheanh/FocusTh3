@@ -58,22 +58,22 @@ try {
 window.currentFirebaseUser = null;
 
 function showError(msg) {
-    const safeMsg = String(msg || 'An error occurred during authentication.');
+    const errorMessage = msg || FPi18n.message("auth.genericError");
     const obErr = document.getElementById('ob-auth-error-banner');
     if (obErr) {
         obErr.className = "p-3.5 rounded-2xl text-xs font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 flex items-center gap-2 shadow-sm";
-        obErr.innerHTML = `<i class="fa-solid fa-circle-exclamation shrink-0 text-sm"></i><span>${safeMsg}</span>`;
+        obErr.innerHTML = `<i class="fa-solid fa-circle-exclamation shrink-0 text-sm"></i><span>${FPi18n.messageHtml(errorMessage)}</span>`;
         obErr.classList.remove('hidden');
         obErr.style.display = 'flex';
     }
     const modalErr = document.getElementById('auth-error-msg');
     if (modalErr) {
-        modalErr.textContent = safeMsg;
+        modalErr.innerHTML = FPi18n.messageHtml(errorMessage);
         modalErr.classList.remove('hidden');
         modalErr.style.display = 'block';
     }
     if (typeof showNotification === 'function') {
-        showNotification("Authentication", safeMsg, "error");
+        showNotification(FPi18n.message("auth.authentication"), errorMessage, "error");
     }
 }
 window.showError = showError;
@@ -442,8 +442,8 @@ async function applyAuthenticatedUserSession(userObj, intentMeta = null) {
     }
 
     showNotification(
-        `Welcome, ${window.appState.user.name}! 👋`,
-        "Signed in successfully. Your profile and cloud workspace are active.",
+        FPi18n.message("auth.welcome", { name: window.appState.user.name }),
+        FPi18n.message("auth.signedInBody"),
         "success"
     );
 }
@@ -472,7 +472,7 @@ window.firebaseLoginEmail = async (emailArg, passArg, fromOnboarding = false) =>
     const email = (emailArg !== undefined ? emailArg : (document.getElementById('ob-signin-email')?.value || document.getElementById('auth-email-input')?.value || '')).trim();
     const pass = passArg !== undefined ? passArg : (document.getElementById('ob-signin-password')?.value || document.getElementById('auth-password-input')?.value || '');
     if (!email || !pass) {
-        showError("Please enter both your email address and password.");
+        showError(FPi18n.message("auth.credentialsRequired"));
         return false;
     }
 
@@ -480,7 +480,7 @@ window.firebaseLoginEmail = async (emailArg, passArg, fromOnboarding = false) =>
     let authUserObj = null;
 
     if (typeof window.setOnboardingAuthLoading === 'function') {
-        window.setOnboardingAuthLoading(true, 'Verifying credentials & restoring data...');
+        window.setOnboardingAuthLoading(true, FPi18n.message("auth.verifyingCredentialsRestoringData"));
     }
 
     // 1. Check persistent Registered Accounts registry first
@@ -498,11 +498,11 @@ window.firebaseLoginEmail = async (emailArg, passArg, fromOnboarding = false) =>
             // If Firebase fails (e.g. offline or user registered locally), verify against local registry
             if (!existingAcc) {
                 if (typeof window.setOnboardingAuthLoading === 'function') window.setOnboardingAuthLoading(false);
-                showError("No user found with this email. Please check your email or create an account.");
+                showError(FPi18n.message("auth.accountNotFound"));
                 return false;
             } else if (existingAcc.password && existingAcc.password !== pass) {
                 if (typeof window.setOnboardingAuthLoading === 'function') window.setOnboardingAuthLoading(false);
-                showError("Invalid credential, check your email and password again.");
+                showError(FPi18n.message("auth.invalidCredentials"));
                 return false;
             }
         }
@@ -510,25 +510,25 @@ window.firebaseLoginEmail = async (emailArg, passArg, fromOnboarding = false) =>
         // Firebase Auth not initialized: strictly check local accounts registry
         if (!existingAcc) {
             if (typeof window.setOnboardingAuthLoading === 'function') window.setOnboardingAuthLoading(false);
-            showError("No user found with this email. Please check your email or create an account.");
+            showError(FPi18n.message("auth.accountNotFound"));
             return false;
         }
         if (existingAcc.password && existingAcc.password !== pass) {
             if (typeof window.setOnboardingAuthLoading === 'function') window.setOnboardingAuthLoading(false);
-            showError("Invalid credential, check your email and password again.");
+            showError(FPi18n.message("auth.invalidCredentials"));
             return false;
         }
     }
 
     if (!authUserObj && !existingAcc) {
         if (typeof window.setOnboardingAuthLoading === 'function') window.setOnboardingAuthLoading(false);
-        showError("No user found with this email. Please check your email or create an account.");
+        showError(FPi18n.message("auth.accountNotFound"));
         return false;
     }
 
     if (!authUserObj && existingAcc && existingAcc.password && existingAcc.password !== pass) {
         if (typeof window.setOnboardingAuthLoading === 'function') window.setOnboardingAuthLoading(false);
-        showError("Invalid credential, check your email and password again.");
+        showError(FPi18n.message("auth.invalidCredentials"));
         return false;
     }
 
@@ -591,7 +591,7 @@ window.firebaseLoginEmail = async (emailArg, passArg, fromOnboarding = false) =>
     if (typeof window.updateUI === 'function') window.updateUI();
     if (typeof switchAppView === 'function') switchAppView('home', false);
 
-    showNotification("Welcome Back! 👋", `Signed in as ${window.appState.user.name || normEmail}. All data restored.`, "success");
+    showNotification(FPi18n.message("auth.welcomeBack2"), FPi18n.message("auth.signedInAsAllDataRestored", { account: window.appState.user.name || normEmail }), "success");
     return true;
 };
 
@@ -601,11 +601,11 @@ window.firebaseSignupEmail = async (nameArg, emailArg, passArg, fromOnboarding =
     const pass = passArg !== undefined ? passArg : (document.getElementById('auth-password-input')?.value || '');
 
     if (!email || !pass) {
-        showError("Please enter your email address and a password.");
+        showError(FPi18n.message("auth.signUpCredentialsRequired"));
         return false;
     }
     if (pass.length < 6) {
-        showError("Password must be at least 6 characters long.");
+        showError(FPi18n.message("auth.passwordTooShort"));
         return false;
     }
 
@@ -614,13 +614,13 @@ window.firebaseSignupEmail = async (nameArg, emailArg, passArg, fromOnboarding =
     // Strict Account Registry check: prevent registering duplicate existing accounts
     const existingAcc = findRegisteredAccount(normEmail);
     if (existingAcc) {
-        showError("An account with this email already exists. Please sign in instead.");
+        showError(FPi18n.message("auth.emailInUse"));
         return false;
     }
 
     // Immediate button loading feedback on first click
     if (typeof window.setOnboardingAuthLoading === 'function') {
-        window.setOnboardingAuthLoading(true, 'Setting up your space...');
+        window.setOnboardingAuthLoading(true, FPi18n.message("auth.settingUpYourSpace"));
     }
 
     if (auth) {
@@ -632,16 +632,16 @@ window.firebaseSignupEmail = async (nameArg, emailArg, passArg, fromOnboarding =
         } catch (e) {
             const code = e?.code || '';
             if (code.includes('email-already-in-use')) {
-                showError("An account with this email already exists. Please sign in instead.");
+                showError(FPi18n.message("auth.emailInUse"));
                 return false;
             } else if (code.includes('weak-password')) {
-                showError("Password should be at least 6 characters long.");
+                showError(FPi18n.message("auth.providerWeakPassword"));
                 return false;
             } else if (code.includes('invalid-email')) {
-                showError("Please enter a valid email address.");
+                showError(FPi18n.message("auth.pleaseEnterAValidEmailAddress"));
                 return false;
             } else {
-                showError(e?.message || "Could not create account. Please try again.");
+                showError(FPi18n.message("auth.signUpFailed"));
                 return false;
             }
         } finally {
@@ -674,7 +674,7 @@ window.firebaseSignupEmail = async (nameArg, emailArg, passArg, fromOnboarding =
     if (typeof updateOnboardingAccountStatusUI === 'function') updateOnboardingAccountStatusUI();
 
     // Direct transition to Welcome Wizard & Preferences!
-    showNotification("Account Created! 🎉", `Welcome ${window.appState.user.name}! Let's set up your preferences.`, "success");
+    showNotification(FPi18n.message("auth.accountCreated"), FPi18n.message("auth.welcomeLetSSetUpYourPreferences", { name: window.appState.user.name }), "success");
     if (typeof openOnboardingWizard === 'function') {
         openOnboardingWizard('step_a', false);
     }
@@ -685,7 +685,7 @@ window.firebaseSignupEmail = async (nameArg, emailArg, passArg, fromOnboarding =
 window.firebaseResetPassword = async (emailArg) => {
     const email = (emailArg || '').trim();
     if (!email || !email.includes('@')) {
-        showError("Please enter the email address associated with your account.");
+        showError(FPi18n.message("auth.resetEmailRequired"));
         return false;
     }
     const normEmail = email.toLowerCase();
@@ -696,7 +696,7 @@ window.firebaseResetPassword = async (emailArg) => {
     const existingAcc = accounts[key] || accounts[normEmail];
 
     if (!existingAcc) {
-        showError("No account found with this email. Please verify your email or create an account.");
+        showError(FPi18n.message("auth.resetAccountNotFound"));
         return false;
     }
 
@@ -733,17 +733,17 @@ window.firebaseResetPassword = async (emailArg) => {
         errEl.innerHTML = `
             <div class="flex items-center gap-2 font-black text-sm text-emerald-700 dark:text-emerald-300">
                 <i class="fa-solid fa-circle-check text-base"></i>
-                <span>Password Reset Successful!</span>
+                <span data-i18n="auth.passwordResetSuccessful">Password Reset Successful!</span>
             </div>
-            <p class="text-xs font-semibold">Your password has been reset to:</p>
+            <p class="text-xs font-semibold"><span data-i18n="auth.yourPasswordHasBeenResetTo">Your password has been reset to:</span></p>
             <div class="p-2.5 rounded-xl bg-white/80 dark:bg-black/50 border border-emerald-500/40 text-center font-mono font-black text-base text-emerald-600 dark:text-emerald-300 select-all tracking-wider">
                 ${escapeHtml(newPassword)}
             </div>
             <p class="text-[11px] font-medium text-slate-600 dark:text-slate-400">
-                Format: <strong>[Name]@123</strong>. Click below to sign in immediately with this password.
+                <span data-i18n="auth.format2">Format:</span> <strong><span data-i18n="auth.name123">[Name]@123</span></strong><span data-i18n="auth.resetSignInHint">. Click below to sign in immediately with this password.</span>
             </p>
             <button type="button" onclick="autoFillAndOpenSignIn('${escapeHtml(normEmail)}', '${escapeHtml(newPassword)}')" class="v-accent-btn w-full py-2.5 rounded-xl font-extrabold text-xs shadow-md transition flex items-center justify-center gap-1.5">
-                <span>Sign In With New Password →</span>
+                <span data-i18n="auth.signInWithNewPassword">Sign In With New Password →</span>
             </button>
         `;
         errEl.classList.remove('hidden');
@@ -755,7 +755,7 @@ window.firebaseResetPassword = async (emailArg) => {
         submitBtn.classList.add('hidden');
     }
 
-    showNotification("Password Reset! 🔑", `New password: ${newPassword}`, "success");
+    showNotification(FPi18n.message("auth.passwordReset2"), FPi18n.message("auth.newPassword", { newPassword }), "success");
     return true;
 };
 
@@ -845,7 +845,7 @@ window.firebaseLogout = async () => {
         openOnboardingAuthScreen('signin');
     }
 
-    showNotification("Logged Out 👋", "Session ended. Please sign in to access your account.", "info");
+    showNotification(FPi18n.message("auth.loggedOut"), FPi18n.message("auth.signedOutBody"), "info");
 };
 
 window.switchToSignUpFromBackupModal = function() {
@@ -863,7 +863,7 @@ window.promptDeleteAccountModal = function() {
     const desc = document.getElementById('delete-account-modal-desc');
     const email = (window.appState && window.appState.authEmail) || (auth && auth.currentUser ? auth.currentUser.email : '') || '';
     if (desc && email) {
-        desc.innerText = `This will permanently delete your user profile and cloud Firestore records for ${email}. Your email will be completely reset and released so it can be registered afresh as a new account.`;
+        desc.innerHTML = FPi18n.markup("auth.deleteWarningWithEmail", { email });
     }
     if (modal) modal.classList.remove('hidden');
 };
@@ -877,7 +877,7 @@ window.executeDeleteAccountAction = async function() {
     const btn = document.getElementById('confirm-delete-account-btn');
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-1.5"></i><span>Deleting...</span>';
+        btn.innerHTML = "<i class=\"fa-solid fa-circle-notch fa-spin mr-1.5\"></i><span><span data-i18n=\"auth.deleting\">Deleting...</span></span>";
     }
     try {
         const email = (window.appState && window.appState.authEmail) || (auth && auth.currentUser ? auth.currentUser.email : '') || '';
@@ -947,8 +947,8 @@ window.executeDeleteAccountAction = async function() {
         if (typeof window.updateUI === 'function') window.updateUI();
 
         showNotification(
-            "Account Deleted & Reset",
-            `Account for ${email || 'user'} has been deleted. Your email is reset and can be registered as new.`,
+            FPi18n.message("auth.accountDeletedReset"),
+            FPi18n.message("auth.accountDeletedBody", { email: email || 'user' }),
             "info"
         );
 
@@ -957,11 +957,11 @@ window.executeDeleteAccountAction = async function() {
         }
     } catch (err) {
         console.error("Account deletion failed:", err);
-        showError("Account deletion note: " + (err.message || err));
+        showError(FPi18n.message("auth.accountDeletionNote"));
     } finally {
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = '<span>Yes, Delete Account</span>';
+            btn.innerHTML = "<span><span data-i18n=\"account.yesDeleteAccount\">Yes, Delete Account</span></span>";
         }
     }
 };
@@ -987,7 +987,7 @@ window.addEventListener('storage', (event) => {
                 if (typeof window.updateUI === 'function') window.updateUI();
                 if (typeof openOnboardingAuthScreen === 'function') openOnboardingAuthScreen('signin');
                 if (typeof showNotification === 'function') {
-                    showNotification("Session Expired", "Account was deleted. Please sign in or create an account.", "info");
+                    showNotification(FPi18n.message("auth.sessionExpired"), FPi18n.message("auth.sessionExpiredBody"), "info");
                 }
             }
         } catch(e) {}
@@ -1003,11 +1003,11 @@ window.syncNowFromProfile = async function() {
     const origHtml = btn ? btn.innerHTML : '';
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-rotate fa-spin mr-1"></i> <span>Syncing...</span>';
+        btn.innerHTML = "<i class=\"fa-solid fa-rotate fa-spin mr-1\"></i> <span><span data-i18n=\"auth.syncing\">Syncing...</span></span>";
     }
     try {
         if (!window.appState || window.appState.userType !== 'authenticated') {
-            showNotification("Sync Notice", "Please sign in to sync your workspace data across devices.", "info");
+            showNotification(FPi18n.message("auth.syncNotice"), FPi18n.message("auth.syncRequiresSignIn"), "info");
             return;
         }
 
@@ -1042,10 +1042,10 @@ window.syncNowFromProfile = async function() {
         if (typeof window.updateUI === 'function') window.updateUI();
         if (typeof updateOnboardingAccountStatusUI === 'function') updateOnboardingAccountStatusUI();
 
-        showNotification("Sync Complete! 🔄", "All workspace tasks, habits & settings synced in realtime.", "success");
+        showNotification(FPi18n.message("auth.syncComplete"), FPi18n.message("auth.syncCompleteBody"), "success");
     } catch (err) {
         console.error("Sync error:", err);
-        showNotification("Sync Notice", "Workspace state saved locally and queued for cloud sync.", "info");
+        showNotification(FPi18n.message("auth.syncNotice"), FPi18n.message("auth.syncQueued"), "info");
     } finally {
         if (btn) {
             btn.disabled = false;

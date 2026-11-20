@@ -71,25 +71,25 @@ function isHexLight(hex) {
 }
 
 const FP_THEMES = [
-    { id: 'obsidian',  name: 'Obsidian',       desc: 'Deep carbon & slate',  bg: '#0c0b0b', cardBg: '#171515', lightBg: '#ffffff', lightCard: '#f8fafc', accent: '#64748b' },
-    { id: 'midnight',  name: 'Midnight Navy',  desc: 'Deep navy & indigo',   bg: '#05070e', cardBg: '#0d1222', lightBg: '#f8faff', lightCard: '#eef2ff', accent: '#4f46e5' },
-    { id: 'forest',    name: 'Forest Emerald', desc: 'Moss & emerald tones', bg: '#040806', cardBg: '#0b1510', lightBg: '#f7fdfa', lightCard: '#ecfdf5', accent: '#10b981' },
-    { id: 'cyberpunk', name: 'Cyberpunk',      desc: 'Vibrant neon purple',  bg: '#0a0112', cardBg: '#1b032d', lightBg: '#fdfaff', lightCard: '#fae8ff', accent: '#d946ef' },
-    { id: 'sunset',    name: 'Sunset Crimson', desc: 'Warm crimson tones',   bg: '#0a0505', cardBg: '#1b0c0c', lightBg: '#fffafa', lightCard: '#fef2f2', accent: '#ef4444' },
-    { id: 'pureblack', name: 'Pure Black',     desc: 'OLED pitch black',     bg: '#000000', cardBg: '#0a0a0a', lightBg: '#ffffff', lightCard: '#f8fafc', accent: '#0f172a' },
-    { id: 'purewhite', name: 'Pure White',     desc: 'Crisp white surface',  bg: '#ffffff', cardBg: '#f8fafc', lightBg: '#ffffff', lightCard: '#f8fafc', accent: '#4f46e5' }
+    { id: 'obsidian',  name: 'Obsidian', nameKey: "appearance.theme.obsidian",       desc: 'Deep carbon & slate', descKey: "appearance.deepCarbonSlate",  bg: '#0c0b0b', cardBg: '#171515', lightBg: '#ffffff', lightCard: '#f8fafc', accent: '#64748b' },
+    { id: 'midnight',  name: 'Midnight Navy', nameKey: "appearance.midnightNavy",  desc: 'Deep navy & indigo', descKey: "appearance.deepNavyIndigo",   bg: '#05070e', cardBg: '#0d1222', lightBg: '#f8faff', lightCard: '#eef2ff', accent: '#4f46e5' },
+    { id: 'forest',    name: 'Forest Emerald', nameKey: "appearance.forestEmerald", desc: 'Moss & emerald tones', descKey: "appearance.mossEmeraldTones", bg: '#040806', cardBg: '#0b1510', lightBg: '#f7fdfa', lightCard: '#ecfdf5', accent: '#10b981' },
+    { id: 'cyberpunk', name: 'Cyberpunk', nameKey: "appearance.theme.cyberpunk",      desc: 'Vibrant neon purple', descKey: "appearance.vibrantNeonPurple",  bg: '#0a0112', cardBg: '#1b032d', lightBg: '#fdfaff', lightCard: '#fae8ff', accent: '#d946ef' },
+    { id: 'sunset',    name: 'Sunset Crimson', nameKey: "appearance.sunsetCrimson", desc: 'Warm crimson tones', descKey: "appearance.warmCrimsonTones",   bg: '#0a0505', cardBg: '#1b0c0c', lightBg: '#fffafa', lightCard: '#fef2f2', accent: '#ef4444' },
+    { id: 'pureblack', name: 'Pure Black', nameKey: "appearance.pureBlack",     desc: 'OLED pitch black', descKey: "appearance.oledPitchBlack",     bg: '#000000', cardBg: '#0a0a0a', lightBg: '#ffffff', lightCard: '#f8fafc', accent: '#0f172a' },
+    { id: 'purewhite', name: 'Pure White', nameKey: "appearance.pureWhite",     desc: 'Crisp white surface', descKey: "appearance.crispWhiteSurface",  bg: '#ffffff', cardBg: '#f8fafc', lightBg: '#ffffff', lightCard: '#f8fafc', accent: '#4f46e5' }
 ];
 
 const FP_ACCENTS = [
-    { value: '#e2ddd9', lightValue: '#334155', label: 'Silver / Slate' },
-    { value: '#5f5bf6', lightValue: '#4f46e5', label: 'Indigo' },
-    { value: '#8b5cf6', lightValue: '#7c3aed', label: 'Violet' },
-    { value: '#10b981', lightValue: '#059669', label: 'Emerald' },
-    { value: '#d946ef', lightValue: '#c026d3', label: 'Magenta' },
-    { value: '#f97316', lightValue: '#ea580c', label: 'Orange' },
-    { value: '#ef4444', lightValue: '#dc2626', label: 'Crimson' },
-    { value: '#06b6d4', lightValue: '#0891b2', label: 'Cyan' },
-    { value: '#eab308', lightValue: '#ca8a04', label: 'Gold' }
+    { value: '#e2ddd9', lightValue: '#334155', label: 'Silver / Slate', labelKey: "appearance.silverSlate" },
+    { value: '#5f5bf6', lightValue: '#4f46e5', label: 'Indigo', labelKey: "appearance.indigo" },
+    { value: '#8b5cf6', lightValue: '#7c3aed', label: 'Violet', labelKey: "appearance.violet" },
+    { value: '#10b981', lightValue: '#059669', label: 'Emerald', labelKey: "appearance.emerald" },
+    { value: '#d946ef', lightValue: '#c026d3', label: 'Magenta', labelKey: "appearance.magenta" },
+    { value: '#f97316', lightValue: '#ea580c', label: 'Orange', labelKey: "appearance.orange" },
+    { value: '#ef4444', lightValue: '#dc2626', label: 'Crimson', labelKey: "appearance.crimson" },
+    { value: '#06b6d4', lightValue: '#0891b2', label: 'Cyan', labelKey: "appearance.cyan" },
+    { value: '#eab308', lightValue: '#ca8a04', label: 'Gold', labelKey: "appearance.gold" }
 ];
 
 // Built-in SVG Preset Profile Avatars for instant 1-tap selection alongside custom photo uploads
@@ -109,12 +109,12 @@ function createPresetAvatarSvgDataUrl(bg1, bg2, emojiText) {
 }
 
 const FP_PRESET_AVATARS = [
-    { id: 'astronaut', label: 'Astronaut', emoji: '🧑‍🚀', dataUrl: createPresetAvatarSvgDataUrl('#5f5bf6', '#312e81', '🧑‍🚀') },
-    { id: 'scholar',   label: 'Scholar',   emoji: '🎓', dataUrl: createPresetAvatarSvgDataUrl('#8b5cf6', '#4c1d95', '🎓') },
-    { id: 'coder',     label: 'Developer', emoji: '💻', dataUrl: createPresetAvatarSvgDataUrl('#10b981', '#064e3b', '💻') },
-    { id: 'rocket',    label: 'Rocket',    emoji: '🚀', dataUrl: createPresetAvatarSvgDataUrl('#06b6d4', '#164e63', '🚀') },
-    { id: 'spark',     label: 'Lightning', emoji: '⚡', dataUrl: createPresetAvatarSvgDataUrl('#f59e0b', '#78350f', '⚡') },
-    { id: 'zen',       label: 'Zen Lotus', emoji: '🧘', dataUrl: createPresetAvatarSvgDataUrl('#ec4899', '#831843', '🧘') }
+    { id: 'astronaut', label: 'Astronaut', labelKey: "appearance.astronaut", emoji: '🧑‍🚀', dataUrl: createPresetAvatarSvgDataUrl('#5f5bf6', '#312e81', '🧑‍🚀') },
+    { id: 'scholar',   label: 'Scholar', labelKey: "nav.scholar",   emoji: '🎓', dataUrl: createPresetAvatarSvgDataUrl('#8b5cf6', '#4c1d95', '🎓') },
+    { id: 'coder',     label: 'Developer', labelKey: "appearance.developer", emoji: '💻', dataUrl: createPresetAvatarSvgDataUrl('#10b981', '#064e3b', '💻') },
+    { id: 'rocket',    label: 'Rocket', labelKey: "appearance.rocket",    emoji: '🚀', dataUrl: createPresetAvatarSvgDataUrl('#06b6d4', '#164e63', '🚀') },
+    { id: 'spark',     label: 'Lightning', labelKey: "appearance.lightning", emoji: '⚡', dataUrl: createPresetAvatarSvgDataUrl('#f59e0b', '#78350f', '⚡') },
+    { id: 'zen',       label: 'Zen Lotus', labelKey: "appearance.zenLotus", emoji: '🧘', dataUrl: createPresetAvatarSvgDataUrl('#ec4899', '#831843', '🧘') }
 ];
 window.FP_PRESET_AVATARS = FP_PRESET_AVATARS;
 
@@ -292,9 +292,9 @@ window.setProfileAvatar = function(dataUrl, silent = false) {
     }
     if (!silent && typeof showNotification === 'function') {
         if (dataUrl) {
-            showNotification("Profile Picture Saved 📸", "Your profile picture has been updated and synced.", "success");
+            showNotification(FPi18n.message("account.profilePictureSaved"), FPi18n.message("account.avatarSavedBody"), "success");
         } else {
-            showNotification("Profile Picture Removed", "Reverted to your 2-letter initials badge.", "info");
+            showNotification(FPi18n.message("account.profilePictureRemoved"), FPi18n.message("account.avatarRemovedBody"), "info");
         }
     }
 };
@@ -316,7 +316,7 @@ window.handleProfileAvatarUpload = function(event) {
     if (!file) return;
     if (!file.type || !file.type.startsWith('image/')) {
         if (typeof showNotification === 'function') {
-            showNotification("Invalid File Type", "Please select a valid image file (PNG, JPG, WEBP, or GIF).", "warning");
+            showNotification(FPi18n.message("account.invalidFileType"), FPi18n.message("account.pleaseSelectAValidImageFilePngJpg"), "warning");
         }
         return;
     }
@@ -725,7 +725,7 @@ function exportData() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showNotification("Backup Exported", "Your FocusPulse data has been downloaded as JSON.", "success");
+    showNotification(FPi18n.message("backup.backupExported"), FPi18n.message("backup.exportSuccessBody"), "success");
 }
 
 function importData(event) {
@@ -760,9 +760,9 @@ function importData(event) {
             applyLiquidGlass(window.appState.liquidEffect === true);
             applyThemeVariables();
             window.updateUI();
-            showNotification("Data Restored", "Your backup file was imported and synced!", "success");
+            showNotification(FPi18n.message("backup.dataRestored"), FPi18n.message("backup.importSuccessBody"), "success");
         } catch (err) {
-            showNotification("Import Error", "The selected backup file could not be parsed. Please verify that it is a valid FocusPulse JSON file.", "warning");
+            showNotification(FPi18n.message("backup.importError"), FPi18n.message("backup.invalidFile"), "warning");
         }
     };
     reader.readAsText(file);
@@ -813,10 +813,10 @@ function updateDynamicLogoAccent(accentHex, accentFgHex) {
     const modeLbl = document.getElementById('logo-color-mode-label');
     if (modeLbl) {
         const labelMap = {
-            'badge': 'Mode: Accent Badge',
-            'icon-tint': 'Mode: Accent Icon'
+            'badge': "settings.modeAccentBadge",
+            'icon-tint': "appearance.modeAccentIcon"
         };
-        modeLbl.innerText = labelMap[mode] || 'Mode: Accent Badge';
+        modeLbl.innerHTML = FPi18n.markup(labelMap[mode] || 'settings.modeAccentBadge');
     }
 }
 
@@ -828,11 +828,11 @@ function cycleLogoColorMode() {
     applyThemeVariables();
     saveState();
     const descMap = {
-        'badge': 'Accent Badge Mode: Logo badge & background dynamically follow your Theme & Accent Palette.',
-        'icon-tint': 'Accent Icon Mode: The logo icon itself is tinted with your active Accent Color.'
+        'badge': "appearance.badgeModeHint",
+        'icon-tint': "appearance.accentIconModeTheLogoIconItselfIs"
     };
     if (typeof showNotification === 'function') {
-        showNotification('Logo Color Mode Updated', descMap[next], 'info');
+        showNotification(FPi18n.message("appearance.logoColorModeUpdated"), FPi18n.message(descMap[next]), 'info');
     }
 }
 

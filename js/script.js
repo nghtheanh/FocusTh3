@@ -369,7 +369,7 @@ function restoreMissedStreak() {
     }
 
     if (window.appState.streakRestoredThisWeek) {
-        showNotification("Streak Safeguard Limit", "You have already used your 1-per-week Restore Missed Streak safeguard for this week. It resets next Monday!", "warning");
+        showNotification(FPi18n.message("settings.streakRestoreLimit"), FPi18n.message("settings.streakRestoreLimitHint"), "warning");
         return;
     }
 
@@ -401,7 +401,7 @@ function restoreMissedStreak() {
             window.appState.streakCount = 1;
             restoredAny = true;
         } else {
-            showNotification("Streak Safe! 🛡️", "Your streaks are already active and up to date! Your 1-per-week safeguard is ready whenever you miss a day.", "info");
+            showNotification(FPi18n.message("settings.streakIntact"), FPi18n.message("settings.streakIntactHint"), "info");
             return;
         }
     }
@@ -412,7 +412,7 @@ function restoreMissedStreak() {
     saveState();
     window.updateUI();
     if (typeof renderHabitsSection === 'function') renderHabitsSection();
-    showNotification("Streak Restored! 🛡️", `1-per-week Streak Safeguard applied! Restored your consistency chain (${window.appState.streakCount || 1}d).`, "success");
+    showNotification(FPi18n.message("settings.streakRestored"), FPi18n.message("settings.streakRestoredHint", {days: window.appState.streakCount || 1}), "success");
 }
 
 
@@ -546,7 +546,10 @@ function selectPomoPreset(name, focus, short, long, count) {
     document.getElementById('inline-short-input').value = short;
     document.getElementById('inline-long-input').value = long;
     document.getElementById('inline-sessions-input').value = count;
-    showNotification("Preset Selected", `Loaded ${name} preset (${focus}m / ${short}m). Click Save Settings to apply.`, "info");
+    const presets = {Normal: "normal", Blitz: "blitz", "Quick Rev": "review", "Extra+": "extra"};
+    const preset = Object.prototype.hasOwnProperty.call(presets, name) ? FPi18n.message("settings.preset." + presets[name]) : name;
+    showNotification(FPi18n.message("settings.presetSelected"),
+        FPi18n.message("settings.presetSelectedHint", {name: preset, focus, short}), "info");
 }
 
 function togglePomoInlineSettings(open) {

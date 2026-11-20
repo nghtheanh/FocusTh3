@@ -36,14 +36,14 @@ let highlightedHabitIdFromDashboard = null;
 
 const SECTION_IDS = ['home', 'tasks', 'habits', 'plans', 'ai', 'account', 'settings'];
 const SECTION_LABELS = {
-    home: 'Home & Focus',
-    tasks: 'Tasks Feed',
-    habits: 'Habit Flow',
-    plans: 'Plans & Hydration',
-    ai: 'Zenith AI Coach',
-    account: 'Account & Stats',
-    settings: 'Settings',
-    all: 'All-in-One Overview'
+    home: "nav.homeFocus",
+    tasks: "nav.tasksFeed",
+    habits: "nav.habitFlow",
+    plans: "nav.plansHydration",
+    ai: "nav.zenithAiCoach",
+    account: "nav.accountStats",
+    settings: "settings.heading",
+    all: "nav.overview"
 };
 
 function switchAppView(viewName, pushHistory = true) {
@@ -72,7 +72,7 @@ function switchAppView(viewName, pushHistory = true) {
     if (typeof updateTitlebarNavButtons === 'function') updateTitlebarNavButtons();
 
     const crumbEl = document.getElementById('topbar-crumb-label');
-    if (crumbEl) crumbEl.innerText = SECTION_LABELS[viewName] || 'Home & Focus';
+    if (crumbEl) crumbEl.innerHTML = FPi18n.markup(SECTION_LABELS[viewName] || 'nav.homeFocus');
 
     const topSetBtn = document.getElementById('topbar-settings-btn');
     if (topSetBtn) {
@@ -313,6 +313,10 @@ function switchSettingsTab(tabId) {
     if (searchInput) searchInput.value = '';
     renderSettingsTabs();
 }
+
+window.addEventListener('focuspulse:languagechange', () => {
+    if (settingsSearchQuery) renderSettingsTabs();
+});
 
 function handleSettingsSearch(val) {
     settingsSearchQuery = (val || '').trim().toLowerCase();
@@ -644,10 +648,10 @@ function setSolidTheme(themeId) {
     applyThemeVariables();
     saveState();
     renderThemePalettes();
-    const label = found ? found.name : 'Custom Theme';
-    const modeStr = window.appState.theme === 'light' ? 'White Mode' : 'Dark Mode';
-    const liquidStr = window.appState.liquidEffect ? ' (Liquid Glass ON)' : '';
-    showNotification("Theme Applied", `Applied ${label} palette in ${modeStr}${liquidStr}.`, "info");
+    const label = FPi18n.message(found ? found.nameKey : "settings.customTheme");
+    const modeStr = window.appState.theme === 'light' ? FPi18n.message("settings.whiteMode") : FPi18n.message("settings.darkMode");
+    const liquidStr = window.appState.liquidEffect ? FPi18n.message('appearance.liquidSuffix') : '';
+    showNotification(FPi18n.message("appearance.themeApplied"), FPi18n.message("appearance.appliedPaletteIn", { label, modeStr, liquidStr }), "info");
 }
 
 function setSurfaceMode(mode) {
@@ -661,10 +665,10 @@ function setSurfaceMode(mode) {
     saveState();
     renderThemePalettes();
     showNotification(
-        mode === 'light' ? "White Mode Active ☀️" : "Dark Mode Active 🌙",
+        mode === 'light' ? FPi18n.message("appearance.whiteModeActive") : FPi18n.message("appearance.darkModeActive"),
         mode === 'light'
-            ? "All theme & accent palettes now apply directly to White Mode!"
-            : "Switched surface to Dark Mode.",
+            ? FPi18n.message("appearance.lightModeBody")
+            : FPi18n.message("appearance.switchedSurfaceToDarkMode"),
         "info"
     );
 }
@@ -709,10 +713,10 @@ function toggleExeRunAtStartup(forceValue) {
     saveState();
     renderThemePalettes();
     showNotification(
-        window.appState.exeRunAtStartup ? "Run at Startup: ON 🚀" : "Run at Startup: OFF",
+        window.appState.exeRunAtStartup ? FPi18n.message("appearance.runAtStartupOn") : FPi18n.message("appearance.runAtStartupOff"),
         window.appState.exeRunAtStartup
-            ? "FocusPulse will launch automatically when Windows starts."
-            : "FocusPulse will no longer auto-launch at Windows startup.",
+            ? FPi18n.message("appearance.startupEnabledBody")
+            : FPi18n.message("appearance.startupDisabledBody"),
         "info"
     );
 }
@@ -727,10 +731,10 @@ function toggleExeCloseToTray(forceValue) {
     saveState();
     renderThemePalettes();
     showNotification(
-        window.appState.exeCloseToTray ? "Move to Tray on Close: ON 📥" : "Move to Tray on Close: OFF",
+        window.appState.exeCloseToTray ? FPi18n.message("appearance.moveToTrayOnCloseOn") : FPi18n.message("appearance.moveToTrayOnCloseOff"),
         window.appState.exeCloseToTray
-            ? "Closing the window will minimize FocusPulse to the system tray so Pomodoro keeps running."
-            : "Closing the window will exit FocusPulse completely.",
+            ? FPi18n.message("appearance.trayEnabledBody")
+            : FPi18n.message("appearance.trayDisabledBody"),
         "info"
     );
 }
@@ -748,10 +752,10 @@ function togglePerformanceMode(forceValue) {
         startDashboardNextUpSlider();
     }
     showNotification(
-        window.appState.performanceMode ? "Low-Spec / Eco Mode Enabled ⚡" : "Low-Spec / Eco Mode Disabled",
+        window.appState.performanceMode ? FPi18n.message("appearance.lowSpecEcoModeEnabled") : FPi18n.message("appearance.lowSpecEcoModeDisabled"),
         window.appState.performanceMode
-            ? "GPU blurs, shadows, transitions & background auto-sliders paused for maximum FPS & battery."
-            : "Standard visual animations, shadows & 5s dashboard sliders restored.",
+            ? FPi18n.message("appearance.ecoEnabledBody")
+            : FPi18n.message("appearance.ecoDisabledBody"),
         "info"
     );
 }
@@ -766,8 +770,8 @@ function changeUiScale(delta) {
     if (typeof detectAndApplyPlatformUI === 'function') detectAndApplyPlatformUI();
     const pct = 100 + (next * 5);
     showNotification(
-        `Interface Scale: ${pct}%`,
-        next === 0 ? "Restored default 100% interface scaling." : `Scaled entire interface typography & layout to ${pct}% (${next > 0 ? '+' + next : next}).`,
+        FPi18n.message("appearance.interfaceScale", { pct }),
+        next === 0 ? FPi18n.message("appearance.scaleResetBody") : FPi18n.message("appearance.scaleChangedBody", { pct, step: next > 0 ? '+' + next : next }),
         "info"
     );
 }
@@ -819,10 +823,10 @@ function renderThemePalettes() {
                         <span style="width:14px;height:14px;border-radius:50%;background:${t.accent};border:1px solid rgba(150,150,150,0.4);display:inline-block;"></span>
                     </div>
                     <div class="flex items-center justify-between w-full">
-                        <span class="text-xs font-extrabold" style="color:var(--v-fg)">${t.name}</span>
+                        <span class="text-xs font-extrabold" style="color:var(--v-fg)">${FPi18n.markup(t.nameKey)}</span>
                         ${isSelected ? '<i class="fa-solid fa-circle-check text-[11px]" style="color:var(--v-accent)"></i>' : ''}
                     </div>
-                    <span class="text-[10.5px] mt-0.5" style="color:var(--v-fg2)">${t.desc}${isWhiteMode && t.id !== 'pureblack' ? ' (White Tint)' : ''}</span>
+                    <span class="text-[10.5px] mt-0.5" style="color:var(--v-fg2)">${FPi18n.markup(t.descKey)}${isWhiteMode && t.id !== 'pureblack' ? FPi18n.markup('appearance.lightTint') : ''}</span>
                 </div>
             `;
         }).join('');
@@ -861,7 +865,7 @@ function renderThemePalettes() {
             return `
                 <button type="button"
                     onclick="setAccentColor('${swatchColor}')"
-                    title="${acc.label} (${swatchColor})"
+                    data-i18n-title="appearance.accentSwatch" data-i18n-params="${escapeHtml(JSON.stringify({color: FPi18n.message(acc.labelKey), hex: swatchColor}))}"
                     style="width:28px;height:28px;border-radius:50%;background:${swatchColor};border:${isSelected ? '2px solid var(--v-fg)' : '1px solid rgba(150,150,150,0.4)'};outline:${isSelected ? '2px solid var(--v-accent)' : 'none'};outline-offset:2px;cursor:pointer;transition:transform 0.15s ease;"
                     onmouseenter="this.style.transform='scale(1.12)'"
                     onmouseleave="this.style.transform='scale(1)'">
@@ -909,23 +913,23 @@ function renderThemePalettes() {
 
     const perfStatusBadge = document.getElementById('perf-mode-status-badge');
     if (perfStatusBadge) {
-        perfStatusBadge.innerText = isPerf ? 'ON • ECO ACTIVE' : 'OFF';
+        perfStatusBadge.innerHTML = isPerf ? FPi18n.markup("appearance.onEcoActive") : FPi18n.markup("settings.off");
         perfStatusBadge.style.color = isPerf ? 'var(--v-accent-fg)' : 'var(--v-fg2)';
         perfStatusBadge.style.background = isPerf ? 'var(--v-accent)' : 'var(--v-bg2)';
         perfStatusBadge.style.borderColor = isPerf ? 'var(--v-accent)' : 'var(--v-bdr3)';
     }
     const perfFpsHint = document.getElementById('perf-mode-fps-hint');
     if (perfFpsHint) {
-        perfFpsHint.innerText = isPerf ? 'Max FPS • Animations Paused' : 'Standard Visuals';
+        perfFpsHint.innerHTML = isPerf ? FPi18n.markup("appearance.maxFpsAnimationsPaused") : FPi18n.markup("settings.standardVisuals");
         perfFpsHint.style.color = isPerf ? 'var(--v-accent)' : 'var(--v-fg3)';
     }
 
     const scale = Math.max(-5, Math.min(5, Number(state.uiScale) || 0));
     const scalePct = 100 + (scale * 5);
-    const scaleText = scale === 0 ? 'Default scale (100%)' : `Step ${scale > 0 ? '+' + scale : scale} (${scalePct}% interface zoom)`;
+    const scaleText = scale === 0 ? FPi18n.markup("settings.defaultScale100") : FPi18n.markup("appearance.stepInterfaceZoom", {step: scale > 0 ? '+' + scale : scale, scalePct});
     ['ui-scale-label', 'modal-ui-scale-label'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.innerText = scaleText;
+        if (el) el.innerHTML = scaleText;
     });
     ['ui-scale-val', 'modal-ui-scale-val'].forEach(id => {
         const el = document.getElementById(id);
@@ -958,13 +962,13 @@ function renderThemePalettes() {
     // 5. Update Liquid Mode status banner
     const modeBanner = document.getElementById('liquid-mode-status-banner');
     if (modeBanner) {
-        const surfaceName = isWhiteMode ? 'White Mode' : 'Dark Mode';
+        const surfaceName = isWhiteMode ? FPi18n.message("settings.whiteMode") : FPi18n.message("settings.darkMode");
         if (isLiquid) {
-            modeBanner.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-cyan-500 mr-1.5"></i> <strong>Liquid Glass Mode is ON (${surfaceName})</strong> — translucent frosted glass & gradients are active, with accent palette <code class="px-1.5 py-0.5 rounded text-[10px]" style="background:var(--v-bg3)">${accent}</code>.`;
+            modeBanner.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-cyan-500 mr-1.5"></i> <strong>${FPi18n.markup("appearance.liquidGlassModeIsOn", { surfaceName })}</strong> <span data-i18n="appearance.glassBannerDetail">— translucent frosted glass & gradients are active, with accent palette</span> <code class="px-1.5 py-0.5 rounded text-[10px]" style="background:var(--v-bg3)">${accent}</code>.`;
         } else {
             const activeThemeObj = FP_THEMES.find(t => t.id === sTheme);
-            const tName = activeThemeObj ? activeThemeObj.name : 'Custom Theme';
-            modeBanner.innerHTML = `<i class="fa-solid fa-palette mr-1.5" style="color:var(--v-accent)"></i> <strong>Solid Theme Mode is ACTIVE (${tName} • ${surfaceName})</strong> — zero gradients, zero blur/transparency, using accent palette <code class="px-1.5 py-0.5 rounded text-[10px]" style="background:var(--v-bg3)">${accent}</code>.`;
+            const tName = FPi18n.message(activeThemeObj ? activeThemeObj.nameKey : "settings.customTheme");
+            modeBanner.innerHTML = `<i class="fa-solid fa-palette mr-1.5" style="color:var(--v-accent)"></i> <strong>${FPi18n.markup("appearance.solidThemeModeIsActive", { tName, surfaceName })}</strong> <span data-i18n="appearance.solidBannerDetail">— zero gradients, zero blur/transparency, using accent palette</span> <code class="px-1.5 py-0.5 rounded text-[10px]" style="background:var(--v-bg3)">${accent}</code>.`;
         }
     }
 }
@@ -1007,11 +1011,11 @@ window.updateUI = function() {
 
     const avatarUrl = (state.user && state.user.avatarDataUrl) ? state.user.avatarDataUrl : '';
 
-    if (profNameEl) profNameEl.innerText = fullName || (state.userType === 'authenticated' ? 'Scholar' : 'Authentication Required');
-    if (profSubjEl) profSubjEl.innerText = state.user.subjects || 'No courses listed yet';
+    if (profNameEl) profNameEl.innerHTML = escapeHtml(fullName) || (state.userType === 'authenticated' ? FPi18n.markup("nav.scholar") : FPi18n.markup("auth.authenticationRequired"));
+    if (profSubjEl) profSubjEl.innerHTML = escapeHtml(state.user.subjects) || FPi18n.markup("account.noCoursesListedYet");
     if (profAvatarEl) {
         if (avatarUrl) {
-            profAvatarEl.innerHTML = `<img src="${avatarUrl}" alt="Profile Picture" class="w-full h-full object-cover rounded-full">`;
+            profAvatarEl.innerHTML = `<img src="${avatarUrl}" alt="Profile Picture" class="w-full h-full object-cover rounded-full" data-i18n-alt="account.profilePicture">`;
         } else {
             profAvatarEl.innerText = initials;
         }
@@ -1034,14 +1038,14 @@ window.updateUI = function() {
         removeAvatarBtn.classList.toggle('hidden', !avatarUrl);
     }
     if (presetAvatarsRow && Array.isArray(window.FP_PRESET_AVATARS)) {
-        presetAvatarsRow.innerHTML = `<span class="text-[10px] font-bold mr-1" style="color:var(--v-fg2)">Presets:</span>` +
+        presetAvatarsRow.innerHTML = `<span class="text-[10px] font-bold mr-1" style="color:var(--v-fg2)" data-i18n="account.presets">Presets:</span>` +
             window.FP_PRESET_AVATARS.map(av => {
                 const isSel = avatarUrl === av.dataUrl;
                 return `<button type="button" onclick="setProfileAvatar('${av.dataUrl}', false)"
                     class="w-7 h-7 rounded-full overflow-hidden border-2 transition hover:scale-110 shrink-0"
                     style="border-color:${isSel ? 'var(--v-accent)' : 'transparent'};transform:${isSel ? 'scale(1.12)' : 'scale(1)'};"
-                    title="${escapeHtml(av.label)}">
-                    <img src="${av.dataUrl}" alt="${escapeHtml(av.label)}" class="w-full h-full object-cover">
+                    data-i18n-title="${av.labelKey}" title="${escapeHtml(FPi18n.translate(av.labelKey))}">
+                    <img src="${av.dataUrl}" data-i18n-alt="${av.labelKey}" alt="${escapeHtml(FPi18n.translate(av.labelKey))}" class="w-full h-full object-cover">
                 </button>`;
             }).join('');
     }
@@ -1053,7 +1057,7 @@ window.updateUI = function() {
     // Sync subjects string from structured courses array
     const coursesList = Array.isArray(state.courses) ? state.courses : [];
     state.user.subjects = coursesList.map(c => c.name).join(', ');
-    if (profSubjEl) profSubjEl.innerText = state.user.subjects || 'No courses listed yet';
+    if (profSubjEl) profSubjEl.innerHTML = escapeHtml(state.user.subjects) || FPi18n.markup("account.noCoursesListedYet");
     if (accSubjInput) accSubjInput.value = state.user.subjects || '';
     if (inlineAccSubj) inlineAccSubj.value = state.user.subjects || '';
 
@@ -1061,7 +1065,7 @@ window.updateUI = function() {
     const sideCoursesEl = document.getElementById('sidebar-courses-list');
     if (sideCoursesEl) {
         if (coursesList.length === 0) {
-            sideCoursesEl.innerHTML = `<p class="text-[11px] px-3 py-2" style="color:var(--v-fg3)">No active courses. Click <strong>+ Manage</strong> to add courses.</p>`;
+            sideCoursesEl.innerHTML = `<p class="text-[11px] px-3 py-2" style="color:var(--v-fg3)"><span data-i18n="account.noActiveCoursesClick">No active courses. Click</span> <strong><span data-i18n="nav.manage">+ Manage</span></strong> <span data-i18n="account.toAddCourses">to add courses.</span></p>`;
         } else {
             sideCoursesEl.innerHTML = coursesList.map((c) => {
                 const col = c.color || '#5f5bf6';
@@ -1076,7 +1080,7 @@ window.updateUI = function() {
                         <span class="flex-1 min-w-0">
                             <span class="block text-xs font-extrabold truncate" style="color:var(--v-fg)">${escapeHtml(c.name)}</span>
                             <span class="block text-[10px] font-semibold" style="color:${coursePendingCount > 0 ? col : 'var(--v-fg3)'}">
-                                ${coursePendingCount} pending task${coursePendingCount === 1 ? '' : 's'}
+                                ${FPi18n.markup("account.pendingTask", {count: coursePendingCount})}
                             </span>
                         </span>
                     </button>
@@ -1131,9 +1135,9 @@ window.updateUI = function() {
     const statTasks = document.getElementById('account-stat-tasks');
     const statHabits = document.getElementById('account-stat-habits');
     const statStreak = document.getElementById('account-stat-streak');
-    if (statFocus) statFocus.innerText = focusStr;
-    if (statTasks) statTasks.innerText = `${doneTasksCount}/${allTasks.length}`;
-    if (statHabits) statHabits.innerText = `${habitsDoneToday}/${allHabits.length}`;
+    if (statFocus) statFocus.innerHTML = FPi18n.markup("account.focusDuration", {hours: hrs, minutes: mins});
+    if (statTasks) statTasks.innerHTML = FPi18n.markup("account.countOfTotal", {done: doneTasksCount, total: allTasks.length});
+    if (statHabits) statHabits.innerHTML = FPi18n.markup("account.countOfTotal", {done: habitsDoneToday, total: allHabits.length});
 
     // Container 4: Best Streak (Starts at 0 on first login, strictly tracks real user streaks)
     const curStreak = state.streakCount || 0;
@@ -1141,7 +1145,7 @@ window.updateUI = function() {
         state.bestStreak = curStreak;
     }
     const userBestStreak = state.bestStreak || 0;
-    if (statStreak) statStreak.innerText = `${userBestStreak}d`;
+    if (statStreak) statStreak.innerHTML = FPi18n.markup("account.streakDays", {days: userBestStreak});
 
     const taskRatePct = allTasks.length > 0 ? Math.round((doneTasksCount / allTasks.length) * 100) : 0;
     const accTaskBar = document.getElementById('account-task-rate-bar');
@@ -1149,9 +1153,9 @@ window.updateUI = function() {
     const accWaterBar = document.getElementById('account-water-rate-bar');
     const accWaterPct = document.getElementById('account-water-rate-pct');
     if (accTaskBar) accTaskBar.style.width = `${taskRatePct}%`;
-    if (accTaskPct) accTaskPct.innerText = `${taskRatePct}% (${doneTasksCount} of ${allTasks.length} completed)`;
+    if (accTaskPct) accTaskPct.innerHTML = FPi18n.markup("account.completion", {percent: taskRatePct, done: doneTasksCount, total: allTasks.length});
     if (accWaterBar) accWaterBar.style.width = `${pct}%`;
-    if (accWaterPct) accWaterPct.innerText = `${pct}% (${state.waterIntakeMl || 0} / ${state.dailyWaterGoalMl || 2500} ml)`;
+    if (accWaterPct) accWaterPct.innerHTML = FPi18n.markup("account.waterProgress", {percent: pct, intake: state.waterIntakeMl || 0, goal: state.dailyWaterGoalMl || 2500});
 
     const apiKeyInput = document.getElementById('settings-gemini-key');
     if (apiKeyInput && state.geminiApiKey) apiKeyInput.value = state.geminiApiKey;
@@ -1840,7 +1844,7 @@ async function handleAccountSubmit(e) {
     }
     closeAccountModal();
     window.updateUI();
-    showNotification("Profile Saved", `Display name updated to "${newName}" and synced to database!`, "success");
+    showNotification(FPi18n.message("account.profileSaved"), FPi18n.message("account.profileSavedBody", { newName }), "success");
 }
 
 async function handleInlineProfileSave(e) {
@@ -1867,7 +1871,7 @@ async function handleInlineProfileSave(e) {
         await window.firebaseUpdateProfileName(newName, newSubjects);
     }
     window.updateUI();
-    showNotification("Account Updated", `Your name "${newName}" is saved locally and synced to cloud!`, "success");
+    showNotification(FPi18n.message("account.accountUpdated"), FPi18n.message("account.yourNameIsSavedLocallyAndSyncedTo", { newName }), "success");
 }
 
 function toggleWorkspace() {
@@ -1892,10 +1896,10 @@ function toggleLiquidGlassEffect() {
     saveState();
     renderThemePalettes();
     showNotification(
-        window.appState.liquidEffect ? "Liquid Glass Mode: ON" : "Solid Theme Mode: ON (Liquid OFF)",
+        window.appState.liquidEffect ? FPi18n.message("appearance.liquidGlassModeOn") : FPi18n.message("appearance.solidThemeModeOnLiquidOff"),
         window.appState.liquidEffect
-            ? "Restored original FocusPulse frosted glass & gradient aesthetics!"
-            : "Activated solid theme & custom palette engine (zero gradients/transparency).",
+            ? FPi18n.message("appearance.glassEnabledBody")
+            : FPi18n.message("appearance.solidEnabledBody"),
         "info"
     );
 }
@@ -1918,7 +1922,7 @@ function applyLiquidGlass(isLiquid) {
 
     ['liquid-toggle-btn-label', 'side-liquid-btn-label', 'page-liquid-btn-label'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.innerText = enabled ? 'Liquid: ON' : 'Liquid: OFF';
+        if (el) el.innerHTML = enabled ? FPi18n.markup("appearance.liquidOn") : FPi18n.markup("nav.liquidOff");
     });
 }
 
@@ -2112,23 +2116,23 @@ function renderUpdatesAndCreditsUI() {
 
     if (hasNewerUpdate) {
         if (bannerHeading) {
-            bannerHeading.innerHTML = `Update available: <span id="fp-banner-version" class="text-amber-500 font-extrabold">${escapeHtml(latestVer)}</span>`;
+            bannerHeading.innerHTML = `<span data-i18n="updates.updateAvailable">Update available:</span> <span id="fp-banner-version" class="text-amber-500 font-extrabold">${escapeHtml(latestVer)}</span>`;
         }
         if (bannerSubtext) {
-            bannerSubtext.innerText = `A new version of FocusPulse (${latestVer}) is reported on GitHub Releases. Your installed version is ${installedVer}.`;
+            bannerSubtext.innerHTML = FPi18n.markup("updates.availableBody", { latestVer, installedVer });
         }
         if (bannerBtnLabel) {
-            bannerBtnLabel.innerText = `Download ${latestVer}`;
+            bannerBtnLabel.innerHTML = FPi18n.markup("updates.download", { latestVer });
         }
     } else {
         if (bannerHeading) {
-            bannerHeading.innerHTML = `FocusPulse is up to date <span class="text-emerald-500 font-black ml-1.5"><i class="fa-solid fa-circle-check"></i></span>`;
+            bannerHeading.innerHTML = `<span data-i18n="settings.focuspulseIsUpToDate">FocusPulse is up to date</span> <span class="text-emerald-500 font-black ml-1.5"><i class="fa-solid fa-circle-check"></i></span>`;
         }
         if (bannerSubtext) {
-            bannerSubtext.innerText = `Installed version ${installedVer} is the latest release. You're running the newest build with all features active.`;
+            bannerSubtext.innerHTML = FPi18n.markup("updates.currentBody", { installedVer });
         }
         if (bannerBtnLabel) {
-            bannerBtnLabel.innerText = `View Releases (${installedVer})`;
+            bannerBtnLabel.innerHTML = FPi18n.markup("updates.viewReleases", { installedVer });
         }
     }
 }
@@ -2171,14 +2175,14 @@ async function fetchLatestGitHubReleaseVersion(silent = true) {
         const latest = window.appState.latestVersion || installed;
         if (isNewerSemver(latest, installed)) {
             showNotification(
-                `Update Available: ${latest} 🚀`,
-                `GitHub Releases reports version ${latest} (Installed: ${installed}).`,
+                FPi18n.message("updates.updateAvailable2", { latest }),
+                FPi18n.message("updates.availableToastBody", { latest, installed }),
                 "success"
             );
         } else {
             showNotification(
-                `Up to Date (${installed}) ✅`,
-                `Installed version (${installed}) matches the latest GitHub report (${latest}).`,
+                FPi18n.message("updates.upToDate", { installed }),
+                FPi18n.message("updates.currentToastBody", { installed, latest }),
                 "success"
             );
         }
@@ -2190,10 +2194,10 @@ function toggleAutoUpdateOnStartup() {
     saveState();
     renderUpdatesAndCreditsUI();
     showNotification(
-        window.appState.autoCheckUpdates ? "Auto-Update Check Enabled" : "Auto-Update Check Disabled",
+        window.appState.autoCheckUpdates ? FPi18n.message("updates.autoUpdateCheckEnabled") : FPi18n.message("updates.autoUpdateCheckDisabled"),
         window.appState.autoCheckUpdates
-            ? "FocusPulse will automatically check GitHub Releases on startup."
-            : "Startup release checks paused.",
+            ? FPi18n.message("updates.automaticEnabledBody")
+            : FPi18n.message("updates.startupReleaseChecksPaused"),
         "info"
     );
 }
@@ -2201,11 +2205,11 @@ function toggleAutoUpdateOnStartup() {
 async function triggerManualUpdateCheck() {
     const btn = document.getElementById('fp-manual-check-btn');
     if (btn) {
-        btn.innerHTML = `<i class="fa-solid fa-arrows-rotate fa-spin mr-1.5"></i> Checking...`;
+        btn.innerHTML = `<i class="fa-solid fa-arrows-rotate fa-spin mr-1.5"></i> <span data-i18n="updates.checking">Checking...</span>`;
     }
     await fetchLatestGitHubReleaseVersion(false);
     if (btn) {
-        btn.innerHTML = `<i class="fa-solid fa-arrows-rotate mr-1.5"></i> Check Now`;
+        btn.innerHTML = `<i class="fa-solid fa-arrows-rotate mr-1.5"></i> <span data-i18n="settings.checkNow">Check Now</span>`;
     }
 }
 
@@ -2271,8 +2275,8 @@ function downloadLatestFocusPulseRelease() {
     const latest = window.appState.latestVersion || 'v1.0';
     window.openExternalUrl('https://github.com/foc-it/FocusPulse/releases/latest');
     showNotification(
-        `Opening GitHub Releases (${latest})`,
-        "Opened github.com/foc-it/FocusPulse/releases/latest in your default browser!",
+        FPi18n.message("updates.openingGithubReleases", { latest }),
+        FPi18n.message("updates.releasesOpenedBody"),
         "success"
     );
 }
@@ -2284,7 +2288,7 @@ function openFocItGitHub() {
 
 function openCreatorGitHub() {
     window.openExternalUrl('https://github.com/azmee7');
-    showNotification("Opening GitHub (azmee7)", "Opened github.com/azmee7 in your default browser.", "info");
+    showNotification(FPi18n.message("updates.openingGithubAzmee7"), FPi18n.message("updates.creatorOpenedBody"), "info");
 }
 
 // =========================================================================
@@ -2312,25 +2316,25 @@ async function probeGitHubReleaseAssetsStatus() {
             const signedApkAsset = assets.find(a => a.name && a.name.toLowerCase().endsWith('.apk') && !a.name.toLowerCase().includes('unsigned'));
             if (exeAsset) {
                 if (winBadge) {
-                    winBadge.innerText = 'Release Ready (.EXE)';
+                    winBadge.innerHTML = FPi18n.markup("updates.releaseReadyExe");
                     winBadge.className = 'text-[10px] px-2 py-0.5 rounded-full font-extrabold bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30';
                 }
-                if (winBtnText) winBtnText.innerText = 'Download Windows Installer (.EXE)';
+                if (winBtnText) winBtnText.innerHTML = FPi18n.markup("updates.downloadWindowsInstallerExe");
             } else {
                 if (winBadge) {
-                    winBadge.innerText = 'View on GitHub Releases';
+                    winBadge.innerHTML = FPi18n.markup("updates.viewOnGithubReleases");
                     winBadge.className = 'text-[10px] px-2 py-0.5 rounded-full font-extrabold bg-sky-500/15 text-sky-600 dark:text-sky-300 border border-sky-500/30';
                 }
             }
             if (signedApkAsset) {
                 if (apkBadge) {
-                    apkBadge.innerText = 'Signed APK Ready';
+                    apkBadge.innerHTML = FPi18n.markup("updates.signedApkReady");
                     apkBadge.className = 'text-[10px] px-2 py-0.5 rounded-full font-extrabold bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30';
                 }
-                if (apkBtnText) apkBtnText.innerText = 'Download Signed Android APK';
+                if (apkBtnText) apkBtnText.innerHTML = FPi18n.markup("updates.downloadSignedAndroidApk");
             } else {
                 if (apkBadge) {
-                    apkBadge.innerText = 'Signed Release Pending • View Releases';
+                    apkBadge.innerHTML = FPi18n.markup("updates.signedReleasePendingViewReleases");
                     apkBadge.className = 'text-[10px] px-2 py-0.5 rounded-full font-extrabold bg-amber-500/15 text-amber-600 dark:text-amber-300 border border-amber-500/30';
                 }
             }
@@ -2338,10 +2342,10 @@ async function probeGitHubReleaseAssetsStatus() {
         }
     } catch (e) {}
     if (winBadge) {
-        winBadge.innerText = 'GitHub Releases (v1.0.0)';
+        winBadge.innerHTML = FPi18n.markup("updates.githubReleasesV100");
     }
     if (apkBadge) {
-        apkBadge.innerText = 'Signed APK via GitHub Releases';
+        apkBadge.innerHTML = FPi18n.markup("updates.signedApkViaGithubReleases");
     }
 }
 
@@ -2363,10 +2367,10 @@ function closeInstallAppModal() {
 function triggerInstallPlatformAction(platform) {
     if (platform === 'windows') {
         window.openExternalUrl('https://github.com/foc-it/FocusPulse/releases/latest');
-        showNotification('Windows Installer (.EXE)', 'Opening official FocusPulse GitHub Releases page.', 'info');
+        showNotification(FPi18n.message("updates.windowsInstallerExe"), FPi18n.message("updates.windowsDownloadBody"), 'info');
     } else if (platform === 'android') {
         window.openExternalUrl('https://github.com/foc-it/FocusPulse/releases/latest');
-        showNotification('Android Signed APK', 'Opening official FocusPulse GitHub Releases page. Remember to allow installing from this source if prompted by Android.', 'info');
+        showNotification(FPi18n.message("updates.androidSignedApk"), FPi18n.message("updates.androidDownloadBody"), 'info');
     } else if (platform === 'web') {
         if (deferredPwaPrompt) {
             deferredPwaPrompt.prompt();
@@ -2375,7 +2379,7 @@ function triggerInstallPlatformAction(platform) {
             });
         }
         closeInstallAppModal();
-        showNotification('FocusPulse Web Suite Active ⚡', 'You are running the full FocusPulse Web Application right here!', 'success');
+        showNotification(FPi18n.message("updates.focuspulseWebSuiteActive"), FPi18n.message("updates.webActiveBody"), 'success');
     }
 }
 
@@ -2660,7 +2664,7 @@ function renderCourseFormColorSwatches() {
         return `
             <button type="button" onclick="selectCourseFormColor('${col}')"
                 style="width:24px;height:24px;border-radius:8px;background:${col};border:${isSel ? '2px solid var(--v-fg)' : '1px solid rgba(255,255,255,0.2)'};transform:${isSel ? 'scale(1.12)' : 'scale(1)'};transition:all 0.15s ease;"
-                title="Badge Color ${col}"></button>
+                data-i18n-title="courses.colorHint" data-i18n-params="${escapeHtml(JSON.stringify({hex: col}))}"></button>
         `;
     }).join('');
 }
@@ -2676,8 +2680,8 @@ function resetCourseManagerForm() {
 
     if (codeInput) codeInput.value = '';
     if (nameInput) nameInput.value = '';
-    if (headingEl) headingEl.innerHTML = `<i class="fa-solid fa-graduation-cap" style="color:var(--v-accent)"></i><span>Add New Course</span>`;
-    if (submitBtn) submitBtn.innerHTML = `<i class="fa-solid fa-plus text-[10px]"></i><span>Add Course</span>`;
+    if (headingEl) headingEl.innerHTML = `<i class="fa-solid fa-graduation-cap" style="color:var(--v-accent)"></i><span data-i18n="courses.addNewCourse">Add New Course</span>`;
+    if (submitBtn) submitBtn.innerHTML = `<i class="fa-solid fa-plus text-[10px]"></i><span data-i18n="courses.addCourse">Add Course</span>`;
     if (cancelBtn) cancelBtn.classList.add('hidden');
 
     renderCourseFormColorSwatches();
@@ -2700,8 +2704,8 @@ function startEditCourse(courseId) {
 
     if (codeInput) codeInput.value = (found.code || found.name.slice(0, 2)).slice(0, 2).toUpperCase();
     if (nameInput) nameInput.value = found.name;
-    if (headingEl) headingEl.innerHTML = `<i class="fa-solid fa-pen-to-square" style="color:var(--v-accent)"></i><span>Editing Course: ${escapeHtml(found.name)}</span>`;
-    if (submitBtn) submitBtn.innerHTML = `<i class="fa-solid fa-check text-[10px]"></i><span>Update Course</span>`;
+    if (headingEl) headingEl.innerHTML = `<i class="fa-solid fa-pen-to-square" style="color:var(--v-accent)"></i><span>${FPi18n.markup("courses.editingCourse", { name: found.name })}</span>`;
+    if (submitBtn) submitBtn.innerHTML = `<i class="fa-solid fa-check text-[10px]"></i><span data-i18n="courses.updateCourse">Update Course</span>`;
     if (cancelBtn) cancelBtn.classList.remove('hidden');
 
     renderCourseFormColorSwatches();
@@ -2723,7 +2727,7 @@ function deleteCourseById(courseId) {
     }
     saveState(true);
     window.updateUI();
-    showNotification("Course Deleted", `Removed "${target.name}" from your active courses.`, "info");
+    showNotification(FPi18n.message("courses.courseDeleted"), FPi18n.message("courses.removedFromYourActiveCourses", { name: target.name }), "info");
 }
 
 function handleCourseManagerSubmit(e) {
@@ -2753,7 +2757,7 @@ function handleCourseManagerSubmit(e) {
             (window.appState.tasks || []).forEach(t => {
                 if (t.course === oldName) t.course = name;
             });
-            showNotification("Course Updated", `Updated "${name}" with 2-letter profile badge [${code}].`, "success");
+            showNotification(FPi18n.message("courses.courseUpdated"), FPi18n.message("courses.updatedWith2LetterProfileBadge", { name, code }), "success");
         }
     } else {
         window.appState.courses.push({
@@ -2762,7 +2766,7 @@ function handleCourseManagerSubmit(e) {
             code,
             color: selectedCourseFormColor || '#5f5bf6'
         });
-        showNotification("Course Added", `Added "${name}" with 2-letter profile badge [${code}]!`, "success");
+        showNotification(FPi18n.message("courses.courseAdded"), FPi18n.message("courses.addedWith2LetterProfileBadge", { name, code }), "success");
     }
 
     window.appState.user.subjects = window.appState.courses.map(c => c.name).join(', ');
@@ -2812,7 +2816,7 @@ function renderAccountCourseColorSwatches() {
         return `
             <button type="button" onclick="selectCourseFormColor('${col}'); renderAccountCourseColorSwatches(); updateAccountCourseFormAvatarPreview();"
                 style="width:22px;height:22px;border-radius:7px;background:${col};border:${isSel ? '2px solid var(--v-fg)' : '1px solid rgba(255,255,255,0.2)'};transform:${isSel ? 'scale(1.12)' : 'scale(1)'};transition:all 0.15s ease;"
-                title="Badge Color ${col}"></button>
+                data-i18n-title="courses.colorHint" data-i18n-params="${escapeHtml(JSON.stringify({hex: col}))}"></button>
         `;
     }).join('');
 }
@@ -2832,7 +2836,7 @@ function startEditCourseFromAccount(courseId) {
 
     if (codeInput) codeInput.value = (found.code || found.name.slice(0, 2)).slice(0, 2).toUpperCase();
     if (nameInput) nameInput.value = found.name;
-    if (submitBtn) submitBtn.innerHTML = `<i class="fa-solid fa-check text-[10px]"></i><span>Update Course</span>`;
+    if (submitBtn) submitBtn.innerHTML = `<i class="fa-solid fa-check text-[10px]"></i><span data-i18n="courses.updateCourse">Update Course</span>`;
     if (cancelBtn) cancelBtn.classList.remove('hidden');
 
     renderAccountCourseColorSwatches();
@@ -2848,7 +2852,7 @@ function resetAccountCourseForm() {
 
     if (codeInput) codeInput.value = '';
     if (nameInput) nameInput.value = '';
-    if (submitBtn) submitBtn.innerHTML = `<i class="fa-solid fa-plus text-[10px]"></i><span>Save Course</span>`;
+    if (submitBtn) submitBtn.innerHTML = `<i class="fa-solid fa-plus text-[10px]"></i><span data-i18n="account.saveCourse">Save Course</span>`;
     if (cancelBtn) cancelBtn.classList.add('hidden');
 
     renderAccountCourseColorSwatches();
@@ -2881,7 +2885,7 @@ function handleAccountCourseSubmit(e) {
             (window.appState.tasks || []).forEach(t => {
                 if (t.course === oldName) t.course = name;
             });
-            showNotification("Course Updated", `Updated "${name}" [${code}] in Account & Settings.`, "success");
+            showNotification(FPi18n.message("courses.courseUpdated"), FPi18n.message("courses.updatedInAccountSettings", { name, code }), "success");
         }
     } else {
         window.appState.courses.push({
@@ -2890,7 +2894,7 @@ function handleAccountCourseSubmit(e) {
             code,
             color: selectedCourseFormColor || '#5f5bf6'
         });
-        showNotification("Course Added", `Added "${name}" [${code}] to Active Courses!`, "success");
+        showNotification(FPi18n.message("courses.courseAdded"), FPi18n.message("courses.addedToActiveCourses", { name, code }), "success");
     }
 
     window.appState.user.subjects = window.appState.courses.map(c => c.name).join(', ');
@@ -2911,14 +2915,14 @@ function renderCoursesSettingsManager() {
     ['settings-courses-count-badge', 'account-courses-count-badge'].forEach(badgeId => {
         const countBadge = document.getElementById(badgeId);
         if (countBadge) {
-            countBadge.innerText = `${courses.length} Course${courses.length === 1 ? '' : 's'}`;
+            countBadge.innerHTML = FPi18n.markup("courses.course", {count: courses.length});
         }
     });
 
     const renderListInto = (listEl, isAccountView) => {
         if (!listEl) return;
         if (courses.length === 0) {
-            listEl.innerHTML = `<p class="text-xs text-center py-6" style="color:var(--v-fg2)">No courses added yet. Use the form above to add your first course and 2-letter subject profile!</p>`;
+            listEl.innerHTML = `<p class="text-xs text-center py-6" style="color:var(--v-fg2)"><span data-i18n="courses.noCoursesAddedYetUseTheFormAbove">No courses added yet. Use the form above to add your first course and 2-letter subject profile!</span></p>`;
             return;
         }
         listEl.innerHTML = courses.map(c => {
@@ -2935,21 +2939,21 @@ function renderCoursesSettingsManager() {
                         <div class="min-w-0">
                             <div class="flex items-center gap-2 flex-wrap">
                                 <h4 class="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">${escapeHtml(c.name)}</h4>
-                                <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border" style="border-color:var(--v-bdr3);background:var(--v-bg0);color:var(--v-fg2);">Badge: ${escapeHtml(code)}</span>
+                                <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border" style="border-color:var(--v-bdr3);background:var(--v-bg0);color:var(--v-fg2);">${FPi18n.markup("courses.badge", { code })}</span>
                             </div>
                             <p class="text-[11px] font-semibold mt-0.5" style="color:${pendingCnt > 0 ? col : 'var(--v-fg3)'}">
-                                ${pendingCnt} pending task${pendingCnt === 1 ? '' : 's'} in Active Courses
+                                ${FPi18n.markup("courses.pendingTaskInActiveCourses", {count: pendingCnt})}
                             </p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
                         <button type="button" onclick="${editFn}" class="px-3 py-1.5 rounded-xl text-[11px] font-extrabold border transition hover:opacity-90 flex items-center gap-1.5" style="border-color:var(--v-bdr3);background:var(--v-bg0);color:var(--v-fg);">
                             <i class="fa-solid fa-pen text-[10px]" style="color:var(--v-accent)"></i>
-                            <span>Edit</span>
+                            <span data-i18n="courses.edit">Edit</span>
                         </button>
                         <button type="button" onclick="deleteCourseById('${c.id}')" class="px-3 py-1.5 rounded-xl text-[11px] font-extrabold bg-rose-500/15 hover:bg-rose-500/25 text-rose-600 dark:text-rose-400 border border-rose-500/30 transition flex items-center gap-1">
                             <i class="fa-solid fa-trash-can text-[10px]"></i>
-                            <span>Delete</span>
+                            <span data-i18n="courses.delete">Delete</span>
                         </button>
                     </div>
                 </div>

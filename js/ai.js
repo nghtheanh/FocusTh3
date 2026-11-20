@@ -77,10 +77,10 @@ function saveGeminiApiKey(val) {
     window.appState.geminiApiKey = (val || '').trim();
     saveState();
     showNotification(
-        "AI Key Saved",
+        FPi18n.message("settings.geminiSaved"),
         window.appState.geminiApiKey
-            ? "Custom Gemini API key saved."
-            : "Using built-in Zenith AI direct answer engine.",
+            ? FPi18n.message("settings.geminiCustom")
+            : FPi18n.message("settings.geminiDefault"),
         "success"
     );
 }

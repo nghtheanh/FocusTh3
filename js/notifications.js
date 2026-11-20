@@ -207,7 +207,7 @@ function showNotification(title, message = '', type = 'info', sendBrowserPush = 
         title,
         message,
         type,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        timestamp: Date.now()
     };
     notificationHistory.unshift(item);
     if (notificationHistory.length > 30) notificationHistory.pop();
@@ -241,8 +241,8 @@ function showNotification(title, message = '', type = 'info', sendBrowserPush = 
         toast.innerHTML = `
             <div class="mt-0.5 shrink-0">${iconMap[type] || iconMap.info}</div>
             <div class="flex-1 min-w-0">
-                <p class="text-xs font-bold text-slate-900 dark:text-white truncate">${escapeHtml(title)}</p>
-                <p class="text-[11px] text-slate-700 dark:text-slate-300 font-medium leading-snug mt-0.5">${escapeHtml(message)}</p>
+                <p class="text-xs font-bold text-slate-900 dark:text-white truncate">${FPi18n.messageHtml(title)}</p>
+                <p class="text-[11px] text-slate-700 dark:text-slate-300 font-medium leading-snug mt-0.5">${FPi18n.messageHtml(message)}</p>
             </div>
             <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs p-0.5"><i class="fa-solid fa-xmark"></i></button>
         `;
@@ -254,7 +254,7 @@ function showNotification(title, message = '', type = 'info', sendBrowserPush = 
 
     // Deliver native OS notification when requested, when timer finishes, or when app is hidden/minimized (FP-12, FP-13, FP-14)
     // Always trigger native system notification for desktop & mobile
-    deliverNativeSystemNotification(title, message, type);
+    deliverNativeSystemNotification(FPi18n.resolve(title), FPi18n.resolve(message), type);
 }
 
 async function requestBrowserNotificationPermission(fromOnboarding = false) {
@@ -273,7 +273,7 @@ async function requestBrowserNotificationPermission(fromOnboarding = false) {
 
     // If strictly Windows desktop app:
     if (isWindowsDesktop && window.__TAURI__ && window.__TAURI__.core) {
-        showNotification("Notifications Active 🔔", "System notifications and audio alerts are enabled!", "success", true);
+        showNotification(FPi18n.message("alerts.notificationsActive"), FPi18n.message("alerts.nativeEnabledBody"), "success", true);
         if (typeof updateNotificationSettingsUI === 'function') updateNotificationSettingsUI();
         return 'granted';
     }
@@ -283,7 +283,7 @@ async function requestBrowserNotificationPermission(fromOnboarding = false) {
         try {
             const capPerm = await window.Capacitor.Plugins.LocalNotifications.requestPermissions();
             if (capPerm && capPerm.display === 'granted') {
-                showNotification("Notifications Enabled 🔔", "Android system notifications and study reminders are active.", "success", true);
+                showNotification(FPi18n.message("alerts.notificationsEnabled"), FPi18n.message("alerts.androidEnabledBody"), "success", true);
                 if (typeof updateNotificationSettingsUI === 'function') updateNotificationSettingsUI();
                 return 'granted';
             }
@@ -291,13 +291,13 @@ async function requestBrowserNotificationPermission(fromOnboarding = false) {
     }
 
     if (!("Notification" in window)) {
-        showNotification("In-App Notifications Active 🔔", "In-app alerts and audio chimes are enabled.", "success", false);
+        showNotification(FPi18n.message("alerts.inAppNotificationsActive"), FPi18n.message("alerts.inAppEnabledBody"), "success", false);
         if (typeof updateNotificationSettingsUI === 'function') updateNotificationSettingsUI();
         return 'unsupported';
     }
 
     if (Notification.permission === "granted") {
-        showNotification("Notifications Active ✅", "System push notifications and study alarms are ready.", "success", true);
+        showNotification(FPi18n.message("alerts.notificationsActive2"), FPi18n.message("alerts.readyBody"), "success", true);
         if (typeof updateNotificationSettingsUI === 'function') updateNotificationSettingsUI();
         return 'granted';
     }
@@ -308,13 +308,13 @@ async function requestBrowserNotificationPermission(fromOnboarding = false) {
             window.appState.notificationsEnabled = true;
             window.appState.notificationPreference = 'enabled';
             saveState();
-            showNotification("Notifications Enabled 🔔", "System notifications are active! You will receive timely reminders.", "success", true);
+            showNotification(FPi18n.message("alerts.notificationsEnabled"), FPi18n.message("alerts.remindersEnabledBody"), "success", true);
         } else if (permission === "denied") {
             window.appState.notificationPreference = 'denied';
             saveState();
-            showNotification("Notifications Denied", "System notification permission was denied. You can enable it in device Settings.", "warning", false);
+            showNotification(FPi18n.message("alerts.notificationsDenied"), FPi18n.message("alerts.deniedBody"), "warning", false);
         } else {
-            showNotification("In-App Alerts Active", "FocusPulse in-app toast notifications and sound alerts are active.", "info", false);
+            showNotification(FPi18n.message("alerts.inAppAlertsActive"), FPi18n.message("alerts.toastEnabledBody"), "info", false);
         }
         if (typeof updateNotificationSettingsUI === 'function') updateNotificationSettingsUI();
         return permission;
@@ -327,8 +327,8 @@ async function requestBrowserNotificationPermission(fromOnboarding = false) {
 function sendTestNotification() {
     initAudioContext();
     showNotification(
-        "FocusPulse System Notification 🔔",
-        "Native OS push notification, in-app toast popup, and harmonic audio chime fired!",
+        FPi18n.message("alerts.focuspulseSystemNotification"),
+        FPi18n.message("alerts.testBody"),
         "timer",
         true
     );
@@ -438,16 +438,16 @@ function renderNotificationCenter() {
     }
     if (!listEl) return;
     if (notificationHistory.length === 0) {
-        listEl.innerHTML = `<p class="text-center text-xs text-slate-500 dark:text-slate-400 py-6">No recent notifications yet. Click <strong>Test Alert</strong> above to verify sound & OS push!</p>`;
+        listEl.innerHTML = `<p class="text-center text-xs text-slate-500 dark:text-slate-400 py-6"><span data-i18n="alerts.noRecentNotificationsYetClick">No recent notifications yet. Click</span> <strong><span data-i18n="alerts.testAlert2">Test Alert</span></strong> <span data-i18n="alerts.aboveToVerifySoundOsPush">above to verify sound & OS push!</span></p>`;
         return;
     }
     listEl.innerHTML = notificationHistory.map(n => `
         <div class="bg-white/50 dark:bg-white/5 border border-white/40 dark:border-white/10 p-3 rounded-2xl flex items-start justify-between gap-2 text-xs">
             <div>
-                <p class="font-bold text-slate-900 dark:text-white">${escapeHtml(n.title)}</p>
-                <p class="text-[11px] text-slate-700 dark:text-slate-300 mt-0.5">${escapeHtml(n.message)}</p>
+                <p class="font-bold text-slate-900 dark:text-white">${FPi18n.messageHtml(n.title)}</p>
+                <p class="text-[11px] text-slate-700 dark:text-slate-300 mt-0.5">${FPi18n.messageHtml(n.message)}</p>
             </div>
-            <span class="text-[10px] text-slate-500 dark:text-slate-400 shrink-0 font-mono">${escapeHtml(n.time)}</span>
+            <span class="text-[10px] text-slate-500 dark:text-slate-400 shrink-0 font-mono">${FPi18n.formatDate(n.timestamp, {hour: '2-digit', minute: '2-digit'})}</span>
         </div>
     `).join('');
 }
@@ -457,7 +457,7 @@ function toggleSoundEffects(checkbox) {
     saveState();
     if (typeof updateNotificationSettingsUI === 'function') updateNotificationSettingsUI();
     if (checkbox.checked) {
-        showNotification("Sound Effects On 🔊", "Audio chimes will play on timers, tasks & check-ins.", "success");
+        showNotification(FPi18n.message("alerts.soundEffectsOn"), FPi18n.message("alerts.soundEnabledBody"), "success");
     }
 }
 
@@ -466,7 +466,7 @@ function toggleInAppPopups(checkbox) {
     saveState();
     if (typeof updateNotificationSettingsUI === 'function') updateNotificationSettingsUI();
     if (checkbox.checked) {
-        showNotification("In-App Popups On 💬", "Floating toast popups are enabled for reminders & actions.", "success");
+        showNotification(FPi18n.message("alerts.inAppPopupsOn"), FPi18n.message("alerts.popupEnabledBody"), "success");
     }
 }
 
@@ -497,14 +497,16 @@ function updateNotificationSettingsUI() {
     if (statusBadge) {
         const perm = getSystemNotificationPermissionState();
         if (perm === 'granted') {
-            statusBadge.innerText = 'Access Granted ✅';
+            statusBadge.innerHTML = FPi18n.markup("alerts.accessGranted");
             statusBadge.className = 'text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30';
         } else if (perm === 'denied') {
-            statusBadge.innerText = 'Browser Blocked (In-App Active)';
+            statusBadge.innerHTML = FPi18n.markup("alerts.browserBlockedInAppActive");
             statusBadge.className = 'text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-300 border border-amber-500/30';
         } else {
-            statusBadge.innerText = 'Ready to Enable';
+            statusBadge.innerHTML = FPi18n.markup("settings.readyToEnable");
             statusBadge.className = 'text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 border border-indigo-500/30';
         }
     }
 }
+
+window.addEventListener('focuspulse:languagechange', renderNotificationCenter);
