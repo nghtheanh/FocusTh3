@@ -4,6 +4,7 @@
 // Natural Language System Actions, and Inline Apply (Yes/No) Confirmation Above Input
 // ==========================================
 
+let aiRequestSequence = 0;
 let pendingAiAction = null;
 let activeAiFlow = null;
 let aiVariantCounter = 0;
@@ -17,54 +18,84 @@ const aiConversationMemory = {
 };
 
 const AI_COLOR_PALETTE = [
-    { key: 'violet',  label: 'Violet',  hex: '#8b5cf6', aliases: ['violet', 'voilet', 'purple', 'purpel', 'lavender', 'amethyst'] },
-    { key: 'indigo',  label: 'Indigo',  hex: '#5f5bf6', aliases: ['indigo', 'royal'] },
-    { key: 'emerald', label: 'Emerald', hex: '#10b981', aliases: ['emerald', 'green', 'grn', 'mint', 'forest', 'tealgreen'] },
-    { key: 'orange',  label: 'Orange',  hex: '#f97316', aliases: ['orange', 'org', 'amber', 'tangerine', 'coral'] },
-    { key: 'magenta', label: 'Magenta', hex: '#d946ef', aliases: ['magenta', 'fuchsia', 'neonpink', 'hotpink'] },
-    { key: 'cyan',    label: 'Cyan',    hex: '#06b6d4', aliases: ['cyan', 'teal', 'aqua', 'turquoise', 'sky'] },
-    { key: 'gold',    label: 'Gold',    hex: '#eab308', aliases: ['gold', 'yellow', 'ylw', 'mustard', 'sun'] },
-    { key: 'crimson', label: 'Crimson', hex: '#ef4444', aliases: ['crimson', 'red', 'scarlet', 'ruby'] },
-    { key: 'blue',    label: 'Blue',    hex: '#3b82f6', aliases: ['blue', 'blu', 'navy', 'cobalt', 'ocean'] },
-    { key: 'rose',    label: 'Rose',    hex: '#f43f5e', aliases: ['rose', 'pink', 'pnk', 'blush'] },
-    { key: 'slate',   label: 'Silver / Slate', hex: '#64748b', aliases: ['silver', 'slate', 'grey', 'gray'] }
+    { key: 'violet',  label: 'Violet', nameKey: 'appearance.violet',  hex: '#8b5cf6', aliases: ['violet', 'voilet', 'purple', 'purpel', 'lavender', 'amethyst'] },
+    { key: 'indigo',  label: 'Indigo', nameKey: 'appearance.indigo',  hex: '#5f5bf6', aliases: ['indigo', 'royal'] },
+    { key: 'emerald', label: 'Emerald', nameKey: 'appearance.emerald', hex: '#10b981', aliases: ['emerald', 'green', 'grn', 'mint', 'forest', 'tealgreen'] },
+    { key: 'orange',  label: 'Orange', nameKey: 'appearance.orange',  hex: '#f97316', aliases: ['orange', 'org', 'amber', 'tangerine', 'coral'] },
+    { key: 'magenta', label: 'Magenta', nameKey: 'appearance.magenta', hex: '#d946ef', aliases: ['magenta', 'fuchsia', 'neonpink', 'hotpink'] },
+    { key: 'cyan',    label: 'Cyan', nameKey: 'appearance.cyan',    hex: '#06b6d4', aliases: ['cyan', 'teal', 'aqua', 'turquoise', 'sky'] },
+    { key: 'gold',    label: 'Gold', nameKey: 'appearance.gold',    hex: '#eab308', aliases: ['gold', 'yellow', 'ylw', 'mustard', 'sun'] },
+    { key: 'crimson', label: 'Crimson', nameKey: 'appearance.crimson', hex: '#ef4444', aliases: ['crimson', 'red', 'scarlet', 'ruby'] },
+    { key: 'blue',    label: 'Blue', nameKey: 'habits.color.blue',    hex: '#3b82f6', aliases: ['blue', 'blu', 'navy', 'cobalt', 'ocean'] },
+    { key: 'rose',    label: 'Rose', nameKey: 'habits.color.rose',    hex: '#f43f5e', aliases: ['rose', 'pink', 'pnk', 'blush'] },
+    { key: 'slate',   label: 'Silver / Slate', nameKey: 'appearance.silverSlate', hex: '#64748b', aliases: ['silver', 'slate', 'grey', 'gray'] }
 ];
 
 const BASIC_HABITS_PRESETS = [
-    { name: 'Morning Hydration (500ml)', category: 'Health', color: 'blue', icon: '💧', targetPerWeek: 7 },
-    { name: 'Read 20 Pages of Textbook', category: 'Learning', color: 'violet', icon: '📚', targetPerWeek: 5 },
-    { name: '45m Strength / Cardio', category: 'Fitness', color: 'emerald', icon: '💪', targetPerWeek: 4 },
-    { name: 'Deep Work Session (No Phone)', category: 'Productivity', color: 'amber', icon: '⚡', targetPerWeek: 5 },
-    { name: '10m Evening Mindfulness', category: 'Mindfulness', color: 'rose', icon: '🧘', targetPerWeek: 7 }
+    { name: 'Morning Hydration (500ml)', nameKey: 'auth.morningHydration500ml', category: 'Health', color: 'blue', icon: '💧', targetPerWeek: 7 },
+    { name: 'Read 20 Pages of Textbook', nameKey: 'ai.preset.read', category: 'Learning', color: 'violet', icon: '📚', targetPerWeek: 5 },
+    { name: '45m Strength / Cardio', nameKey: 'ai.preset.cardio', category: 'Fitness', color: 'emerald', icon: '💪', targetPerWeek: 4 },
+    { name: 'Deep Work Session (No Phone)', nameKey: 'auth.deepWorkSessionNoPhone', category: 'Productivity', color: 'amber', icon: '⚡', targetPerWeek: 5 },
+    { name: '10m Evening Mindfulness', nameKey: 'setup.suggestion.mindfulness', category: 'Mindfulness', color: 'rose', icon: '🧘', targetPerWeek: 7 }
 ];
 
 const EXTRA_HABITS_PRESETS = [
-    { name: 'Eat a Healthy Balanced Meal', category: 'Health', color: 'emerald', icon: '🥗', targetPerWeek: 7 },
-    { name: '30m Outdoor Walk / Run', category: 'Fitness', color: 'orange', icon: '🏃', targetPerWeek: 5 },
-    { name: '1hr Coding / Problem Solving', category: 'Learning', color: 'indigo', icon: '💻', targetPerWeek: 5 },
-    { name: '8 Hours Quality Sleep', category: 'Health', color: 'violet', icon: '💤', targetPerWeek: 7 },
-    { name: '1hr Evening Digital Detox', category: 'Mindfulness', color: 'cyan', icon: '📵', targetPerWeek: 6 }
+    { name: 'Eat a Healthy Balanced Meal', nameKey: 'ai.preset.meal', category: 'Health', color: 'emerald', icon: '🥗', targetPerWeek: 7 },
+    { name: '30m Outdoor Walk / Run', nameKey: 'ai.preset.walk', category: 'Fitness', color: 'orange', icon: '🏃', targetPerWeek: 5 },
+    { name: '1hr Coding / Problem Solving', nameKey: 'ai.preset.code', category: 'Learning', color: 'indigo', icon: '💻', targetPerWeek: 5 },
+    { name: '8 Hours Quality Sleep', nameKey: 'ai.preset.sleep', category: 'Health', color: 'violet', icon: '💤', targetPerWeek: 7 },
+    { name: '1hr Evening Digital Detox', nameKey: 'ai.preset.detox', category: 'Mindfulness', color: 'cyan', icon: '📵', targetPerWeek: 6 }
 ];
 
 const ALL_HABIT_SUGGESTIONS = [...BASIC_HABITS_PRESETS, ...EXTRA_HABITS_PRESETS];
 
-const SUGGESTED_TASK_PRESETS = [
-    'Complete Lecture Revision Notes',
-    'Solve 10 Practice Problems',
-    'Write Lab Report Summary',
-    'Review Flashcards (Active Recall)',
-    'Prepare Weekly Study Outline',
-    'Read Next Textbook Chapter'
-];
+const SUGGESTED_TASK_KEYS = ['ai.preset.revision', 'ai.preset.problems', 'ai.preset.lab',
+    'ai.preset.flashcards', 'ai.preset.outline', 'ai.preset.chapter'];
 
 const SUGGESTED_COURSE_PRESETS = [
-    { name: 'Biology', code: 'BI', color: '#10b981' },
-    { name: 'Chemistry', code: 'CH', color: '#06b6d4' },
-    { name: 'Data Structures', code: 'DS', color: '#8b5cf6' },
-    { name: 'Linear Algebra', code: 'LA', color: '#f97316' },
-    { name: 'World History', code: 'WH', color: '#eab308' },
-    { name: 'English Literature', code: 'EL', color: '#f43f5e' }
+    { name: 'Biology', nameKey: 'ai.preset.biology', code: 'BI', color: '#10b981' },
+    { name: 'Chemistry', nameKey: 'setup.suggestion.chemistry', code: 'CH', color: '#06b6d4' },
+    { name: 'Data Structures', nameKey: 'auth.dataStructures', code: 'DS', color: '#8b5cf6' },
+    { name: 'Linear Algebra', nameKey: 'ai.preset.algebra', code: 'LA', color: '#f97316' },
+    { name: 'World History', nameKey: 'ai.preset.history', code: 'WH', color: '#eab308' },
+    { name: 'English Literature', nameKey: 'ai.preset.literature', code: 'EL', color: '#f43f5e' }
 ];
+
+function aiEntityMessage(type, plural = false) {
+    return FPi18n.message('ai.entity.' + type + (plural ? 's' : ''));
+}
+
+function aiPickedName(item) {
+    return item.nameKey ? FPi18n.translate(item.nameKey) : (item.name || item.title);
+}
+
+function hasAiHabitPreset(preset) {
+    const names = Object.values(window.FocusPulseLocales).map(locale => locale.messages[preset.nameKey]?.toLowerCase());
+    return (window.appState?.habits || []).some(habit => names.includes(habit.name.toLowerCase()));
+}
+
+function aiPickedList(items) {
+    const labels = items.map(item => {
+        const name = item.nameKey ? FPi18n.message(item.nameKey) : (item.name || item.title);
+        return item.code ? FPi18n.message('ai.list.course', {name, code: item.code}) : name;
+    });
+    return labels.reduce((first, next) => FPi18n.message('ai.list.join', {first, next}));
+}
+
+function aiThemeMessage(idOrName) {
+    const theme = FP_THEMES.find(t => t.id === idOrName || t.name === idOrName);
+    return theme ? FPi18n.message(theme.nameKey) : idOrName;
+}
+
+function aiTimerPreset(name) {
+    const keys = {Classic: 'ai.preset.classic', Extended: 'ai.preset.extended', Blitz: 'settings.preset.blitz'};
+    return Object.hasOwn(keys, name) ? FPi18n.message(keys[name]) : name;
+}
+
+function aiColorMessage(color) {
+    const known = AI_COLOR_PALETTE.find(c => c.hex === color.hex);
+    return known ? FPi18n.message(known.nameKey) : (color.label || color.hex);
+}
 
 function pickAiVariant(variants) {
     if (!Array.isArray(variants) || variants.length === 0) return '';
@@ -85,10 +116,48 @@ function saveGeminiApiKey(val) {
     );
 }
 
+// Route translated commands to the existing intent handlers. Capture names from the original input.
+const aiQuickIntents = ['courses', 'habits', 'theme', 'settings', 'plan', 'priority', 'exam', 'stuck', 'progress', 'tips', 'energy', 'help'];
+const viAiCommands = {
+    'xin chào': 'hello', 'chào bạn': 'hello', 'chào': 'hello', 'trợ giúp': 'help',
+    'giúp tôi làm bài tập': 'help me with my assignment', 'giải bài tập': 'help me with my assignment',
+    'tất cả': 'all', 'cả hai': 'both', 'tôi cần lời giải': 'i need answers',
+    'lưu vào ghi chú': 'save to notes', 'giải thích thêm': 'explain more',
+    'ví dụ': 'give me an example', 'đồng ý': 'yes', 'có': 'yes', 'áp dụng': 'apply',
+    'xác nhận': 'confirm', 'không': 'no', 'hủy': 'cancel', 'huỷ': 'cancel',
+    'chế độ sáng': 'white mode', 'chế độ tối': 'dark mode', 'tắt âm báo': 'mute sound',
+    'bật âm báo': 'enable sound', 'bật thông báo': 'enable notifications', 'tắt thông báo': 'disable notifications',
+    'bắt đầu pomodoro': 'start pomodoro', 'tạm dừng pomodoro': 'pause pomodoro',
+    'uống nước': 'log water', 'bây giờ là mấy giờ': 'current time', 'mấy giờ rồi': 'current time',
+    'hôm nay là ngày bao nhiêu': 'current date', 'hôm nay là thứ mấy': 'what day is today'
+};
+const viEntityNames = {'công việc': 'task', 'thói quen': 'habit', 'môn học': 'course', 'kế hoạch': 'plan'};
+function aiCommandInput(raw) {
+    const text = raw.trim();
+    const lookup = text.normalize('NFC').toLowerCase().replace(/[?!.]+$/, '').trim();
+    if (Object.hasOwn(viAiCommands, lookup)) return viAiCommands[lookup];
+    const messages = window.FocusPulseLocales;
+    for (const intent of aiQuickIntents) {
+        const key = 'ai.prompt.' + intent;
+        if (lookup === messages.vi.messages[key].toLowerCase().replace(/[?!.]+$/, '')) return messages.en.messages[key];
+    }
+    const multi = /^(?:thêm|tạo)\s+(\d+)\s+(thói quen|công việc|môn học)(?=\s|:|$)(.*)$/iu.exec(text);
+    if (multi) return 'add ' + multi[1] + ' ' + viEntityNames[multi[2].toLowerCase()] + 's' + multi[3];
+    const named = /^(thêm|tạo|xóa|xoá|hoàn thành|ghi nhận)\s+(công việc|thói quen|môn học|kế hoạch)(?=\s|:|$)\s*:?\s*(.*)$/iu.exec(text);
+    if (named) {
+        const verbs = {'thêm': 'add', 'tạo': 'add', 'xóa': 'delete', 'xoá': 'delete', 'hoàn thành': 'complete', 'ghi nhận': 'log'};
+        return verbs[named[1].toLowerCase()] + ' ' + viEntityNames[named[2].toLowerCase()] + (named[3] ? ': ' + named[3] : '');
+    }
+    return text.replace(/^đặt mục tiêu (?:uống )?nước\s*:?\s*/iu, 'set water goal to ')
+        .replace(/^đặt dung tích ly\s*:?\s*/iu, 'set glass size to ')
+        .replace(/^đặt pomodoro\s*:?\s*(\d+)\s*phút$/iu, 'set pomodoro to $1 mins');
+}
+
 // Normalize typos in user commands (including "Hello me with..." -> "help me with...", "adddd" -> "add", etc.)
 function normalizeAiCommandText(raw) {
-    return String(raw || '')
-        .trim()
+    const text = aiCommandInput(String(raw || ''));
+    if (/^(?:add|create|delete|complete|log)\s+(?:\d+\s+)?(?:tasks?|habits?|courses?|plans?)\s*:/i.test(text)) return text;
+    return text
         .replace(/^h+e+l+o+\s+me\b/i, 'help me')
         .replace(/\bh+l+p+\s+me\b/gi, 'help me')
         .replace(/\ba+s+i+g*n*m+e*n+t+(s?)\b/gi, 'assignment$1')
@@ -147,6 +216,7 @@ function resolveAiColor(inputStr) {
         return { key: 'custom', label: hexMatch[0].toUpperCase(), hex: hexMatch[0] };
     }
     for (const col of AI_COLOR_PALETTE) {
+        if (FPi18n.translate(col.nameKey).toLowerCase() === lower) return col;
         for (const alias of col.aliases) {
             const re = new RegExp(`\\b${alias}\\b`, 'i');
             if (re.test(lower)) {
@@ -158,9 +228,9 @@ function resolveAiColor(inputStr) {
 }
 
 function getColorLabelByHex(hex) {
-    if (!hex) return 'Indigo';
+    if (!hex) return FPi18n.message('appearance.indigo');
     const found = AI_COLOR_PALETTE.find(c => c.hex.toLowerCase() === String(hex).toLowerCase());
-    return found ? `${found.label} (${found.hex})` : hex;
+    return found ? FPi18n.message('appearance.accentSwatch', {color: FPi18n.message(found.nameKey), hex: found.hex}) : hex;
 }
 
 function findCourseFromText(queryStr) {
@@ -239,15 +309,16 @@ function appendUserChatBubble(text) {
     recordConversationTurn('user', text);
     const history = document.getElementById('ai-chat-history');
     if (!history) return;
-    history.innerHTML += `
+    history.insertAdjacentHTML('beforeend', `
         <div class="flex justify-end">
             <div class="v-accent-btn bg-indigo-600 text-white p-2.5 rounded-2xl rounded-tr-none max-w-[85%] shadow-sm font-medium">${escapeHtml(text)}</div>
         </div>
-    `;
+    `);
     history.scrollTop = history.scrollHeight;
 }
 
 function appendAiChatBubble(replyText, isSuccessAction = false, intentTag = null) {
+    replyText = FPi18n.resolve(replyText);
     recordConversationTurn('ai', replyText, intentTag);
     const history = document.getElementById('ai-chat-history');
     if (!history) return;
@@ -258,21 +329,21 @@ function appendAiChatBubble(replyText, isSuccessAction = false, intentTag = null
         .replace(/\n/g, '<br>');
 
     if (isSuccessAction) {
-        history.innerHTML += `
+        history.insertAdjacentHTML('beforeend', `
             <div class="flex gap-2">
                 <div class="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0 mt-0.5"><i class="fa-solid fa-check text-[10px]"></i></div>
                 <div class="bg-emerald-500/15 border border-emerald-500/30 p-2.5 rounded-2xl rounded-tl-none max-w-[88%] text-emerald-900 dark:text-emerald-200 font-semibold leading-relaxed">${formattedHtml}</div>
             </div>
-        `;
+        `);
     } else {
-        history.innerHTML += `
+        history.insertAdjacentHTML('beforeend', `
             <div class="flex gap-2">
                 <div class="w-6 h-6 rounded-lg bg-indigo-600/20 text-indigo-500 flex items-center justify-center shrink-0 mt-0.5" style="color:var(--v-accent)">
                     <i class="fa-solid fa-robot text-[10px]"></i>
                 </div>
                 <div class="bg-white/70 dark:bg-white/10 border border-white/60 dark:border-white/10 p-3 rounded-2xl rounded-tl-none max-w-[88%] text-slate-900 dark:text-slate-100 font-medium leading-relaxed shadow-sm">${formattedHtml}</div>
             </div>
-        `;
+        `);
     }
     history.scrollTop = history.scrollHeight;
 }
@@ -320,15 +391,15 @@ function stageAiPendingAction(actionCmd, chatNote) {
             <div class="flex items-center gap-2.5 min-w-0">
                 ${badgeHtml}
                 <div class="min-w-0">
-                    <p class="text-[10px] font-extrabold uppercase tracking-wider text-violet-500 dark:text-violet-400">Confirm Change</p>
-                    <p id="ai-confirm-text" class="text-xs font-bold text-slate-900 dark:text-white leading-snug break-words">${escapeHtml(actionCmd.summary)}</p>
+                    <p class="text-[10px] font-extrabold uppercase tracking-wider text-violet-500 dark:text-violet-400"><span data-i18n="ai.ui.change">Confirm Change</span></p>
+                    <p id="ai-inline-confirm-text" class="text-xs font-bold text-slate-900 dark:text-white leading-snug break-words">${FPi18n.messageHtml(actionCmd.summary)}</p>
                 </div>
             </div>
             <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                <button type="button" onclick="cancelAiAction()" class="px-3.5 py-1.5 rounded-xl bg-white/70 dark:bg-white/10 hover:bg-rose-500/15 hover:text-rose-500 text-slate-800 dark:text-slate-200 text-xs font-extrabold transition border border-white/40 dark:border-white/10">No</button>
+                <button type="button" onclick="cancelAiAction()" class="px-3.5 py-1.5 rounded-xl bg-white/70 dark:bg-white/10 hover:bg-rose-500/15 hover:text-rose-500 text-slate-800 dark:text-slate-200 text-xs font-extrabold transition border border-white/40 dark:border-white/10"><span data-i18n="ai.ui.no">No</span></button>
                 <button type="button" onclick="confirmAiAction()" class="v-accent-btn px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold transition shadow-md flex items-center gap-1.5">
                     <i class="fa-solid fa-check text-[10px]"></i>
-                    <span>Apply (Yes)</span>
+                    <span><span data-i18n="ai.ui.apply">Apply (Yes)</span></span>
                 </button>
             </div>
         </div>
@@ -349,7 +420,6 @@ function renderAiFlowPopup() {
     if (activeAiFlow.step === 'collect_multiple_items') {
         const { entityType, targetCount, collected } = activeAiFlow;
         const remaining = Math.max(0, targetCount - collected.length);
-        const typeLabel = entityType === 'habit' ? 'Habits' : (entityType === 'task' ? 'Tasks' : 'Courses');
 
         let candidateButtons = '';
         if (entityType === 'habit') {
@@ -359,18 +429,19 @@ function renderAiFlowPopup() {
                     <button type="button" onclick="handleAiMultiItemPick(${i})"
                         class="px-2.5 py-1 rounded-xl border text-[11px] font-bold transition flex items-center gap-1.5 ${isPicked ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm' : 'bg-white/70 dark:bg-white/10 hover:bg-indigo-500/20 border-white/40 dark:border-white/10'}">
                         <span>${isPicked ? '✓' : h.icon}</span>
-                        <span>${escapeHtml(h.name)}</span>
+                        <span>${FPi18n.markup(h.nameKey)}</span>
                     </button>
                 `;
             }).join('');
         } else if (entityType === 'task') {
-            candidateButtons = SUGGESTED_TASK_PRESETS.map((title, i) => {
-                const isPicked = collected.some(item => item.title.toLowerCase() === title.toLowerCase());
+            candidateButtons = SUGGESTED_TASK_KEYS.map((nameKey, i) => {
+                const title = FPi18n.translate(nameKey);
+                const isPicked = collected.some(item => item.nameKey === nameKey || item.title.toLowerCase() === title.toLowerCase());
                 return `
                     <button type="button" onclick="handleAiMultiItemPick(${i})"
                         class="px-2.5 py-1 rounded-xl border text-[11px] font-bold transition flex items-center gap-1.5 ${isPicked ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm' : 'bg-white/70 dark:bg-white/10 hover:bg-indigo-500/20 border-white/40 dark:border-white/10'}">
                         <span>${isPicked ? '✓' : '📌'}</span>
-                        <span>${escapeHtml(title)}</span>
+                        <span>${FPi18n.markup(nameKey)}</span>
                     </button>
                 `;
             }).join('');
@@ -381,25 +452,25 @@ function renderAiFlowPopup() {
                     <button type="button" onclick="handleAiMultiItemPick(${i})"
                         class="px-2.5 py-1 rounded-xl border text-[11px] font-bold transition flex items-center gap-1.5 ${isPicked ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm' : 'bg-white/70 dark:bg-white/10 hover:bg-indigo-500/20 border-white/40 dark:border-white/10'}">
                         <span>${isPicked ? '✓' : '🎓'}</span>
-                        <span>${escapeHtml(c.name)} [${c.code}]</span>
+                        <span>${FPi18n.markup(c.nameKey)} [${c.code}]</span>
                     </button>
                 `;
             }).join('');
         }
 
         const selectedSummary = collected.length > 0
-            ? `<div class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">Selected (${collected.length}/${targetCount}): ${collected.map(x => escapeHtml(x.name || x.title)).join(', ')}</div>`
-            : `<div class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Click ${remaining} option${remaining > 1 ? 's' : ''} below, or type your own in the chat box (comma-separated or one by one).</div>`;
+            ? `<div class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">${FPi18n.markup('ai.ui.selected', {count: collected.length, total: targetCount, items: aiPickedList(collected)})}</div>`
+            : `<div class="text-[11px] font-medium text-slate-500 dark:text-slate-400">${FPi18n.markup('ai.ui.more', {count: remaining})}</div>`;
 
         tray.innerHTML = `
             <div class="space-y-2">
                 <div class="flex items-center justify-between">
                     <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-500 flex items-center gap-1.5">
-                        <i class="fa-solid fa-list-check"></i> Select ${targetCount} ${typeLabel} (${remaining} more needed)
+                        <i class="fa-solid fa-list-check"></i> ${FPi18n.markup('ai.ui.selectCount', {count: targetCount, type: aiEntityMessage(entityType, true), remaining})}
                     </span>
                     <div class="flex items-center gap-1.5">
-                        ${collected.length > 0 ? `<button type="button" onclick="finalizeMultiItemCollection()" class="px-2.5 py-1 rounded-lg bg-indigo-600 text-white text-[10px] font-extrabold">Review (${collected.length})</button>` : ''}
-                        <button type="button" onclick="dismissAiInteractiveFlow()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs px-1.5"><i class="fa-solid fa-xmark"></i></button>
+                        ${collected.length > 0 ? `<button type="button" onclick="finalizeMultiItemCollection()" class="px-2.5 py-1 rounded-lg bg-indigo-600 text-white text-[10px] font-extrabold">${FPi18n.markup('ai.ui.review', {count: collected.length})}</button>` : ''}
+                        <button type="button" onclick="dismissAiInteractiveFlow()" aria-label="Close" data-i18n-aria-label="nav.close" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs px-1.5"><i class="fa-solid fa-xmark"></i></button>
                     </div>
                 </div>
                 ${selectedSummary}
@@ -418,8 +489,8 @@ function renderAiFlowPopup() {
         const taskButtons = pendingTasks.slice(0, 5).map((t, idx) => `
             <button type="button" onclick="handleAiAssignmentPick(${idx})"
                 class="px-2.5 py-1.5 rounded-xl bg-white/75 dark:bg-white/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-[11px] font-bold transition flex items-center gap-1.5 text-left">
-                <span class="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 text-[9px] font-black">${escapeHtml(t.course || 'TASK')}</span>
-                <span>${escapeHtml(t.title)}</span>
+                <span class="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 text-[9px] font-black">${FPi18n.messageHtml(t.course || FPi18n.message('ai.study.task'))}</span>
+                <span>${FPi18n.messageHtml(taskTitleMessage(t))}</span>
             </button>
         `).join('');
 
@@ -427,15 +498,15 @@ function renderAiFlowPopup() {
             <div class="space-y-2">
                 <div class="flex items-center justify-between">
                     <span class="text-[10px] font-extrabold uppercase tracking-wider text-indigo-500 dark:text-indigo-400 flex items-center gap-1.5">
-                        <i class="fa-solid fa-book-open-reader"></i> Select an Assignment for Direct Answers & Solutions
+                        <i class="fa-solid fa-book-open-reader"></i> <span data-i18n="ai.ui.pickAssignment">Select an Assignment for Direct Answers & Solutions</span>
                     </span>
-                    <button type="button" onclick="dismissAiInteractiveFlow()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs px-1.5"><i class="fa-solid fa-xmark"></i></button>
+                    <button type="button" onclick="dismissAiInteractiveFlow()" aria-label="Close" data-i18n-aria-label="nav.close" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs px-1.5"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <div class="flex flex-wrap gap-1.5">
                     ${pendingTasks.length > 1 ? `
                         <button type="button" onclick="handleAiAssignmentPick('all')"
                             class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold transition shadow-sm">
-                            ✨ Solve All ${pendingTasks.length} Assignments
+                            ${FPi18n.markup('ai.ui.solveAll', {count: pendingTasks.length})}
                         </button>
                     ` : ''}
                     ${taskButtons}
@@ -454,18 +525,18 @@ function renderAiFlowPopup() {
         tray.innerHTML = `
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-500 flex items-center gap-1.5">
-                    <i class="fa-solid fa-lightbulb"></i> Apply Solution to Workspace:
+                    <i class="fa-solid fa-lightbulb"></i> <span data-i18n="ai.ui.useSolution">Apply Solution to Workspace:</span>
                 </span>
                 <div class="flex flex-wrap items-center gap-1.5">
                     <button type="button" onclick="handleAiSaveAnswerToNotes()" class="px-2.5 py-1 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-700 dark:text-indigo-300 text-[11px] font-bold transition">
-                        📝 Save to Quick Study Notes
+                        <span data-i18n="ai.ui.saveSolution">📝 Save to Quick Study Notes</span>
                     </button>
                     ${taskObj && !taskObj.completed ? `
                         <button type="button" onclick="handleAiCompleteAssignmentTask('${escapeHtml(taskObj.id)}')" class="px-2.5 py-1 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold transition">
-                            ✅ Mark "${escapeHtml(taskObj.title)}" Done
+                            ${FPi18n.markup('ai.ui.markDone', {title: taskTitleMessage(taskObj)})}
                         </button>
                     ` : ''}
-                    <button type="button" onclick="dismissAiInteractiveFlow()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs px-1.5"><i class="fa-solid fa-xmark"></i></button>
+                    <button type="button" onclick="dismissAiInteractiveFlow()" aria-label="Close" data-i18n-aria-label="nav.close" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs px-1.5"><i class="fa-solid fa-xmark"></i></button>
                 </div>
             </div>
         `;
@@ -492,14 +563,14 @@ function renderAiFlowPopup() {
             <div class="space-y-2">
                 <div class="flex items-center justify-between">
                     <span class="text-[10px] font-extrabold uppercase tracking-wider text-indigo-500 dark:text-indigo-400 flex items-center gap-1.5">
-                        <i class="fa-solid fa-graduation-cap"></i> Select a Course to Edit (or type course name below)
+                        <i class="fa-solid fa-graduation-cap"></i> <span data-i18n="ai.ui.pickCourse">Select a Course to Edit (or type course name below)</span>
                     </span>
-                    <button type="button" onclick="dismissAiInteractiveFlow()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs px-1.5"><i class="fa-solid fa-xmark"></i></button>
+                    <button type="button" onclick="dismissAiInteractiveFlow()" aria-label="Close" data-i18n-aria-label="nav.close" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs px-1.5"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <div class="flex flex-wrap gap-1.5">
                     ${courseButtons}
                     <button type="button" onclick="handleAiStartAddNewCourse()" class="px-2.5 py-1.5 rounded-xl border border-dashed border-indigo-500/50 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 text-xs font-bold transition flex items-center gap-1">
-                        <i class="fa-solid fa-plus text-[10px]"></i> Add Course
+                        <i class="fa-solid fa-plus text-[10px]"></i> <span data-i18n="ai.ui.addCourse">Add Course</span>
                     </button>
                 </div>
             </div>
@@ -522,9 +593,9 @@ function renderAiFlowPopup() {
             <button type="button" onclick="handleAiCourseColorPick('${item.key}')"
                 class="px-2 py-1 rounded-lg border flex items-center gap-1.5 text-[11px] font-bold transition hover:scale-105"
                 style="background:${item.hex}18;border-color:${item.hex}66;color:var(--v-fg);"
-                title="Change colour to ${item.label}">
+                ${FPi18n.attributeMarkup('title', 'ai.ui.colorTip', {color: aiColorMessage(item)})}>
                 <span class="w-3 h-3 rounded-full shrink-0" style="background:${item.hex};"></span>
-                <span>${item.label}</span>
+                <span>${FPi18n.messageHtml(aiColorMessage(item))}</span>
             </button>
         `).join('');
 
@@ -533,17 +604,17 @@ function renderAiFlowPopup() {
                 <div class="flex items-center justify-between gap-2">
                     <div class="flex items-center gap-2">
                         <span class="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black uppercase" style="background:${col}28;color:${col};border:1px solid ${col}66;">${escapeHtml(code)}</span>
-                        <span class="text-xs font-extrabold text-slate-900 dark:text-white">Editing ${escapeHtml(course.name)} — Pick Colour or Edit Option:</span>
+                        <span class="text-xs font-extrabold text-slate-900 dark:text-white">${FPi18n.markup('ai.ui.editing', {name: course.name})}</span>
                     </div>
-                    <button type="button" onclick="dismissAiInteractiveFlow()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs px-1.5"><i class="fa-solid fa-xmark"></i></button>
+                    <button type="button" onclick="dismissAiInteractiveFlow()" aria-label="Close" data-i18n-aria-label="nav.close" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs px-1.5"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <div class="flex flex-wrap gap-1.5">
                     ${colorPills}
                 </div>
                 <div class="flex flex-wrap items-center gap-1.5 pt-1 border-t border-white/20 dark:border-white/10">
-                    <button type="button" onclick="handleAiCourseEditModePick('name')" class="px-2.5 py-1 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-700 dark:text-indigo-300 text-[11px] font-bold transition">✏️ Change Name</button>
-                    <button type="button" onclick="handleAiCourseEditModePick('code')" class="px-2.5 py-1 rounded-lg bg-violet-500/15 hover:bg-violet-500/25 text-violet-700 dark:text-violet-300 text-[11px] font-bold transition">🔤 Change 2-Letter Code</button>
-                    <button type="button" onclick="handleAiCourseEditModePick('delete')" class="px-2.5 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-600 dark:text-rose-300 text-[11px] font-bold transition">🗑️ Delete Course</button>
+                    <button type="button" onclick="handleAiCourseEditModePick('name')" class="px-2.5 py-1 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-700 dark:text-indigo-300 text-[11px] font-bold transition"><span data-i18n="ai.ui.changeName">✏️ Change Name</span></button>
+                    <button type="button" onclick="handleAiCourseEditModePick('code')" class="px-2.5 py-1 rounded-lg bg-violet-500/15 hover:bg-violet-500/25 text-violet-700 dark:text-violet-300 text-[11px] font-bold transition"><span data-i18n="ai.ui.changeCode">🔤 Change 2-Letter Code</span></button>
+                    <button type="button" onclick="handleAiCourseEditModePick('delete')" class="px-2.5 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-600 dark:text-rose-300 text-[11px] font-bold transition"><span data-i18n="ai.ui.deleteCourse">🗑️ Delete Course</span></button>
                 </div>
             </div>
         `;
@@ -552,17 +623,14 @@ function renderAiFlowPopup() {
     }
 
     if (activeAiFlow.step === 'await_course_name' || activeAiFlow.step === 'await_course_code' || activeAiFlow.step === 'await_new_course_name') {
-        const labelMap = {
-            'await_course_name': `Type the new name for "${activeAiFlow.courseName}" in the box below`,
-            'await_course_code': `Type the new 2-letter code for "${activeAiFlow.courseName}" (e.g. PY, CS, MA)`,
-            'await_new_course_name': `Type the name of the new course to add (e.g. Biology, Data Structures)`
-        };
+        const labelMap = {await_course_name: 'ai.ui.newName', await_course_code: 'ai.ui.newCode',
+            await_new_course_name: 'ai.ui.newCourse'};
         tray.innerHTML = `
             <div class="flex items-center justify-between gap-2">
                 <span class="text-xs font-bold text-indigo-600 dark:text-indigo-300 flex items-center gap-2">
-                    <i class="fa-solid fa-keyboard"></i> ${escapeHtml(labelMap[activeAiFlow.step])}
+                    <i class="fa-solid fa-keyboard"></i> ${FPi18n.markup(labelMap[activeAiFlow.step], {name: activeAiFlow.courseName})}
                 </span>
-                <button type="button" onclick="dismissAiInteractiveFlow()" class="px-2.5 py-1 rounded-lg bg-white/60 dark:bg-white/10 text-[11px] font-bold">Cancel</button>
+                <button type="button" onclick="dismissAiInteractiveFlow()" class="px-2.5 py-1 rounded-lg bg-white/60 dark:bg-white/10 text-[11px] font-bold">${FPi18n.markup('account.cancel')}</button>
             </div>
         `;
         tray.classList.remove('hidden');
@@ -575,7 +643,7 @@ function renderAiFlowPopup() {
                 class="px-2.5 py-1 rounded-lg border flex items-center gap-1.5 text-[11px] font-bold transition hover:scale-105"
                 style="background:var(--v-bg3);border-color:var(--v-bdr2);color:var(--v-fg);">
                 <span class="w-3 h-3 rounded-full border border-white/30" style="background:${t.bg === '#ffffff' ? '#e2e8f0' : t.accent};"></span>
-                <span>${escapeHtml(t.name)}</span>
+                <span>${FPi18n.markup(t.nameKey)}</span>
             </button>
         `).join('');
 
@@ -584,7 +652,7 @@ function renderAiFlowPopup() {
                 class="px-2 py-1 rounded-lg border flex items-center gap-1 text-[10px] font-bold transition hover:scale-105"
                 style="background:${col.hex}18;border-color:${col.hex}66;color:var(--v-fg);">
                 <span class="w-2.5 h-2.5 rounded-full" style="background:${col.hex};"></span>
-                <span>${col.label}</span>
+                <span>${FPi18n.messageHtml(aiColorMessage(col))}</span>
             </button>
         `).join('');
 
@@ -592,15 +660,15 @@ function renderAiFlowPopup() {
             <div class="space-y-2">
                 <div class="flex items-center justify-between">
                     <span class="text-[10px] font-extrabold uppercase tracking-wider text-fuchsia-500 dark:text-fuchsia-400 flex items-center gap-1.5">
-                        <i class="fa-solid fa-palette"></i> Choose a Theme, Surface Mode, or Accent Colour
+                        <i class="fa-solid fa-palette"></i> <span data-i18n="ai.ui.pickTheme">Choose a Theme, Surface Mode, or Accent Colour</span>
                     </span>
-                    <button type="button" onclick="dismissAiInteractiveFlow()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs px-1.5"><i class="fa-solid fa-xmark"></i></button>
+                    <button type="button" onclick="dismissAiInteractiveFlow()" aria-label="Close" data-i18n-aria-label="nav.close" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs px-1.5"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <div class="flex flex-wrap gap-1.5">${themePills}</div>
                 <div class="flex flex-wrap gap-1.5 pt-1 border-t border-white/20 dark:border-white/10">
-                    <button type="button" onclick="handleAiThemePick('surface', 'dark')" class="px-2.5 py-1 rounded-lg bg-slate-800 text-white text-[11px] font-bold">🌙 Dark Mode</button>
-                    <button type="button" onclick="handleAiThemePick('surface', 'light')" class="px-2.5 py-1 rounded-lg bg-white text-slate-900 border border-slate-300 text-[11px] font-bold">☀️ White Mode</button>
-                    <button type="button" onclick="handleAiThemePick('liquid', 'toggle')" class="px-2.5 py-1 rounded-lg bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 text-[11px] font-bold">✨ Toggle Liquid Glass</button>
+                    <button type="button" onclick="handleAiThemePick('surface', 'dark')" class="px-2.5 py-1 rounded-lg bg-slate-800 text-white text-[11px] font-bold"><span data-i18n="ai.ui.dark">🌙 Dark Mode</span></button>
+                    <button type="button" onclick="handleAiThemePick('surface', 'light')" class="px-2.5 py-1 rounded-lg bg-white text-slate-900 border border-slate-300 text-[11px] font-bold"><span data-i18n="ai.ui.light">☀️ White Mode</span></button>
+                    <button type="button" onclick="handleAiThemePick('liquid', 'toggle')" class="px-2.5 py-1 rounded-lg bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 text-[11px] font-bold"><span data-i18n="ai.ui.glass">✨ Toggle Liquid Glass</span></button>
                 </div>
                 <div class="flex flex-wrap gap-1 pt-1 border-t border-white/20 dark:border-white/10">${accentSwatches}</div>
             </div>
@@ -610,14 +678,13 @@ function renderAiFlowPopup() {
     }
 
     if (activeAiFlow.step === 'select_habit') {
-        const existingNames = new Set(((window.appState && window.appState.habits) || []).map(h => h.name.toLowerCase()));
-        const missingBasicCount = BASIC_HABITS_PRESETS.filter(p => !existingNames.has(p.name.toLowerCase())).length;
+        const missingBasicCount = BASIC_HABITS_PRESETS.filter(preset => !hasAiHabitPreset(preset)).length;
 
         const presetButtons = ALL_HABIT_SUGGESTIONS.map((h, i) => `
             <button type="button" onclick="handleAiPresetHabitPick(${i})"
                 class="px-2.5 py-1 rounded-xl bg-white/70 dark:bg-white/10 hover:bg-indigo-500/20 border border-white/40 dark:border-white/10 text-[11px] font-bold transition flex items-center gap-1.5">
                 <span>${h.icon}</span>
-                <span>${escapeHtml(h.name)}</span>
+                <span>${FPi18n.markup(h.nameKey)}</span>
             </button>
         `).join('');
 
@@ -625,21 +692,21 @@ function renderAiFlowPopup() {
             <div class="space-y-2">
                 <div class="flex items-center justify-between">
                     <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-500 flex items-center gap-1.5">
-                        <i class="fa-solid fa-fire"></i> Pick a Habit to Add or Type Custom Habit(s) Below
+                        <i class="fa-solid fa-fire"></i> <span data-i18n="ai.ui.pickHabit">Pick a Habit to Add or Type Custom Habit(s) Below</span>
                     </span>
-                    <button type="button" onclick="dismissAiInteractiveFlow()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs px-1.5"><i class="fa-solid fa-xmark"></i></button>
+                    <button type="button" onclick="dismissAiInteractiveFlow()" aria-label="Close" data-i18n-aria-label="nav.close" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs px-1.5"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <div class="flex flex-wrap gap-1.5">
                     ${missingBasicCount > 0 ? `
                         <button type="button" onclick="handleAiAddAllBasicHabitsPick()" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold transition shadow-sm">
-                            ✨ Add 5 Core Basic Habits
+                            <span data-i18n="ai.ui.addBasic">✨ Add 5 Core Basic Habits</span>
                         </button>
                     ` : `
                         <button type="button" onclick="handleAiAddAllExtraHabitsPick()" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold transition shadow-sm">
-                            🚀 Add 5 Extra Starter Habits
+                            <span data-i18n="ai.ui.addExtra">🚀 Add 5 Extra Starter Habits</span>
                         </button>
                         <button type="button" onclick="handleAiAddAllBasicHabitsPick()" class="px-2.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 text-[11px] font-extrabold transition">
-                            🔄 Reset Core 5 Habits
+                            <span data-i18n="ai.ui.resetCore">🔄 Check the 5 core habits</span>
                         </button>
                     `}
                     ${presetButtons}
@@ -655,20 +722,20 @@ function renderAiFlowPopup() {
             <div class="space-y-2">
                 <div class="flex items-center justify-between">
                     <span class="text-[10px] font-extrabold uppercase tracking-wider text-cyan-500 flex items-center gap-1.5">
-                        <i class="fa-solid fa-sliders"></i> Quick Settings (Click Any Option to Confirm & Apply)
+                        <i class="fa-solid fa-sliders"></i> <span data-i18n="ai.ui.quickSettings">Quick Settings (Click Any Option to Confirm & Apply)</span>
                     </span>
-                    <button type="button" onclick="dismissAiInteractiveFlow()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs px-1.5"><i class="fa-solid fa-xmark"></i></button>
+                    <button type="button" onclick="dismissAiInteractiveFlow()" aria-label="Close" data-i18n-aria-label="nav.close" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs px-1.5"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <div class="flex flex-wrap gap-1.5">
-                    <button type="button" onclick="handleAiSettingPick('pomo_classic')" class="px-2.5 py-1 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-700 dark:text-indigo-300 text-[11px] font-bold">⏱️ Classic (25/5m)</button>
-                    <button type="button" onclick="handleAiSettingPick('pomo_extended')" class="px-2.5 py-1 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-700 dark:text-indigo-300 text-[11px] font-bold">⏱️ Extended (50/10m)</button>
-                    <button type="button" onclick="handleAiSettingPick('pomo_blitz')" class="px-2.5 py-1 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-700 dark:text-indigo-300 text-[11px] font-bold">⏱️ Blitz (15/3m)</button>
-                    <button type="button" onclick="handleAiSettingPick('water_2500')" class="px-2.5 py-1 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 text-sky-700 dark:text-sky-300 text-[11px] font-bold">💧 Goal 2500ml</button>
-                    <button type="button" onclick="handleAiSettingPick('water_3000')" class="px-2.5 py-1 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 text-sky-700 dark:text-sky-300 text-[11px] font-bold">💧 Goal 3000ml</button>
-                    <button type="button" onclick="handleAiSettingPick('toggle_perf')" class="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 text-[11px] font-bold">⚡ Performance Mode</button>
-                    <button type="button" onclick="handleAiSettingPick('toggle_liquid')" class="px-2.5 py-1 rounded-lg bg-fuchsia-500/15 hover:bg-fuchsia-500/25 text-fuchsia-700 dark:text-fuchsia-300 text-[11px] font-bold">✨ Liquid Glass</button>
-                    <button type="button" onclick="handleAiSettingPick('toggle_sound')" class="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold">🔊 Toggle Sound</button>
-                    <button type="button" onclick="handleAiSettingPick('toggle_notif')" class="px-2.5 py-1 rounded-lg bg-violet-500/15 hover:bg-violet-500/25 text-violet-700 dark:text-violet-300 text-[11px] font-bold">🔔 Toggle Alerts</button>
+                    <button type="button" onclick="handleAiSettingPick('pomo_classic')" class="px-2.5 py-1 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-700 dark:text-indigo-300 text-[11px] font-bold"><span data-i18n="ai.ui.classic">⏱️ Classic (25/5m)</span></button>
+                    <button type="button" onclick="handleAiSettingPick('pomo_extended')" class="px-2.5 py-1 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-700 dark:text-indigo-300 text-[11px] font-bold"><span data-i18n="ai.ui.extended">⏱️ Extended (50/10m)</span></button>
+                    <button type="button" onclick="handleAiSettingPick('pomo_blitz')" class="px-2.5 py-1 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-700 dark:text-indigo-300 text-[11px] font-bold"><span data-i18n="ai.ui.blitz">⏱️ Blitz (15/3m)</span></button>
+                    <button type="button" onclick="handleAiSettingPick('water_2500')" class="px-2.5 py-1 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 text-sky-700 dark:text-sky-300 text-[11px] font-bold"><span data-i18n="ai.ui.waterSmall">💧 Goal 2500ml</span></button>
+                    <button type="button" onclick="handleAiSettingPick('water_3000')" class="px-2.5 py-1 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 text-sky-700 dark:text-sky-300 text-[11px] font-bold"><span data-i18n="ai.ui.waterLarge">💧 Goal 3000ml</span></button>
+                    <button type="button" onclick="handleAiSettingPick('toggle_perf')" class="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 text-[11px] font-bold"><span data-i18n="ai.ui.performance">⚡ Performance Mode</span></button>
+                    <button type="button" onclick="handleAiSettingPick('toggle_liquid')" class="px-2.5 py-1 rounded-lg bg-fuchsia-500/15 hover:bg-fuchsia-500/25 text-fuchsia-700 dark:text-fuchsia-300 text-[11px] font-bold"><span data-i18n="ai.ui.liquid">✨ Liquid Glass</span></button>
+                    <button type="button" onclick="handleAiSettingPick('toggle_sound')" class="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold"><span data-i18n="ai.ui.sound">🔊 Toggle Sound</span></button>
+                    <button type="button" onclick="handleAiSettingPick('toggle_notif')" class="px-2.5 py-1 rounded-lg bg-violet-500/15 hover:bg-violet-500/25 text-violet-700 dark:text-violet-300 text-[11px] font-bold"><span data-i18n="ai.ui.alerts">🔔 Toggle Alerts</span></button>
                 </div>
             </div>
         `;
@@ -692,13 +759,14 @@ function handleAiMultiItemPick(index) {
             collected.push({ ...candidate });
         }
     } else if (entityType === 'task') {
-        const title = SUGGESTED_TASK_PRESETS[index];
-        if (!title) return;
-        const existingIdx = collected.findIndex(x => x.title.toLowerCase() === title.toLowerCase());
+        const nameKey = SUGGESTED_TASK_KEYS[index];
+        if (!nameKey) return;
+        const title = FPi18n.translate(nameKey);
+        const existingIdx = collected.findIndex(x => x.nameKey === nameKey || x.title.toLowerCase() === title.toLowerCase());
         if (existingIdx >= 0) {
             collected.splice(existingIdx, 1);
         } else {
-            collected.push({ title });
+            collected.push({title, nameKey});
         }
     } else if (entityType === 'course') {
         const c = SUGGESTED_COURSE_PRESETS[index];
@@ -725,34 +793,34 @@ function finalizeMultiItemCollection() {
 
     activeAiFlow = null;
     if (entityType === 'habit') {
-        const namesList = collected.map(h => `"${h.name}"`).join(', ');
+        const namesList = aiPickedList(collected);
         stageAiPendingAction(
             {
                 type: 'add_multiple_habits',
                 items: collected,
-                summary: `Add ${collected.length} habit${collected.length > 1 ? 's' : ''}: ${namesList}`
+                summary: FPi18n.message('ai.summary.habits', {count: collected.length, names: namesList})
             },
-            `🔥 Ready to add **${collected.length} habit${collected.length > 1 ? 's' : ''}** (${namesList}) to your Habit Flow Tracker. Click **Apply (Yes)** below to confirm.`
+            FPi18n.message('ai.review.habits', {count: collected.length, names: namesList})
         );
     } else if (entityType === 'task') {
-        const namesList = collected.map(t => `"${t.title}"`).join(', ');
+        const namesList = aiPickedList(collected);
         stageAiPendingAction(
             {
                 type: 'add_multiple_tasks',
                 items: collected,
-                summary: `Add ${collected.length} task${collected.length > 1 ? 's' : ''}: ${namesList}`
+                summary: FPi18n.message('ai.summary.tasks', {count: collected.length, names: namesList})
             },
-            `📌 Ready to add **${collected.length} task${collected.length > 1 ? 's' : ''}** (${namesList}) to your Smart Task Tracker. Click **Apply (Yes)** below to confirm.`
+            FPi18n.message('ai.review.tasks', {count: collected.length, names: namesList})
         );
     } else if (entityType === 'course') {
-        const namesList = collected.map(c => `"${c.name}" [${c.code}]`).join(', ');
+        const namesList = aiPickedList(collected);
         stageAiPendingAction(
             {
                 type: 'add_multiple_courses',
                 items: collected,
-                summary: `Add ${collected.length} course${collected.length > 1 ? 's' : ''}: ${namesList}`
+                summary: FPi18n.message('ai.summary.courses', {count: collected.length, names: namesList})
             },
-            `🎓 Ready to add **${collected.length} course${collected.length > 1 ? 's' : ''}** (${namesList}) to your Active Courses. Click **Apply (Yes)** below to confirm.`
+            FPi18n.message('ai.review.courses', {count: collected.length, names: namesList})
         );
     }
 }
@@ -760,46 +828,31 @@ function finalizeMultiItemCollection() {
 // Generate direct, substantive academic solutions for a user's assignment or task
 function buildAssignmentSolutionText(taskObj) {
     if (!taskObj) return '';
-    const title = taskObj.title || 'Assignment';
+    const title = FPi18n.resolve(taskTitleMessage(taskObj)) || FPi18n.translate('ai.study.assignment');
     const lower = `${title} ${taskObj.course || ''} ${taskObj.description || ''}`.toLowerCase();
 
-    if (lower.includes('optics') || lower.includes('physics') || lower.includes('refraction') || lower.includes('snell') || lower.includes('prism')) {
-        return `🔬 **Solution Guide — ${title} (${taskObj.course || 'Physics'}):**\n` +
-            `• **1. Snell's Law of Refraction:** **n₁ sin(θ₁) = n₂ sin(θ₂)**, where **n = c / v** is the refractive index. Passing from air (n₁ ≈ 1.00) into glass (n₂ ≈ 1.50), light bends **toward the normal** (θ₂ < θ₁).\n` +
-            `• **2. Prism Minimum Deviation Formula:** **n = sin((A + Dₘ) / 2) / sin(A / 2)**, where **A** is the prism apex angle (60°) and **Dₘ** is the angle of minimum deviation.\n` +
-            `• **3. Thin Lens & Error Analysis:** Use **1/f = 1/v − 1/u**. Key experimental sources of error: parallax error when aligning pins, finite glass slab thickness, and chromatic dispersion.`;
+    if (/optics|physics|refraction|snell|prism|quang học|vật l[ýí]|khúc xạ|lăng kính/u.test(lower)) {
+        return FPi18n.translate('ai.study.optics', {title, course: taskObj.course || FPi18n.message('setup.suggestion.physics')});
     }
 
-    if (lower.includes('calculus') || lower.includes('integration') || lower.includes('integral') || lower.includes('by parts') || lower.includes('substitution')) {
-        return `📐 **Solution Guide — ${title} (${taskObj.course || 'Calculus'}):**\n` +
-            `• **1. Integration by Parts (LIATE Rule):** **∫ u dv = u·v − ∫ v du**. Choose **u** in priority order: **L**ogarithmic, **I**nverse trig, **A**lgebraic, **T**rigonometric, **E**xponential.\n` +
-            `• **2. Worked Example (∫ x·eˣ dx):** Let u = x (du = dx) and dv = eˣ dx (v = eˣ). Then **∫ x·eˣ dx = x·eˣ − ∫ eˣ dx = eˣ(x − 1) + C**.\n` +
-            `• **3. Trigonometric Substitution:** For **√(a² − x²)** use **x = a·sin(θ)**; for **√(a² + x²)** use **x = a·tan(θ)**; for **√(x² − a²)** use **x = a·sec(θ)**.`;
+    if (/calculus|integration|integral|by parts|substitution|giải tích|tích phân/u.test(lower)) {
+        return FPi18n.translate('ai.study.calculus', {title, course: taskObj.course || FPi18n.message('ai.study.calculusSubject')});
     }
 
-    if (lower.includes('binary tree') || lower.includes('avl') || lower.includes('red-black') || lower.includes('cs101') || lower.includes('data structure')) {
-        return `💻 **Solution Guide — ${title} (${taskObj.course || 'CS101'}):**\n` +
-            `• **1. Tree Traversals (O(n) Time, O(h) Space):**\n` +
-            `  - **In-Order (Left → Root → Right):** Visits BST nodes in sorted ascending order.\n` +
-            `  - **Pre-Order (Root → Left → Right):** Used for cloning/serializing trees.\n` +
-            `  - **Post-Order (Left → Right → Root):** Used for deleting/freeing nodes bottom-up.\n` +
-            `• **2. AVL Self-Balancing Rotations:** Track balance factor **BF = height(left) − height(right) ∈ {−1, 0, 1}**. Fix imbalances via **LL (Right Rotate)**, **RR (Left Rotate)**, **LR (Left-Right)**, or **RL (Right-Left)** in O(1) pointer updates.\n` +
-            `• **3. Complexity:** Search, Insertion, and Deletion all run in guaranteed **O(log n)** time.`;
+    if (/binary tree|avl|red-black|cs101|data structure|cây nhị phân|cấu trúc dữ liệu/u.test(lower)) {
+        return FPi18n.translate('ai.study.trees', {title, course: taskObj.course || 'CS101'});
     }
 
-    return `📘 **Solution & Key Concepts — ${title} (${taskObj.course || 'Study Task'}):**\n` +
-        `• **Core Thesis / Objective:** Define the primary formula, theorem, or problem statement for **${title}** first.\n` +
-        `• **Step-by-Step Derivation:** Write out the given parameters, apply the governing equation/algorithm, and verify boundary cases.\n` +
-        `• **Summary Conclusion:** State the final numerical or conceptual result clearly in 1–2 sentences.${taskObj.description ? `\n• **Task Notes:** ${taskObj.description}` : ''}`;
+    return FPi18n.translate('ai.study.guide', {title, course: taskObj.course || FPi18n.message('ai.study.task'), notes: taskObj.description ? FPi18n.translate('ai.study.notes', {notes: taskObj.description}) : ''});
 }
 
 function handleAiAssignmentPick(idxOrAll) {
     const pendingTasks = ((window.appState && window.appState.tasks) || []).filter(t => !t.completed);
     if (idxOrAll === 'all') {
-        appendUserChatBubble('Solve all my assignments');
+        appendUserChatBubble(FPi18n.translate('ai.study.solveAll'));
         if (pendingTasks.length === 0) {
             dismissAiInteractiveFlow();
-            appendAiChatBubble(`You currently have no pending assignments in your task list! Type any question or topic and I'll give you the direct answer.`, false, 'study_answer');
+            appendAiChatBubble(FPi18n.message('ai.study.noPending'), false, 'study_answer');
             return;
         }
         const combinedSolutions = pendingTasks.slice(0, 4).map(t => buildAssignmentSolutionText(t)).join('\n\n');
@@ -826,9 +879,9 @@ function handleAiSaveAnswerToNotes() {
         {
             type: 'append_study_notes',
             noteText: cleanText,
-            summary: `Save the AI assignment solution into Quick Study Notes`
+            summary: FPi18n.message('ai.summary.saveSolution')
         },
-        `📝 Ready to append this solution to your **Quick Study Notes**. Click **Apply (Yes)** below to confirm.`
+        FPi18n.message('ai.review.saveNotes')
     );
 }
 
@@ -840,9 +893,9 @@ function handleAiCompleteAssignmentTask(taskId) {
         {
             type: 'complete_task',
             query: taskObj.title,
-            summary: `Mark assignment "${taskObj.title}" as completed`
+            summary: FPi18n.message('ai.summary.finishAssignment', {title: taskObj.title})
         },
-        `✅ Ready to mark **"${taskObj.title}"** as completed. Click **Apply (Yes)** below to confirm.`
+        FPi18n.message('ai.review.finishTask', {title: taskObj.title})
     );
 }
 
@@ -855,9 +908,7 @@ function handleAiCourseSelectClick(courseId) {
     activeAiFlow = { step: 'select_course_edit', courseId: course.id, courseName: course.name };
     const code = (course.code || course.name.slice(0, 2)).slice(0, 2).toUpperCase();
     appendAiChatBubble(
-        `✏️ Selected **[${code}] ${course.name}** (current colour: **${getColorLabelByHex(course.color)}**).\n` +
-        `Which edit do you need? Pick an option below or type:\n` +
-        `• \`change colour to violet\` — or \`change letters to PY\` — or \`change name to ...\``,
+        FPi18n.message('ai.course.selected', {code, name: course.name, color: getColorLabelByHex(course.color)}),
         false,
         'course_flow'
     );
@@ -866,7 +917,7 @@ function handleAiCourseSelectClick(courseId) {
 
 function handleAiStartAddNewCourse() {
     activeAiFlow = { step: 'await_new_course_name' };
-    appendAiChatBubble(`🎓 What is the **name** of the new course you want to add? (e.g. \`Biology\`, \`Data Structures\`)`, false, 'course_flow');
+    appendAiChatBubble(FPi18n.message('ai.course.askName'), false, 'course_flow');
     renderAiFlowPopup();
     const input = document.getElementById('ai-chat-input');
     if (input) input.focus();
@@ -887,9 +938,9 @@ function handleAiCourseColorPick(colorKey) {
             newColor: colObj.hex,
             colorLabel: colObj.label,
             previewBadge: { code, color: colObj.hex },
-            summary: `Change "${course.name}" [${code}] colour to ${colObj.label} (${colObj.hex})`
+            summary: FPi18n.message('ai.summary.courseColor', {name: course.name, code, color: aiColorMessage(colObj), hex: colObj.hex})
         },
-        `🎨 Ready to update **${course.name} [${code}]** colour to **${colObj.label} (${colObj.hex})**. Click **Apply (Yes)** below to confirm.`
+        FPi18n.message('ai.review.courseColor', {name: course.name, code, color: aiColorMessage(colObj), hex: colObj.hex})
     );
 }
 
@@ -902,11 +953,11 @@ function handleAiCourseEditModePick(mode) {
 
     if (mode === 'name') {
         activeAiFlow = { step: 'await_course_name', courseId: course.id, courseName: course.name };
-        appendAiChatBubble(`✏️ Type the **new course name** for **${course.name} [${code}]**:`, false, 'course_flow');
+        appendAiChatBubble(FPi18n.message('ai.course.rename', {name: course.name, code}), false, 'course_flow');
         renderAiFlowPopup();
     } else if (mode === 'code') {
         activeAiFlow = { step: 'await_course_code', courseId: course.id, courseName: course.name };
-        appendAiChatBubble(`🔤 Type the **new 2-letter badge code** for **${course.name}** (currently \`[${code}]\`):`, false, 'course_flow');
+        appendAiChatBubble(FPi18n.message('ai.course.code', {name: course.name, code}), false, 'course_flow');
         renderAiFlowPopup();
     } else if (mode === 'delete') {
         activeAiFlow = null;
@@ -915,9 +966,9 @@ function handleAiCourseEditModePick(mode) {
                 type: 'delete_course',
                 courseId: course.id,
                 courseName: course.name,
-                summary: `Delete course "${course.name}" [${code}] from Active Courses`
+                summary: FPi18n.message('ai.summary.deleteCourse', {name: course.name, code})
             },
-            `🗑️ Ready to delete **${course.name} [${code}]**. Click **Apply (Yes)** below to confirm.`
+            FPi18n.message('ai.review.deleteCourse', {name: course.name, code})
         );
     }
 }
@@ -933,18 +984,18 @@ function handleAiThemePick(kind, value) {
                 themeId: value,
                 themeName: tName,
                 previewColor: tObj ? tObj.accent : '#5f5bf6',
-                summary: `Switch application theme to "${tName}"`
+                summary: FPi18n.message('ai.summary.theme', {theme: aiThemeMessage(tName)})
             },
-            `🎨 Ready to switch your theme to **${tName}**. Confirm below to apply.`
+            FPi18n.message('ai.review.theme', {theme: aiThemeMessage(tName)})
         );
     } else if (kind === 'surface') {
         stageAiPendingAction(
             {
                 type: 'surface_mode',
                 mode: value,
-                summary: `Switch surface mode to ${value === 'light' ? 'White Mode' : 'Dark Mode'}`
+                summary: FPi18n.message('ai.summary.surface', {mode: FPi18n.message(value === 'light' ? 'settings.whiteMode' : 'settings.darkMode')})
             },
-            `🎨 Ready to switch surface mode to **${value === 'light' ? 'White Mode' : 'Dark Mode'}**. Confirm below to apply.`
+            FPi18n.message('ai.review.surface', {mode: FPi18n.message(value === 'light' ? 'settings.whiteMode' : 'settings.darkMode')})
         );
     } else if (kind === 'liquid') {
         const nextState = !window.appState.liquidEffect;
@@ -952,9 +1003,9 @@ function handleAiThemePick(kind, value) {
             {
                 type: 'set_liquid_glass',
                 enabled: nextState,
-                summary: `${nextState ? 'Enable' : 'Disable'} Liquid Glass visual mode`
+                summary: FPi18n.message('ai.summary.glassVisual', {action: FPi18n.message(nextState ? 'ai.verb.Enable' : 'ai.verb.Disable')})
             },
-            `✨ Ready to **${nextState ? 'enable' : 'disable'} Liquid Glass Mode**. Confirm below to apply.`
+            FPi18n.message('ai.review.glass', {action: FPi18n.message(nextState ? 'ai.verb.enable' : 'ai.verb.disable')})
         );
     } else if (kind === 'accent') {
         const colObj = AI_COLOR_PALETTE.find(c => c.key === value);
@@ -965,9 +1016,9 @@ function handleAiThemePick(kind, value) {
                 hex: colObj.hex,
                 label: colObj.label,
                 previewColor: colObj.hex,
-                summary: `Change accent colour to ${colObj.label} (${colObj.hex})`
+                summary: FPi18n.message('ai.summary.accent', {color: aiColorMessage(colObj), hex: colObj.hex})
             },
-            `🎨 Ready to change your accent colour to **${colObj.label} (${colObj.hex})**. Confirm below to apply.`
+            FPi18n.message('ai.review.accent', {color: aiColorMessage(colObj), hex: colObj.hex})
         );
     }
 }
@@ -977,9 +1028,9 @@ function handleAiAddAllBasicHabitsPick() {
     stageAiPendingAction(
         {
             type: 'add_basic_habits',
-            summary: `Add / refresh the 5 FocusPulse Core Basic Habits (Hydration, Reading, Fitness, Deep Work, Mindfulness)`
+            summary: FPi18n.message('ai.summary.refreshCore')
         },
-        `🔥 Ready to apply the **5 Core Basic Habits** to your Habit Flow Tracker. Confirm below to apply.`
+        FPi18n.message('ai.review.coreHabits')
     );
 }
 
@@ -989,9 +1040,9 @@ function handleAiAddAllExtraHabitsPick() {
         {
             type: 'add_multiple_habits',
             items: EXTRA_HABITS_PRESETS,
-            summary: `Add 5 Extra Starter Habits (Healthy Meal, Walk/Run, Coding, 8h Sleep, Digital Detox)`
+            summary: FPi18n.message('ai.summary.extraHabits')
         },
-        `🚀 Ready to add the **5 Extra Starter Habits** to your Habit Flow Tracker. Confirm below to apply.`
+        FPi18n.message('ai.review.extraHabits')
     );
 }
 
@@ -1002,14 +1053,14 @@ function handleAiPresetHabitPick(idx) {
     stageAiPendingAction(
         {
             type: 'add_habit',
-            name: preset.name,
+            nameKey: preset.nameKey,
             category: preset.category,
             color: preset.color,
             icon: preset.icon,
             targetPerWeek: preset.targetPerWeek,
-            summary: `Add daily habit "${preset.name}" (${preset.icon} ${preset.category})`
+            summary: FPi18n.message('ai.summary.habitPreset', {name: FPi18n.message(preset.nameKey), icon: preset.icon, category: categoryMessage(preset.category, habitCategoryKeys)})
         },
-        `🔥 Ready to add habit **"${preset.name}"**. Confirm below to apply.`
+        FPi18n.message('ai.review.habitPreset', {name: FPi18n.message(preset.nameKey)})
     );
 }
 
@@ -1019,55 +1070,55 @@ function handleAiSettingPick(settingKey) {
         stageAiPendingAction({
             type: 'set_pomo_preset',
             name: 'Classic', focus: 25, short: 5, long: 15, count: 4,
-            summary: 'Set Pomodoro Timer to Classic (25m Focus / 5m Short / 15m Long)'
-        }, `⏱️ Ready to apply the **Classic (25/5m)** Pomodoro preset. Confirm below.`);
+            summary: FPi18n.message('ai.summary.classic')
+        }, FPi18n.message('ai.review.classic'));
     } else if (settingKey === 'pomo_extended') {
         stageAiPendingAction({
             type: 'set_pomo_preset',
             name: 'Extended', focus: 50, short: 10, long: 20, count: 3,
-            summary: 'Set Pomodoro Timer to Extended (50m Focus / 10m Short / 20m Long)'
-        }, `⏱️ Ready to apply the **Extended (50/10m)** Pomodoro preset. Confirm below.`);
+            summary: FPi18n.message('ai.summary.extended')
+        }, FPi18n.message('ai.review.extended'));
     } else if (settingKey === 'pomo_blitz') {
         stageAiPendingAction({
             type: 'set_pomo_preset',
             name: 'Blitz', focus: 15, short: 3, long: 10, count: 6,
-            summary: 'Set Pomodoro Timer to Blitz (15m Focus / 3m Short / 10m Long)'
-        }, `⏱️ Ready to apply the **Blitz (15/3m)** Pomodoro preset. Confirm below.`);
+            summary: FPi18n.message('ai.summary.blitz')
+        }, FPi18n.message('ai.review.blitz'));
     } else if (settingKey === 'water_2500' || settingKey === 'water_3000') {
         const goal = settingKey === 'water_3000' ? 3000 : 2500;
         stageAiPendingAction({
             type: 'set_water_goal',
             goalMl: goal,
-            summary: `Set Daily Hydration Goal to ${goal} ml`
-        }, `💧 Ready to update your daily hydration goal to **${goal} ml**. Confirm below.`);
+            summary: FPi18n.message('ai.summary.waterGoal', {goal})
+        }, FPi18n.message('ai.review.waterGoal', {goal}));
     } else if (settingKey === 'toggle_perf') {
         const nextVal = !window.appState.performanceMode;
         stageAiPendingAction({
             type: 'set_performance_mode',
             enabled: nextVal,
-            summary: `${nextVal ? 'Enable' : 'Disable'} Low-Spec / Performance Mode`
-        }, `⚡ Ready to **${nextVal ? 'enable' : 'disable'} Performance Mode**. Confirm below.`);
+            summary: FPi18n.message('ai.summary.performance', {action: FPi18n.message(nextVal ? 'ai.verb.Enable' : 'ai.verb.Disable')})
+        }, FPi18n.message('ai.review.performance', {action: FPi18n.message(nextVal ? 'ai.verb.enable' : 'ai.verb.disable')}));
     } else if (settingKey === 'toggle_liquid') {
         const nextVal = !window.appState.liquidEffect;
         stageAiPendingAction({
             type: 'set_liquid_glass',
             enabled: nextVal,
-            summary: `${nextVal ? 'Enable' : 'Disable'} Liquid Glass Mode`
-        }, `✨ Ready to **${nextVal ? 'enable' : 'disable'} Liquid Glass Mode**. Confirm below.`);
+            summary: FPi18n.message('ai.summary.glassMode', {action: FPi18n.message(nextVal ? 'ai.verb.Enable' : 'ai.verb.Disable')})
+        }, FPi18n.message('ai.review.glassMode', {action: FPi18n.message(nextVal ? 'ai.verb.enable' : 'ai.verb.disable')}));
     } else if (settingKey === 'toggle_sound') {
         const nextVal = window.appState.soundEnabled === false;
         stageAiPendingAction({
             type: 'set_sound_enabled',
             enabled: nextVal,
-            summary: `${nextVal ? 'Enable' : 'Mute'} timer & alert sound effects`
-        }, `🔊 Ready to **${nextVal ? 'enable' : 'mute'} sound effects**. Confirm below.`);
+            summary: FPi18n.message('ai.summary.sound', {action: FPi18n.message(nextVal ? 'ai.verb.Enable' : 'ai.verb.Mute')})
+        }, FPi18n.message('ai.review.sound', {action: FPi18n.message(nextVal ? 'ai.verb.enable' : 'ai.verb.mute')}));
     } else if (settingKey === 'toggle_notif') {
         const nextVal = window.appState.notificationsEnabled === false;
         stageAiPendingAction({
             type: 'set_notifications_enabled',
             enabled: nextVal,
-            summary: `${nextVal ? 'Enable' : 'Disable'} desktop & app notifications`
-        }, `🔔 Ready to **${nextVal ? 'enable' : 'disable'} notifications**. Confirm below.`);
+            summary: FPi18n.message('ai.summary.alerts', {action: FPi18n.message(nextVal ? 'ai.verb.Enable' : 'ai.verb.Disable')})
+        }, FPi18n.message('ai.review.alerts', {action: FPi18n.message(nextVal ? 'ai.verb.enable' : 'ai.verb.disable')}));
     }
 }
 
@@ -1102,7 +1153,7 @@ function processActiveAiFlowInput(rawPrompt) {
 
     if (/^(?:cancel|exit|stop|nevermind|quit)$/i.test(norm)) {
         dismissAiInteractiveFlow();
-        appendAiChatBubble(`Cancelled the current selection. Tell me what you'd like to do next!`);
+        appendAiChatBubble(FPi18n.message('ai.flow.cancelled'));
         return true;
     }
 
@@ -1148,10 +1199,10 @@ function processActiveAiFlowInput(rawPrompt) {
             return true;
         } else {
             const remaining = targetCount - collected.length;
-            const latestName = collected[collected.length - 1].name || collected[collected.length - 1].title;
-            const ordinal = collected.length === 1 ? '2nd' : (collected.length === 2 ? '3rd' : 'next');
+            const latestName = aiPickedName(collected[collected.length - 1]);
+            const ordinal = collected.length === 1 ? 'ai.order.second' : (collected.length === 2 ? 'ai.order.third' : 'ai.order.next');
             appendAiChatBubble(
-                `👍 Got #${collected.length}: **${latestName}**! What is the **${ordinal} ${entityType}** you'd like to add? (${remaining} more needed — pick one below or type it in the box)`,
+                FPi18n.message('ai.flow.nextItem', {count: collected.length, name: latestName, order: FPi18n.message(ordinal), type: aiEntityMessage(entityType), remaining}),
                 false,
                 'multi_item_flow'
             );
@@ -1166,7 +1217,7 @@ function processActiveAiFlowInput(rawPrompt) {
         if (/\b(?:i\s+need\s+answers?|give\s+(?:me\s+)?answers?|all|everything|both|solve\s+all|yes|sure|ok)\b/i.test(norm)) {
             if (pendingTasks.length === 0) {
                 dismissAiInteractiveFlow();
-                appendAiChatBubble(`You have no pending assignments in your task tracker right now. Type your assignment question or topic directly and I'll solve it for you!`, false, 'study_answer');
+                appendAiChatBubble(FPi18n.message('ai.study.askDirectly'), false, 'study_answer');
                 return true;
             }
             const combined = pendingTasks.slice(0, 4).map(t => buildAssignmentSolutionText(t)).join('\n\n');
@@ -1220,9 +1271,9 @@ function processActiveAiFlowInput(rawPrompt) {
                         code,
                         color: '#8b5cf6',
                         previewBadge: { code, color: '#8b5cf6' },
-                        summary: `Add new course "${afterAdd}" [${code}]`
+                        summary: FPi18n.message('ai.summary.addCourse', {name: afterAdd, code})
                     },
-                    `🎓 Ready to add course **"${afterAdd}" [${code}]**. Confirm below to apply.`
+                    FPi18n.message('ai.review.addCourse', {name: afterAdd, code})
                 );
                 return true;
             }
@@ -1235,9 +1286,7 @@ function processActiveAiFlowInput(rawPrompt) {
             activeAiFlow = { step: 'select_course_edit', courseId: matchedCourse.id, courseName: matchedCourse.name };
             const code = (matchedCourse.code || matchedCourse.name.slice(0, 2)).slice(0, 2).toUpperCase();
             appendAiChatBubble(
-                `✏️ Selected **[${code}] ${matchedCourse.name}** (current colour: **${getColorLabelByHex(matchedCourse.color)}**).\n` +
-                `Which edit do you need? Pick an option below or type:\n` +
-                `• \`change colour to violet\` — or \`change letters to PY\` — or \`change name to ...\``,
+                FPi18n.message('ai.course.selected', {code, name: matchedCourse.name, color: getColorLabelByHex(matchedCourse.color)}),
                 false,
                 'course_flow'
             );
@@ -1266,9 +1315,9 @@ function processActiveAiFlowInput(rawPrompt) {
                     type: 'delete_course',
                     courseId: course.id,
                     courseName: course.name,
-                    summary: `Delete course "${course.name}" [${curCode}] from Active Courses`
+                    summary: FPi18n.message('ai.summary.deleteCourse', {name: course.name, code: curCode})
                 },
-                `🗑️ Ready to delete **${course.name} [${curCode}]**. Click **Apply (Yes)** below to confirm.`
+                FPi18n.message('ai.review.deleteCourse', {name: course.name, code: curCode})
             );
             return true;
         }
@@ -1283,9 +1332,9 @@ function processActiveAiFlowInput(rawPrompt) {
                     newColor: matchedColor.hex,
                     colorLabel: matchedColor.label,
                     previewBadge: { code: curCode, color: matchedColor.hex },
-                    summary: `Change "${course.name}" [${curCode}] colour to ${matchedColor.label} (${matchedColor.hex})`
+                    summary: FPi18n.message('ai.summary.courseColor', {name: course.name, code: curCode, color: aiColorMessage(matchedColor), hex: matchedColor.hex})
                 },
-                `🎨 Ready to update **${course.name} [${curCode}]** colour to **${matchedColor.label} (${matchedColor.hex})**. Confirm below to apply.`
+                FPi18n.message('ai.review.editColor', {name: course.name, code: curCode, color: aiColorMessage(matchedColor), hex: matchedColor.hex})
             );
             return true;
         }
@@ -1301,14 +1350,14 @@ function processActiveAiFlowInput(rawPrompt) {
                         courseId: course.id,
                         newCode,
                         previewBadge: { code: newCode, color: course.color || '#5f5bf6' },
-                        summary: `Change 2-letter badge of "${course.name}" from [${curCode}] to [${newCode}]`
+                        summary: FPi18n.message('ai.summary.changeCode', {name: course.name, oldCode: curCode, newCode})
                     },
-                    `🔤 Ready to update **${course.name}** 2-letter badge code to **[${newCode}]**. Confirm below to apply.`
+                    FPi18n.message('ai.review.editCode', {name: course.name, code: newCode})
                 );
                 return true;
             } else {
                 activeAiFlow = { step: 'await_course_code', courseId: course.id, courseName: course.name };
-                appendAiChatBubble(`🔤 What **2-letter badge code** would you like for **${course.name}**? (e.g. \`PY\`, \`CS\`, \`MA\`)`, false, 'course_flow');
+                appendAiChatBubble(FPi18n.message('ai.course.askCode', {name: course.name}), false, 'course_flow');
                 renderAiFlowPopup();
                 return true;
             }
@@ -1326,14 +1375,14 @@ function processActiveAiFlowInput(rawPrompt) {
                         courseId: course.id,
                         newName,
                         previewBadge: { code: autoCode, color: course.color || '#5f5bf6' },
-                        summary: `Rename course "${course.name}" to "${newName}"`
+                        summary: FPi18n.message('ai.summary.rename', {name: course.name, newName})
                     },
-                    `✏️ Ready to rename **${course.name}** to **${newName}**. Confirm below to apply.`
+                    FPi18n.message('ai.review.rename', {name: course.name, newName})
                 );
                 return true;
             } else {
                 activeAiFlow = { step: 'await_course_name', courseId: course.id, courseName: course.name };
-                appendAiChatBubble(`✏️ Type the **new name** for **${course.name}**:`, false, 'course_flow');
+                appendAiChatBubble(FPi18n.message('ai.course.askRename', {name: course.name}), false, 'course_flow');
                 renderAiFlowPopup();
                 return true;
             }
@@ -1354,16 +1403,15 @@ function processActiveAiFlowInput(rawPrompt) {
                     courseId: course.id,
                     newCode,
                     previewBadge: { code: newCode, color: course.color || '#5f5bf6' },
-                    summary: `Change 2-letter badge of "${course.name}" to [${newCode}]`
+                    summary: FPi18n.message('ai.summary.newCode', {name: course.name, code: newCode})
                 },
-                `🔤 Ready to update **${course.name}** 2-letter badge code to **[${newCode}]**. Confirm below to apply.`
+                FPi18n.message('ai.review.editCode', {name: course.name, code: newCode})
             );
             return true;
         }
 
         appendAiChatBubble(
-            `For **${course.name} [${curCode}]**, tell me what you'd like to change:\n` +
-            `• **Colour:** \`change colour to violet\` • **Code:** \`change letters to PY\` • **Name:** \`change name to Python\``,
+            FPi18n.message('ai.course.editChoices', {name: course.name, code: curCode}),
             false,
             'course_flow'
         );
@@ -1385,9 +1433,9 @@ function processActiveAiFlowInput(rawPrompt) {
                 courseId: course.id,
                 newName,
                 previewBadge: { code: curCode, color: course.color || '#5f5bf6' },
-                summary: `Rename course "${course.name}" to "${newName}"`
+                summary: FPi18n.message('ai.summary.rename', {name: course.name, newName})
             },
-            `✏️ Ready to rename **${course.name}** to **${newName}**. Confirm below to apply.`
+            FPi18n.message('ai.review.rename', {name: course.name, newName})
         );
         return true;
     }
@@ -1399,7 +1447,7 @@ function processActiveAiFlowInput(rawPrompt) {
         if (!course) { dismissAiInteractiveFlow(); return false; }
         const cleanedCode = clean.replace(/^(?:change\s+(?:letters?|code)\s+to|to)\s+/i, '').replace(/[^a-zA-Z0-9]/g, '').slice(0, 2).toUpperCase();
         if (!cleanedCode) {
-            appendAiChatBubble(`Please enter 1 or 2 letters/numbers for the badge code (e.g. \`PY\`, \`CS\`).`, false, 'course_flow');
+            appendAiChatBubble(FPi18n.message('ai.course.invalidCode'), false, 'course_flow');
             return true;
         }
         activeAiFlow = null;
@@ -1409,9 +1457,9 @@ function processActiveAiFlowInput(rawPrompt) {
                 courseId: course.id,
                 newCode: cleanedCode,
                 previewBadge: { code: cleanedCode, color: course.color || '#5f5bf6' },
-                summary: `Change 2-letter badge of "${course.name}" to [${cleanedCode}]`
+                summary: FPi18n.message('ai.summary.newCode', {name: course.name, code: cleanedCode})
             },
-            `🔤 Ready to update **${course.name}** 2-letter badge code to **[${cleanedCode}]**. Confirm below to apply.`
+            FPi18n.message('ai.review.editCode', {name: course.name, code: cleanedCode})
         );
         return true;
     }
@@ -1429,9 +1477,9 @@ function processActiveAiFlowInput(rawPrompt) {
                 code,
                 color: matchedColor.hex,
                 previewBadge: { code, color: matchedColor.hex },
-                summary: `Add new course "${newName}" [${code}]`
+                summary: FPi18n.message('ai.summary.addCourse', {name: newName, code})
             },
-            `🎓 Ready to add new course **"${newName}" [${code}]**. Confirm below to apply.`
+            FPi18n.message('ai.review.newCourse', {name: newName, code})
         );
         return true;
     }
@@ -1441,7 +1489,7 @@ function processActiveAiFlowInput(rawPrompt) {
         const directTheme = parseThemeOrColorCommand(clean);
         if (directTheme) {
             activeAiFlow = null;
-            stageAiPendingAction(directTheme, `🎨 Ready to apply: **${directTheme.summary}**. Confirm below to apply.`);
+            stageAiPendingAction(directTheme, FPi18n.message('ai.review.themeAction', {summary: directTheme.summary}));
             return true;
         }
         const matchedCol = resolveAiColor(clean);
@@ -1453,9 +1501,9 @@ function processActiveAiFlowInput(rawPrompt) {
                     hex: matchedCol.hex,
                     label: matchedCol.label,
                     previewColor: matchedCol.hex,
-                    summary: `Change accent colour to ${matchedCol.label} (${matchedCol.hex})`
+                    summary: FPi18n.message('ai.summary.accent', {color: aiColorMessage(matchedCol), hex: matchedCol.hex})
                 },
-                `🎨 Ready to change accent colour to **${matchedCol.label} (${matchedCol.hex})**. Confirm below to apply.`
+                FPi18n.message('ai.review.changeAccent', {color: aiColorMessage(matchedCol), hex: matchedCol.hex})
             );
             return true;
         }
@@ -1494,9 +1542,9 @@ function processActiveAiFlowInput(rawPrompt) {
                 {
                     type: 'add_habit',
                     name: habitTitle,
-                    summary: `Create daily habit "${habitTitle}" in Habit Flow Tracker`
+                    summary: FPi18n.message('ai.summary.customHabit', {name: habitTitle})
                 },
-                `🔥 Ready to add daily habit **"${habitTitle}"**. Confirm below to apply.`
+                FPi18n.message('ai.review.customHabit', {name: habitTitle})
             );
             return true;
         }
@@ -1510,7 +1558,7 @@ function processActiveAiFlowInput(rawPrompt) {
         const directCmd = parseAiActionCommand(clean);
         if (directCmd) {
             activeAiFlow = null;
-            stageAiPendingAction(directCmd, `⚙️ Ready to apply: **${directCmd.summary}**. Confirm below.`);
+            stageAiPendingAction(directCmd, FPi18n.message('ai.review.settingAction', {summary: directCmd.summary}));
             return true;
         }
         activeAiFlow = null;
@@ -1528,14 +1576,14 @@ function parseThemeOrColorCommand(prompt) {
         return {
             type: 'surface_mode',
             mode: 'light',
-            summary: 'Switch application surface to White Mode'
+            summary: FPi18n.message('ai.summary.white')
         };
     }
     if (/\b(?:dark\s+mode|switch\s+to\s+dark)\b/.test(norm)) {
         return {
             type: 'surface_mode',
             mode: 'dark',
-            summary: 'Switch application surface to Dark Mode'
+            summary: FPi18n.message('ai.summary.dark')
         };
     }
 
@@ -1546,7 +1594,7 @@ function parseThemeOrColorCommand(prompt) {
         return {
             type: 'set_liquid_glass',
             enabled: nextVal,
-            summary: `${nextVal ? 'Enable' : 'Disable'} Liquid Glass visual mode`
+            summary: FPi18n.message('ai.summary.glassVisual', {action: FPi18n.message(nextVal ? 'ai.verb.Enable' : 'ai.verb.Disable')})
         };
     }
 
@@ -1566,7 +1614,7 @@ function parseThemeOrColorCommand(prompt) {
                 themeId: t.id,
                 themeName: t.name,
                 previewColor: t.accent,
-                summary: `Switch solid theme to "${t.name}"`
+                summary: FPi18n.message('ai.summary.solid', {theme: aiThemeMessage(t.name)})
             };
         }
     }
@@ -1579,7 +1627,7 @@ function parseThemeOrColorCommand(prompt) {
                 hex: col.hex,
                 label: col.label,
                 previewColor: col.hex,
-                summary: `Change accent colour to ${col.label} (${col.hex})`
+                summary: FPi18n.message('ai.summary.accent', {color: aiColorMessage(col), hex: col.hex})
             };
         }
     }
@@ -1596,12 +1644,11 @@ function parseAiActionCommand(prompt) {
     // 1. Add Basic Habits (only if some are missing; if all 5 exist, let startInteractiveAiFlowIfMatched offer Extra Starter Habits!)
     if (/\b(?:add|restore|load|reset|create|get|include)\s+(?:the\s+|my\s+|our\s+)?(?:basic|sample|default|starter|core)\s+habits?\b/i.test(norm) ||
         /^basic\s+habits?$/i.test(norm)) {
-        const existingNames = new Set(((window.appState && window.appState.habits) || []).map(h => h.name.toLowerCase()));
-        const missingCount = BASIC_HABITS_PRESETS.filter(p => !existingNames.has(p.name.toLowerCase())).length;
+        const missingCount = BASIC_HABITS_PRESETS.filter(preset => !hasAiHabitPreset(preset)).length;
         if (missingCount > 0 || /\b(?:reset|restore)\b/i.test(norm)) {
             return {
                 type: 'add_basic_habits',
-                summary: 'Add the 5 FocusPulse Basic Habits (Hydration, Reading, Fitness, Deep Work, Mindfulness)'
+                summary: FPi18n.message('ai.summary.coreHabits')
             };
         }
         // When all 5 basic habits already exist, return null here so startInteractiveAiFlowIfMatched opens the smart Extra/Basic Habit chooser!
@@ -1617,7 +1664,7 @@ function parseAiActionCommand(prompt) {
             return {
                 type: 'add_multiple_habits',
                 items,
-                summary: `Add ${items.length} habits: ${items.map(x => `"${x.name}"`).join(', ')}`
+                summary: FPi18n.message('ai.summary.habitList', {count: items.length, names: items.map(x => `"${x.name}"`).join(', ')})
             };
         }
     }
@@ -1626,7 +1673,7 @@ function parseAiActionCommand(prompt) {
     if (/\b(?:check|complete|mark|finish|log)\s+all\s+habits?\b/i.test(norm)) {
         return {
             type: 'mark_all_habits',
-            summary: 'Mark all daily habits as completed for today'
+            summary: FPi18n.message('ai.summary.checkAll')
         };
     }
 
@@ -1638,15 +1685,15 @@ function parseAiActionCommand(prompt) {
             return {
                 type: 'add_task',
                 title: rawTitle,
-                summary: `Add new task "${rawTitle}" to Smart Task Tracker`
+                summary: FPi18n.message('ai.summary.newTask', {title: rawTitle})
             };
         }
     }
     if (lower === 'add task' || lower === 'new task' || lower === 'create task') {
         return {
             type: 'add_task',
-            title: 'Focused Study Session',
-            summary: 'Add new task "Focused Study Session" to Smart Task Tracker'
+            title: FPi18n.translate('ai.preset.focusTask'),
+            summary: FPi18n.message('ai.summary.focusTask')
         };
     }
 
@@ -1661,7 +1708,7 @@ function parseAiActionCommand(prompt) {
             return {
                 type: 'complete_task',
                 query: targetLabel,
-                summary: `Mark task "${targetLabel}" as completed`
+                summary: FPi18n.message('ai.summary.completeTask', {title: targetLabel})
             };
         }
     }
@@ -1671,7 +1718,7 @@ function parseAiActionCommand(prompt) {
         return {
             type: 'delete_task',
             query: queryTitle,
-            summary: `Delete task matching "${queryTitle}"`
+            summary: FPi18n.message('ai.summary.deleteTask', {query: queryTitle})
         };
     }
 
@@ -1683,7 +1730,7 @@ function parseAiActionCommand(prompt) {
             return {
                 type: 'add_habit',
                 name: rawHabit,
-                summary: `Create daily habit "${rawHabit}" in Habit Flow Tracker`
+                summary: FPi18n.message('ai.summary.customHabit', {name: rawHabit})
             };
         }
     }
@@ -1695,7 +1742,7 @@ function parseAiActionCommand(prompt) {
         return {
             type: 'check_habit',
             query: queryHabit,
-            summary: `Log today's completion for habit matching "${queryHabit}"`
+            summary: FPi18n.message('ai.summary.checkHabit', {query: queryHabit})
         };
     }
     const deleteHabitMatch = norm.match(/^(?:delete|remove)\s+habit[:\s,-]+(.+)$/i);
@@ -1704,7 +1751,7 @@ function parseAiActionCommand(prompt) {
         return {
             type: 'delete_habit',
             query: queryHabit,
-            summary: `Delete habit matching "${queryHabit}"`
+            summary: FPi18n.message('ai.summary.deleteHabit', {query: queryHabit})
         };
     }
 
@@ -1721,7 +1768,7 @@ function parseAiActionCommand(prompt) {
                 code,
                 color: col.hex,
                 previewBadge: { code, color: col.hex },
-                summary: `Add new course "${rawCourse}" [${code}]`
+                summary: FPi18n.message('ai.summary.addCourse', {name: rawCourse, code})
             };
         }
     }
@@ -1734,7 +1781,7 @@ function parseAiActionCommand(prompt) {
                 type: 'delete_course',
                 courseId: target.id,
                 courseName: target.name,
-                summary: `Delete course "${target.name}" [${code}] from Active Courses`
+                summary: FPi18n.message('ai.summary.deleteCourse', {name: target.name, code})
             };
         }
     }
@@ -1750,7 +1797,7 @@ function parseAiActionCommand(prompt) {
                     newColor: col.hex,
                     colorLabel: col.label,
                     previewBadge: { code: curCode, color: col.hex },
-                    summary: `Change "${matchedCourse.name}" [${curCode}] colour to ${col.label} (${col.hex})`
+                    summary: FPi18n.message('ai.summary.courseColor', {name: matchedCourse.name, code: curCode, color: aiColorMessage(col), hex: col.hex})
                 };
             }
             const codeMatch = norm.match(/\b(?:letters?|code|badge)\s+(?:to\s+)?([A-Za-z0-9]{1,2})\b/i);
@@ -1761,7 +1808,7 @@ function parseAiActionCommand(prompt) {
                     courseId: matchedCourse.id,
                     newCode,
                     previewBadge: { code: newCode, color: matchedCourse.color || '#5f5bf6' },
-                    summary: `Change 2-letter badge of "${matchedCourse.name}" to [${newCode}]`
+                    summary: FPi18n.message('ai.summary.newCode', {name: matchedCourse.name, code: newCode})
                 };
             }
             const renameMatch = norm.match(/\b(?:rename|name)\s+(?:to\s+)(.+)$/i);
@@ -1772,7 +1819,7 @@ function parseAiActionCommand(prompt) {
                     courseId: matchedCourse.id,
                     newName,
                     previewBadge: { code: curCode, color: matchedCourse.color || '#5f5bf6' },
-                    summary: `Rename course "${matchedCourse.name}" to "${newName}"`
+                    summary: FPi18n.message('ai.summary.rename', {name: matchedCourse.name, newName})
                 };
             }
         }
@@ -1785,13 +1832,13 @@ function parseAiActionCommand(prompt) {
     // 10. Add Plan / Schedule
     const addPlanMatch = norm.match(/^(?:add|create|new)\s+(?:plan|schedule)[:\s,-]*(.*)$/i);
     if (addPlanMatch) {
-        const rawPlan = addPlanMatch[1].trim() || 'AI Deep Focus Sprint';
+        const rawPlan = addPlanMatch[1].trim() || FPi18n.translate('ai.preset.focusPlan');
         return {
             type: 'add_plan',
             presetName: rawPlan,
             hours: 4,
             sessions: 4,
-            summary: `Add study plan "${rawPlan}" (4 hrs / 4 sessions)`
+            summary: FPi18n.message('ai.summary.newPlan', {name: rawPlan})
         };
     }
 
@@ -1799,23 +1846,23 @@ function parseAiActionCommand(prompt) {
     if (lower === 'start timer' || lower === 'start pomodoro' || lower === 'start focus') {
         return {
             type: 'start_timer',
-            summary: `Start a ${window.appState.timerSettings.pomodoro || 25}-minute Deep Focus Pomodoro timer`
+            summary: FPi18n.message('ai.summary.startTimer', {minutes: window.appState.timerSettings.pomodoro || 25})
         };
     }
     if (lower === 'pause timer' || lower === 'stop timer') {
         return {
             type: 'pause_timer',
-            summary: 'Pause the active Pomodoro timer'
+            summary: FPi18n.message('ai.summary.pauseTimer')
         };
     }
     if (lower === 'classic' || lower === 'classic preset') {
-        return { type: 'set_pomo_preset', name: 'Classic', focus: 25, short: 5, long: 15, count: 4, summary: 'Set Pomodoro Timer to Classic (25m / 5m)' };
+        return { type: 'set_pomo_preset', name: 'Classic', focus: 25, short: 5, long: 15, count: 4, summary: FPi18n.message('ai.summary.classicShort') };
     }
     if (lower === 'extended' || lower === 'extended preset') {
-        return { type: 'set_pomo_preset', name: 'Extended', focus: 50, short: 10, long: 20, count: 3, summary: 'Set Pomodoro Timer to Extended (50m / 10m)' };
+        return { type: 'set_pomo_preset', name: 'Extended', focus: 50, short: 10, long: 20, count: 3, summary: FPi18n.message('ai.summary.extendedShort') };
     }
     if (lower === 'blitz' || lower === 'blitz preset') {
-        return { type: 'set_pomo_preset', name: 'Blitz', focus: 15, short: 3, long: 10, count: 6, summary: 'Set Pomodoro Timer to Blitz (15m / 3m)' };
+        return { type: 'set_pomo_preset', name: 'Blitz', focus: 15, short: 3, long: 10, count: 6, summary: FPi18n.message('ai.summary.blitzShort') };
     }
     const pomoMinsMatch = norm.match(/\b(?:set|change)\s+(?:pomodoro|focus|timer)(?:\s+duration|\s+time)?\s+(?:to\s+)?(\d+)\s*(?:m|min|mins|minutes)?\b/i);
     if (pomoMinsMatch) {
@@ -1823,7 +1870,7 @@ function parseAiActionCommand(prompt) {
         return {
             type: 'set_pomo_minutes',
             minutes: mins,
-            summary: `Set Pomodoro focus duration to ${mins} minutes`
+            summary: FPi18n.message('ai.summary.duration', {minutes: mins})
         };
     }
 
@@ -1831,14 +1878,14 @@ function parseAiActionCommand(prompt) {
     if (lower.includes('reset water') || lower.includes('reset hydration')) {
         return {
             type: 'reset_water',
-            summary: "Reset today's hydration counter to 0 ml"
+            summary: FPi18n.message('ai.summary.resetWater')
         };
     }
     if (lower.includes('log water') || lower.includes('drink water') || lower === 'hydrate' || lower === 'add water' ||
         /\b(?:i\s+drank|just\s+drank|had\s+a\s+glass\s+of)\s+water\b/i.test(norm)) {
         return {
             type: 'log_water',
-            summary: `Log +${window.appState.glassSizeMl || 250} ml water intake`
+            summary: FPi18n.message('ai.summary.logWater', {amount: window.appState.glassSizeMl || 250})
         };
     }
     const waterGoalMatch = norm.match(/\b(?:set|change)\s+(?:daily\s+)?(?:water|hydration)\s+goal\s+(?:to\s+)?(\d+)\s*(?:ml)?\b/i);
@@ -1847,7 +1894,7 @@ function parseAiActionCommand(prompt) {
         return {
             type: 'set_water_goal',
             goalMl,
-            summary: `Set Daily Hydration Goal to ${goalMl} ml`
+            summary: FPi18n.message('ai.summary.waterGoal', {goal: goalMl})
         };
     }
     const glassSizeMatch = norm.match(/\b(?:set|change)\s+glass\s+size\s+(?:to\s+)?(\d+)\s*(?:ml)?\b/i);
@@ -1856,7 +1903,7 @@ function parseAiActionCommand(prompt) {
         return {
             type: 'set_glass_size',
             glassMl,
-            summary: `Set water glass size to ${glassMl} ml`
+            summary: FPi18n.message('ai.summary.glassSize', {size: glassMl})
         };
     }
 
@@ -1868,7 +1915,7 @@ function parseAiActionCommand(prompt) {
         return {
             type: 'set_performance_mode',
             enabled: nextVal,
-            summary: `${nextVal ? 'Enable' : 'Disable'} Low-Spec / Performance Mode`
+            summary: FPi18n.message('ai.summary.performance', {action: FPi18n.message(nextVal ? 'ai.verb.Enable' : 'ai.verb.Disable')})
         };
     }
     const scaleMatch = norm.match(/\b(?:set|change)\s+ui\s+scale\s+(?:to\s+)?([+-]?\d+)\b/i);
@@ -1877,26 +1924,26 @@ function parseAiActionCommand(prompt) {
         return {
             type: 'set_ui_scale',
             scale: stepVal,
-            summary: `Set UI Scale to ${100 + stepVal * 5}% (step ${stepVal})`
+            summary: FPi18n.message('ai.summary.scale', {percent: 100 + stepVal * 5, step: stepVal})
         };
     }
     if (/\b(?:mute\s+sound|disable\s+sound|sound\s+off)\b/i.test(norm)) {
-        return { type: 'set_sound_enabled', enabled: false, summary: 'Mute timer & alert sound effects' };
+        return { type: 'set_sound_enabled', enabled: false, summary: FPi18n.message('ai.summary.mute') };
     }
     if (/\b(?:enable\s+sound|unmute\s+sound|sound\s+on)\b/i.test(norm)) {
-        return { type: 'set_sound_enabled', enabled: true, summary: 'Enable timer & alert sound effects' };
+        return { type: 'set_sound_enabled', enabled: true, summary: FPi18n.message('ai.summary.unmute') };
     }
     if (/\b(?:disable\s+notifications?|notifications?\s+off|mute\s+notifications?)\b/i.test(norm)) {
-        return { type: 'set_notifications_enabled', enabled: false, summary: 'Disable notifications' };
+        return { type: 'set_notifications_enabled', enabled: false, summary: FPi18n.message('ai.summary.disableAlerts') };
     }
     if (/\b(?:enable\s+notifications?|notifications?\s+on)\b/i.test(norm)) {
-        return { type: 'set_notifications_enabled', enabled: true, summary: 'Enable notifications' };
+        return { type: 'set_notifications_enabled', enabled: true, summary: FPi18n.message('ai.summary.enableAlerts') };
     }
     if (/\b(?:hide\s+streak|disable\s+streak)\b/i.test(norm)) {
-        return { type: 'set_streak_visibility', visible: false, summary: 'Hide the top-bar Streak counter badge' };
+        return { type: 'set_streak_visibility', visible: false, summary: FPi18n.message('ai.summary.hideStreak') };
     }
     if (/\b(?:show\s+streak|enable\s+streak)\b/i.test(norm)) {
-        return { type: 'set_streak_visibility', visible: true, summary: 'Show the top-bar Streak counter badge' };
+        return { type: 'set_streak_visibility', visible: true, summary: FPi18n.message('ai.summary.showStreak') };
     }
     const profileNameMatch = norm.match(/\b(?:change|set|update)\s+(?:my\s+)?(?:profile\s+|user\s+)?name\s+to\s+(.+)$/i) ||
                              norm.match(/\bcall\s+me\s+([A-Za-z0-9_ -]{2,25})$/i);
@@ -1905,14 +1952,14 @@ function parseAiActionCommand(prompt) {
         return {
             type: 'set_profile_name',
             name: newUser,
-            summary: `Change your profile display name to "${newUser}"`
+            summary: FPi18n.message('ai.summary.profile', {name: newUser})
         };
     }
     if (/\b(?:save|add|copy)\s+(?:this|that|it|answer|solution)\s+(?:to|into|in)\s+(?:my\s+)?notes?\b/i.test(norm) && aiConversationMemory.lastAnswerText) {
         return {
             type: 'append_study_notes',
             noteText: aiConversationMemory.lastAnswerText.replace(/\*\*/g, ''),
-            summary: 'Save the last AI response into Quick Study Notes'
+            summary: FPi18n.message('ai.summary.saveAnswer')
         };
     }
 
@@ -1924,16 +1971,16 @@ function parseAiActionCommand(prompt) {
             return {
                 type: 'add_task',
                 title: taskTitle.charAt(0).toUpperCase() + taskTitle.slice(1),
-                summary: `Add new task "${taskTitle}" to Smart Task Tracker`
+                summary: FPi18n.message('ai.summary.newTask', {title: taskTitle})
             };
         }
     }
     if (/\b(?:too\s+bright|my\s+eyes\s+hurt|make\s+it\s+dark)\b/i.test(norm)) {
-        return { type: 'surface_mode', mode: 'dark', summary: 'Switch application surface to Dark Mode' };
+        return { type: 'surface_mode', mode: 'dark', summary: FPi18n.message('ai.summary.dark') };
     }
     if (/\b(?:make\s+text\s+bigger|font\s+too\s+small|zoom\s+in)\b/i.test(norm)) {
         const nextScale = Math.min(5, (window.appState.uiScale || 0) + 2);
-        return { type: 'set_ui_scale', scale: nextScale, summary: `Increase UI Scale to ${100 + nextScale * 5}%` };
+        return { type: 'set_ui_scale', scale: nextScale, summary: FPi18n.message('ai.summary.increaseScale', {percent: 100 + nextScale * 5}) };
     }
 
     return null;
@@ -1959,17 +2006,9 @@ function startInteractiveAiFlowIfMatched(prompt) {
                 targetCount: reqCount,
                 collected: []
             };
-            const typePlural = entityType === 'habit' ? 'habits' : (entityType === 'task' ? 'tasks' : 'courses');
-            const exampleStr = entityType === 'habit'
-                ? `\`Morning Run, Read 20 Pages\``
-                : (entityType === 'task' ? `\`Physics Lab, Read Ch 4\`` : `\`Biology, Chemistry\``);
-
+            const exampleStr = FPi18n.message('ai.example.' + entityType);
             appendAiChatBubble(
-                `🔥 **Add ${reqCount} New ${typePlural.charAt(0).toUpperCase() + typePlural.slice(1)}:**\n` +
-                `Which **${reqCount} ${typePlural}** do you need? You can:\n` +
-                `• **Click ${reqCount} options** in the selector tray below\n` +
-                `• **Type them separated by a comma** (e.g. ${exampleStr})\n` +
-                `• Or **type them one by one** and I'll follow up for each!`,
+                FPi18n.message('ai.flow.collect', {count: reqCount, type: aiEntityMessage(entityType, true), group: aiEntityMessage(entityType, true), example: exampleStr}),
                 false,
                 'multi_item_flow'
             );
@@ -2010,18 +2049,15 @@ function startInteractiveAiFlowIfMatched(prompt) {
         // Otherwise show their active assignments from the workspace and ask which one they want solved!
         activeAiFlow = { step: 'select_assignment' };
         if (pendingTasks.length > 0) {
-            const taskLines = pendingTasks.slice(0, 5).map((t, idx) => `${idx + 1}. **[${t.course || 'Task'}] ${t.title}**`).join('\n');
+            const taskLines = pendingTasks.slice(0, 5).map((t, idx) => `${idx + 1}. **[${t.course || FPi18n.translate('ai.study.task')}] ${FPi18n.resolve(taskTitleMessage(t))}**`).join('\n');
             appendAiChatBubble(
-                `📚 **Assignment & Homework Solver:**\n` +
-                `I analyzed your workspace and found **${pendingTasks.length} active assignment(s)**:\n${taskLines}\n\n` +
-                `Which assignment do you need answers for? **Click one below**, type \`all\` (or \`I need answers\`) to solve all of them, or type your specific assignment question!`,
+                FPi18n.message('ai.study.choose', {count: pendingTasks.length, list: taskLines}),
                 false,
                 'assignment_help'
             );
         } else {
             appendAiChatBubble(
-                `📚 **Assignment & Homework Solver:**\n` +
-                `Paste or type your assignment question or topic below, and I will give you a direct, step-by-step answer!`,
+                FPi18n.message('ai.study.prompt'),
                 false,
                 'assignment_help'
             );
@@ -2041,8 +2077,7 @@ function startInteractiveAiFlowIfMatched(prompt) {
             activeAiFlow = { step: 'select_course_edit', courseId: specificCourse.id, courseName: specificCourse.name };
             const code = (specificCourse.code || specificCourse.name.slice(0, 2)).slice(0, 2).toUpperCase();
             appendAiChatBubble(
-                `✏️ Selected **[${code}] ${specificCourse.name}** (colour: **${getColorLabelByHex(specificCourse.color)}**).\n` +
-                `Which edit do you need? Pick an option below or type \`change colour to violet\`, \`change letters to PY\`, or \`change name to ...\``,
+                FPi18n.message('ai.course.selectedOptions', {code, name: specificCourse.name, color: getColorLabelByHex(specificCourse.color)}),
                 false,
                 'course_flow'
             );
@@ -2053,12 +2088,11 @@ function startInteractiveAiFlowIfMatched(prompt) {
         activeAiFlow = { step: 'select_course' };
         const listLines = courses.map((c, idx) => {
             const code = (c.code || c.name.slice(0, 2)).slice(0, 2).toUpperCase();
-            return `${idx + 1}. **${c.name}** — Badge: \`[${code}]\` • Colour: **${getColorLabelByHex(c.color)}**`;
+            return FPi18n.translate('ai.course.listItem', {index: idx + 1, name: c.name, code, color: getColorLabelByHex(c.color)});
         }).join('\n');
 
         appendAiChatBubble(
-            `🎓 **Available Courses (${courses.length}):**\n${listLines || 'No courses yet.'}\n\n` +
-            `Which course would you like to edit? **Click a course below** or type its name, then tell me what to change (colour, 2-letter code, or name)!`,
+            FPi18n.message('ai.course.available', {count: courses.length, list: listLines || FPi18n.message('setup.noCoursesAddedYet')}),
             false,
             'course_flow'
         );
@@ -2070,20 +2104,17 @@ function startInteractiveAiFlowIfMatched(prompt) {
     if (/^(?:add|create|new|make)\s+(?:a\s+|new\s+)?habits?$/i.test(norm) ||
         /\b(?:add|create)\s+(?:a\s+|new\s+|basic\s+|starter\s+)?habits?\b/i.test(norm)) {
         activeAiFlow = { step: 'select_habit' };
-        const existingNames = new Set(((window.appState && window.appState.habits) || []).map(h => h.name.toLowerCase()));
-        const missingBasic = BASIC_HABITS_PRESETS.filter(p => !existingNames.has(p.name.toLowerCase()));
+        const missingBasic = BASIC_HABITS_PRESETS.filter(preset => !hasAiHabitPreset(preset));
 
         if (/\bbasic\b/i.test(norm) && missingBasic.length === 0) {
             appendAiChatBubble(
-                `🔥 All **5 Core Basic Habits** are already in your Habit Flow Tracker!\n` +
-                `Would you like to add **5 Extra Starter Habits** (Healthy Meal, Walk/Run, Coding, 8h Sleep, Digital Detox), pick individual habits from the popup below, or type a custom habit name?`,
+                FPi18n.message('ai.habit.offerExtra'),
                 false,
                 'habit_flow'
             );
         } else {
             appendAiChatBubble(
-                `🔥 **Add Habits to Habit Flow:**\n` +
-                `Which habit would you like to add? Pick any preset in the popup below, type a single habit name, or type \`add 2 habits\` to add multiple at once!`,
+                FPi18n.message('ai.habit.offer'),
                 false,
                 'habit_flow'
             );
@@ -2099,8 +2130,7 @@ function startInteractiveAiFlowIfMatched(prompt) {
         const curTheme = window.appState.solidTheme || 'obsidian';
         const curAccent = getColorLabelByHex(window.appState.accentColor || '#5f5bf6');
         appendAiChatBubble(
-            `🎨 **Theme & Colour Studio** (Current: **${curTheme}** • Accent: **${curAccent}**)\n` +
-            `Pick a **Solid Theme**, **Surface Mode** (\`Dark Mode\`, \`White Mode\`, \`Liquid Glass\`), or **Accent Colour** from the popup below — or type your choice!`,
+            FPi18n.message('ai.theme.offer', {theme: aiThemeMessage(curTheme), accent: curAccent}),
             false,
             'theme_flow'
         );
@@ -2113,11 +2143,7 @@ function startInteractiveAiFlowIfMatched(prompt) {
         norm === 'settings' || norm === 'setting') {
         activeAiFlow = { step: 'select_setting' };
         appendAiChatBubble(
-            `⚙️ **FocusPulse Settings Control:**\n` +
-            `Click any quick setting in the popup below, or type a command:\n` +
-            `• **Timer:** \`set pomodoro to 45 mins\` • \`Classic\` • \`Extended\` • \`Blitz\`\n` +
-            `• **Hydration:** \`set water goal to 3000ml\` • \`set glass size to 300ml\`\n` +
-            `• **System:** \`enable performance mode\` • \`enable liquid glass\` • \`mute sound\` • \`change my name to ...\``,
+            FPi18n.message('ai.settings.offer'),
             false,
             'setting_flow'
         );
@@ -2169,7 +2195,7 @@ async function handleAiChatSubmit(e) {
         appendUserChatBubble(prompt);
         stageAiPendingAction(
             actionCmd,
-            `⚡ Ready to apply: **${actionCmd.summary}**. Click **Apply (Yes)** or **No** below.`
+            FPi18n.message('ai.review.apply', {summary: actionCmd.summary})
         );
         return;
     }
@@ -2199,7 +2225,7 @@ async function executeAiChatCallAfterUserBubble(promptText) {
     if (actionCmd) {
         stageAiPendingAction(
             actionCmd,
-            `⚡ Ready to apply: **${actionCmd.summary}**. Click **Apply (Yes)** or **No** below.`
+            FPi18n.message('ai.review.apply', {summary: actionCmd.summary})
         );
         return;
     }
@@ -2222,14 +2248,41 @@ function normalizeQueryText(raw) {
         .trim();
 }
 
+const aiFactTopics = {
+    'quang hợp': 'photosynthesis', 'ty thể': 'mitochondria', 'ti thể': 'mitochondria',
+    'định luật ii newton': 'newton second law', 'định luật i newton': 'newton first law',
+    'định luật iii newton': 'newton third law', 'định luật ohm': 'ohm law',
+    'định luật snell': 'snell law', 'khúc xạ': 'refraction', 'định lý pythagoras': 'pythagorean theorem',
+    'công thức nghiệm bậc hai': 'quadratic formula', 'tích phân từng phần': 'integration by parts',
+    'tốc độ ánh sáng': 'speed of light', 'tìm kiếm nhị phân': 'binary search', 'cây đỏ đen': 'red black tree',
+    'cây avl': 'avl tree', 'đệ quy': 'recursion', 'phân biệt ram và rom': 'difference between ram and rom'
+};
+const aiCountryCodes = {india: 'IN', usa: 'US', 'united states': 'US', america: 'US', uk: 'GB', 'united kingdom': 'GB',
+    france: 'FR', germany: 'DE', japan: 'JP', china: 'CN', russia: 'RU', canada: 'CA', australia: 'AU',
+    italy: 'IT', spain: 'ES', brazil: 'BR', 'south korea': 'KR', uae: 'AE', 'saudi arabia': 'SA', ukraine: 'UA'};
+function aiFactQuery(text) {
+    const query = text.toLowerCase().replace(/[?.!]+$/, '').trim();
+    const topic = query.replace(/^(?:giải thích|cho tôi biết về)\s+/u, '').replace(/\s+là gì$/u, '');
+    if (Object.hasOwn(aiFactTopics, topic)) return aiFactTopics[topic];
+    const place = /^(thủ đô|thủ tướng|tổng thống|chủ tịch nước)\s+(?:của\s+)?(.+?)(?:\s+là (?:gì|ai|thành phố nào))?$/u.exec(query);
+    if (place) {
+        const regions = new Intl.DisplayNames(['vi'], {type: 'region'});
+        const aliases = {'mỹ': 'usa', 'hoa kỳ': 'usa', 'anh': 'uk', 'nga': 'russia', 'hàn quốc': 'south korea'};
+        const country = aliases[place[2]] || Object.keys(aiCountryCodes).find(k => regions.of(aiCountryCodes[k]).toLowerCase() === place[2]);
+        if (country) return ({'thủ đô': 'capital of ', 'thủ tướng': 'prime minister of ',
+            'tổng thống': 'president of ', 'chủ tịch nước': 'president of '})[place[1]] + country;
+    }
+    return text;
+}
+
 // Instant offline factual knowledge lookup (returns a short, exact answer or null if not matched)
 function lookupInstantFactAnswer(promptText) {
-    const clean = promptText.trim();
-    const norm = normalizeQueryText(clean);
+    const clean = aiCommandInput(promptText);
+    const norm = normalizeQueryText(aiFactQuery(clean));
 
     // 1. Safe Math & Arithmetic Expressions (e.g. "25 * 4", "what is 144 / 12", "2^10")
     const mathCandidate = clean
-        .replace(/^(?:what\s+is|calculate|solve|compute|evaluate)\s+/i, '')
+        .replace(/^(?:what\s+is|calculate|solve|compute|evaluate|tính)\s+/i, '')
         .replace(/[?=]+$/g, '')
         .trim();
     if (/^[0-9+\-*/().\s^%]+$/.test(mathCandidate) && /[0-9]/.test(mathCandidate) && /[+\-*/^%]/.test(mathCandidate)) {
@@ -2237,17 +2290,17 @@ function lookupInstantFactAnswer(promptText) {
             const safeExpr = mathCandidate.replace(/\^/g, '**');
             const result = Function('"use strict"; return (' + safeExpr + ')')();
             if (typeof result === 'number' && isFinite(result)) {
-                return `**${mathCandidate} = ${Number(result.toFixed(6))}**`;
+                return FPi18n.translate('ai.fact.math', {expression: mathCandidate, result: FPi18n.formatNumber(Number(result.toFixed(6)), {maximumFractionDigits: 6})});
             }
         } catch (e) {}
     }
 
     // 2. Current Date / Time / Day queries
     if (/^(?:what\s+time\s+is\s+it|current\s+time|time\s+now)$/.test(norm)) {
-        return `It is currently **${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}**.`;
+        return FPi18n.translate('ai.fact.time', {time: FPi18n.formatDate(new Date(), {hour: '2-digit', minute: '2-digit'})});
     }
     if (/^(?:what\s+(?:is\s+)?(?:today\s*s?\s+)?date|current\s+date|what\s+day\s+is\s+(?:it|today))$/.test(norm)) {
-        return `Today is **${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}**.`;
+        return FPi18n.translate('ai.fact.date', {date: FPi18n.formatDate(new Date(), {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})});
     }
 
     // 3. World Leaders & Government Systems (including misconceptions like "Prime Minister of America")
@@ -2256,43 +2309,43 @@ function lookupInstantFactAnswer(promptText) {
     const isUSA = /\b(?:america|usa|u s a|u s|united states|us)\b/.test(norm);
 
     if (isUSA && hasPM) {
-        return `The United States does **not** have a Prime Minister — it is a presidential republic led by a **President**. The current President of the United States is **Donald Trump**.`;
+        return FPi18n.translate('ai.fact.usGovernment');
     }
     if (isUSA && hasPres) {
-        return `The current President of the United States is **Donald Trump** (47th U.S. President).`;
+        return FPi18n.translate('ai.fact.usPresident');
     }
     if (/\b(?:india)\b/.test(norm) && hasPM) {
-        return `The Prime Minister of India is **Narendra Modi** (serving since May 2014).`;
+        return FPi18n.translate('ai.fact.indiaPM');
     }
     if (/\b(?:india)\b/.test(norm) && hasPres) {
-        return `The President of India is **Droupadi Murmu** (15th President of India).`;
+        return FPi18n.translate('ai.fact.indiaPresident');
     }
     if (/\b(?:uk|united kingdom|britain|great britain|england)\b/.test(norm) && hasPM) {
-        return `The Prime Minister of the United Kingdom is **Keir Starmer**.`;
+        return FPi18n.translate('ai.fact.ukPM');
     }
     if (/\b(?:uk|united kingdom|britain|great britain|england)\b/.test(norm) && hasPres) {
-        return `The United Kingdom does **not** have a President — it is a constitutional monarchy with **King Charles III** as head of state and **Keir Starmer** as Prime Minister.`;
+        return FPi18n.translate('ai.fact.ukGovernment');
     }
     if (/\b(?:canada)\b/.test(norm) && hasPM) {
-        return `The Prime Minister of Canada is **Mark Carney**.`;
+        return FPi18n.translate('ai.fact.canadaPM');
     }
     if (/\b(?:australia)\b/.test(norm) && hasPM) {
-        return `The Prime Minister of Australia is **Anthony Albanese**.`;
+        return FPi18n.translate('ai.fact.australiaPM');
     }
     if (/\b(?:france)\b/.test(norm) && hasPres) {
-        return `The President of France is **Emmanuel Macron**.`;
+        return FPi18n.translate('ai.fact.francePresident');
     }
     if (/\b(?:russia)\b/.test(norm) && hasPres) {
-        return `The President of Russia is **Vladimir Putin**.`;
+        return FPi18n.translate('ai.fact.russiaPresident');
     }
     if (/\b(?:china)\b/.test(norm) && hasPres) {
-        return `The President of China is **Xi Jinping**.`;
+        return FPi18n.translate('ai.fact.chinaPresident');
     }
     if (/\b(?:ukraine)\b/.test(norm) && hasPres) {
-        return `The President of Ukraine is **Volodymyr Zelenskyy**.`;
+        return FPi18n.translate('ai.fact.ukrainePresident');
     }
     if (/\b(?:kerala)\b/.test(norm) && /\b(?:chief minister|cm)\b/.test(norm)) {
-        return `The Chief Minister of Kerala is **Pinarayi Vijayan**.`;
+        return FPi18n.translate('ai.fact.keralaCM');
     }
 
     // 4. World Capitals
@@ -2323,30 +2376,31 @@ function lookupInstantFactAnswer(promptText) {
         for (const [place, cap] of Object.entries(capitals)) {
             if (norm.includes(place)) {
                 const label = place.length <= 3 ? place.toUpperCase() : place.replace(/\b\w/g, c => c.toUpperCase());
-                return `The capital of ${label} is **${cap}**.`;
+                return FPi18n.translate('ai.fact.capital', {place: FPi18n.getCurrentLanguage() === 'vi' && aiCountryCodes[place]
+                    ? new Intl.DisplayNames(['vi'], {type: 'region'}).of(aiCountryCodes[place]) : label, capital: cap});
             }
         }
     }
 
     // 5. Core Science, Math & Computer Science Quick Facts
     const quickFacts = [
-        { match: /\bphotosynthesis\b/, ans: `**Photosynthesis** is the process by which green plants use sunlight, water (H₂O), and carbon dioxide (CO₂) to produce glucose (C₆H₁₂O₆) and oxygen (O₂).` },
-        { match: /\bmitochondria\b/, ans: `**Mitochondria** are the powerhouses of the cell, generating most of the cell's **ATP** (chemical energy) through cellular respiration.` },
-        { match: /\bnewton.*second law\b|\bf\s*=\s*m\s*a\b/, ans: `**Newton's Second Law** states that force equals mass times acceleration (**F = m·a**).` },
-        { match: /\bnewton.*first law\b|\blaw of inertia\b/, ans: `**Newton's First Law (Inertia)** states that an object remains at rest or in uniform motion unless acted upon by an external net force.` },
-        { match: /\bnewton.*third law\b/, ans: `**Newton's Third Law** states that for every action, there is an equal and opposite reaction.` },
-        { match: /\bohm.*law\b/, ans: `**Ohm's Law** states that voltage equals current times resistance (**V = I × R**).` },
-        { match: /\bsnell.*law\b|\brefraction\b/, ans: `**Snell's Law** states that **n₁ sin(θ₁) = n₂ sin(θ₂)**, relating the angles of incidence and refraction to the refractive indices of two media.` },
-        { match: /\bpythagor(?:ean|as)\b/, ans: `The **Pythagorean Theorem** states that in a right triangle, **a² + b² = c²**, where c is the hypotenuse.` },
-        { match: /\bquadratic formula\b/, ans: `The **Quadratic Formula** for ax² + bx + c = 0 is **x = (−b ± √(b² − 4ac)) / 2a**.` },
-        { match: /\bintegration by parts\b/, ans: `**Integration by Parts** uses the formula **∫ u dv = u·v − ∫ v du** (choose u via the **LIATE** priority rule).` },
-        { match: /\bspeed of light\b/, ans: `The speed of light in a vacuum (c) is approximately **299,792,458 m/s** (~3 × 10⁸ m/s).` },
-        { match: /\bbinary search\b/, ans: `**Binary Search** finds a target in a sorted array by repeatedly halving the search interval, running in **O(log n)** time.` },
-        { match: /\bred black tree\b/, ans: `A **Red-Black Tree** is a self-balancing binary search tree that guarantees **O(log n)** search, insertion, and deletion using node color invariants.` },
-        { match: /\bavl tree\b/, ans: `An **AVL Tree** is a self-balancing binary search tree where the heights of left and right subtrees of any node differ by at most **1** (**O(log n)** operations).` },
-        { match: /\brecursion\b/, ans: `**Recursion** is when a function calls itself on a smaller subproblem until reaching a **base case** that stops the calls.` },
-        { match: /\bdifference between ram and rom\b/, ans: `**RAM** is fast, volatile working memory cleared when power turns off; **ROM** is non-volatile permanent memory used for firmware/boot instructions.` },
-        { match: /\bwho (?:created|made|developed|built) focuspulse\b|\bfoc it\b|\bazmee\b/, ans: `**FocusPulse** is developed by **azmee7 (Azmi)** under **Foc-It** (github.com/foc-it).` }
+        { match: /\bphotosynthesis\b/, ans: FPi18n.translate('ai.fact.photosynthesis') },
+        { match: /\bmitochondria\b/, ans: FPi18n.translate('ai.fact.mitochondria') },
+        { match: /\bnewton.*second law\b|\bf\s*=\s*m\s*a\b/, ans: FPi18n.translate('ai.fact.newtonSecond') },
+        { match: /\bnewton.*first law\b|\blaw of inertia\b/, ans: FPi18n.translate('ai.fact.newtonFirst') },
+        { match: /\bnewton.*third law\b/, ans: FPi18n.translate('ai.fact.newtonThird') },
+        { match: /\bohm.*law\b/, ans: FPi18n.translate('ai.fact.ohm') },
+        { match: /\bsnell.*law\b|\brefraction\b/, ans: FPi18n.translate('ai.fact.snell') },
+        { match: /\bpythagor(?:ean|as)\b/, ans: FPi18n.translate('ai.fact.pythagoras') },
+        { match: /\bquadratic formula\b/, ans: FPi18n.translate('ai.fact.quadratic') },
+        { match: /\bintegration by parts\b/, ans: FPi18n.translate('ai.fact.integration') },
+        { match: /\bspeed of light\b/, ans: FPi18n.translate('ai.fact.lightSpeed') },
+        { match: /\bbinary search\b/, ans: FPi18n.translate('ai.fact.binarySearch') },
+        { match: /\bred black tree\b/, ans: FPi18n.translate('ai.fact.redBlack') },
+        { match: /\bavl tree\b/, ans: FPi18n.translate('ai.fact.avl') },
+        { match: /\brecursion\b/, ans: FPi18n.translate('ai.fact.recursion') },
+        { match: /\bdifference between ram and rom\b/, ans: FPi18n.translate('ai.fact.memory') },
+        { match: /\bwho (?:created|made|developed|built) focuspulse\b|\bfoc it\b|\bazmee\b/, ans: FPi18n.translate('ai.fact.developer') }
     ];
     for (const item of quickFacts) {
         if (item.match.test(norm)) {
@@ -2365,8 +2419,8 @@ function generateSmartLocalAiResponse(promptText) {
 
     const q = normalizeAiCommandText(promptText).toLowerCase();
     const state = window.appState;
-    const userName = (state.user && state.user.name) ? state.user.name.split(' ')[0] : 'Scholar';
-    const subjects = (state.user && state.user.subjects) ? state.user.subjects : 'your courses';
+    const userName = (state.user && state.user.name) ? state.user.name.split(' ')[0] : FPi18n.translate('nav.scholar');
+    const subjects = (state.user && state.user.subjects) ? state.user.subjects : FPi18n.translate('ai.study.subjects');
     const pendingTasks = (state.tasks || []).filter(t => !t.completed);
     const completedTasks = (state.tasks || []).filter(t => t.completed);
     const habits = state.habits || [];
@@ -2375,12 +2429,12 @@ function generateSmartLocalAiResponse(promptText) {
     const uncheckedHabitsToday = habits.filter(h => !(h.logs && h.logs[todayKey]));
     const waterPct = Math.min(100, Math.round(((state.waterIntakeMl || 0) / (state.dailyWaterGoalMl || 2500)) * 100));
     const focusMins = Math.round((state.timer.totalFocusSecs || 0) / 60);
-    const topTask = pendingTasks.length > 0 ? pendingTasks[0].title : `reviewing ${subjects.split(',')[0]}`;
-    const nextHabitName = uncheckedHabitsToday.length > 0 ? uncheckedHabitsToday[0].name : 'all daily habits';
+    const topTask = pendingTasks.length > 0 ? taskTitleMessage(pendingTasks[0]) : FPi18n.message('ai.study.reviewing', {subject: subjects.split(',')[0]});
+    const nextHabitName = uncheckedHabitsToday.length > 0 ? habitNameMessage(uncheckedHabitsToday[0]) : FPi18n.message('ai.study.habits');
 
     // 2. Context-aware follow-up check (e.g. if user says "explain more", "give me an example", "what about the second one?")
     if (/^(?:explain\s+more|tell\s+me\s+more|give\s+(?:me\s+)?an?\s+example|elaborate)$/i.test(q) && aiConversationMemory.lastAnswerText) {
-        return `📌 **Further Breakdown:**\nTo apply this in practice, focus on writing out one concrete worked example step by step, verifying units/boundary conditions, and summarizing the key takeaway in **Quick Study Notes** (or type \`save to notes\` and I'll add it for you!).`;
+        return FPi18n.translate('ai.coach.explain');
     }
     if (/\b(?:second|2nd|next)\s+(?:one|assignment|task)\b/i.test(q) && pendingTasks[1]) {
         return buildAssignmentSolutionText(pendingTasks[1]);
@@ -2392,46 +2446,43 @@ function generateSmartLocalAiResponse(promptText) {
     // 3. Standalone Greetings ONLY (never matches "hello me with my assignment", and NEVER spams task/Pomodoro stats!)
     const isStandaloneGreeting = /^(?:hi|hello|hey|yo|sup|howdy|good\s*(?:morning|afternoon|evening)|how\s+are\s+you|what'?s\s+up)[!.?]*$/i.test(q);
     if (isStandaloneGreeting) {
-        return `👋 Hi ${userName}! How can I help you today? You can ask me any study/assignment question, or tell me to update your courses, habits, tasks, themes, or settings.`;
+        return FPi18n.translate('ai.coach.hello', {name: userName});
     }
 
     // 4. Daily Planning & Schedules
     if (q.includes('plan my day') || q.includes('schedule') || q.includes('timeblock')) {
-        const secondTask = pendingTasks.length > 1 ? pendingTasks[1].title : `active recall on ${subjects}`;
-        return `📋 **Today's Study Plan (${userName}):**\n` +
-            `• **Block 1 (${state.timerSettings.pomodoro}m):** Complete **"${topTask}"**.\n` +
-            `• **Break (${state.timerSettings.short}m):** Drink ${state.glassSizeMl}ml water & check off **"${nextHabitName}"**.\n` +
-            `• **Block 2 (${state.timerSettings.pomodoro}m):** Work on **"${secondTask}"**.`;
+        const secondTask = pendingTasks.length > 1 ? taskTitleMessage(pendingTasks[1]) : FPi18n.message('ai.study.recall', {subject: subjects});
+        return FPi18n.translate('ai.coach.plan', {name: userName, focus: state.timerSettings.pomodoro, first: topTask, rest: state.timerSettings.short, water: state.glassSizeMl, habit: nextHabitName, second: secondTask});
     }
 
     // 5. Task Prioritization
     if (q.includes('prioritize') || q === 'tasks' || q === 'my tasks' || q.includes('urgent') || q.includes('backlog')) {
         if (pendingTasks.length === 0) {
-            return `🎉 You have **0 pending tasks**! Type \`add task: [Task Title]\` or \`add 2 tasks\` to add new goals.`;
+            return FPi18n.translate('ai.coach.emptyQueue');
         }
         const sorted = [...pendingTasks].sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-        const listStr = sorted.slice(0, 4).map((t, idx) => `${idx + 1}. **[${t.course || 'Task'}] ${t.title}** (Due ${t.dueDate})`).join('\n');
-        return `⚡ **Priority Task Queue (${pendingTasks.length} Pending):**\n${listStr}\n\nWant me to solve any of these? Type \`help me with my assignment\`!`;
+        const listStr = sorted.slice(0, 4).map((t, idx) => FPi18n.translate('ai.study.priorityItem', {index: idx + 1, course: t.course || FPi18n.message('ai.study.task'), title: taskTitleMessage(t), date: FPi18n.dateMessage(t.dueDate)})).join('\n');
+        return FPi18n.translate('ai.coach.priority', {count: pendingTasks.length, list: listStr});
     }
 
     // 6. Procrastination / Stuck
     if (q.includes('procrastinat') || q.includes('lazy') || q.includes('stuck') || q.includes('unmotivated')) {
-        return `🚀 **2-Minute Reset:** Commit to working on **"${topTask}"** for just **2 minutes**. Starting breaks the friction immediately — or type \`help me with ${topTask}\` and we'll solve the first part together!`;
+        return FPi18n.translate('ai.coach.twoMinutes', {task: topTask});
     }
 
     // 7. Burnout / Stress / Tired
     if (q.includes('overwhelm') || q.includes('stress') || q.includes('tired') || q.includes('burnout')) {
-        return `🌿 **Energy Reset:** Drink a glass of water, step away from screens for 5 minutes, and focus on just one small step when you're ready.`;
+        return FPi18n.translate('ai.coach.energy');
     }
 
     // 8. Exam Strategy
     if (q.includes('exam') || q.includes('revision') || q.includes('active recall') || q.includes('spaced repetition')) {
-        return `🧠 **Exam Strategy:** Spend 60% of your session solving practice problems without looking at notes, log mistakes in **Quick Study Notes**, and review at **Day 1 → Day 3 → Day 7**.`;
+        return FPi18n.translate('ai.coach.exam');
     }
 
     // 9. Habit Tips / Status (only when explicitly asking for habit tips or status)
     if (q === 'habit tips' || q === 'habit status' || q === 'my habits' || q.includes('streak')) {
-        return `🔥 **Habit Status:** ${habitsDoneToday}/${habits.length} completed today (${state.streakCount}-day streak). Next up: **"${nextHabitName}"** — or type \`add 2 habits\` to add new habits!`;
+        return FPi18n.translate('ai.coach.habit', {done: habitsDoneToday, total: habits.length, streak: state.streakCount, next: nextHabitName});
     }
 
     // 10. Progress Report & Stats (ONLY shown when user explicitly asks for stats/progress/report!)
@@ -2439,20 +2490,12 @@ function generateSmartLocalAiResponse(promptText) {
         const totalTasks = pendingTasks.length + completedTasks.length;
         const taskPct = totalTasks > 0 ? Math.round((completedTasks.length / totalTasks) * 100) : 100;
         const habitPct = habits.length > 0 ? Math.round((habitsDoneToday / habits.length) * 100) : 0;
-        return `📊 **Your Progress Today:**\n` +
-            `• **Focus Logged:** ${focusMins}m (${state.streakCount}d streak 🔥)\n` +
-            `• **Tasks:** ${completedTasks.length}/${totalTasks} done (${taskPct}%)\n` +
-            `• **Habits:** ${habitsDoneToday}/${habits.length} done (${habitPct}%)\n` +
-            `• **Water:** ${state.waterIntakeMl}/${state.dailyWaterGoalMl}ml (${waterPct}%)`;
+        return FPi18n.translate('ai.coach.progress', {minutes: focusMins, streak: state.streakCount, tasksDone: completedTasks.length, tasks: totalTasks, taskPct, habitsDone: habitsDoneToday, habits: habits.length, habitPct, water: state.waterIntakeMl, goal: state.dailyWaterGoalMl, waterPct});
     }
 
     // 11. Help / Commands
     if (q === 'help' || q.includes('ai commands') || q.includes('what can you do')) {
-        return `🛠️ **Zenith AI Site Controls & Study Assistant:**\n` +
-            `• **Assignments & Q&A:** \`help me with my assignment\` • \`I need answers\` • or ask any question!\n` +
-            `• **Habits (Single or Multi):** \`add basic habits\` • \`add 2 habits\` • \`add habit: Morning Run\`\n` +
-            `• **Courses:** \`edit my courses\` • \`add 2 courses\` • \`change CS101 colour to violet\`\n` +
-            `• **Themes & Settings:** \`change my theme\` • \`change settings\` • \`cyberpunk\` • \`white mode\``;
+        return FPi18n.translate('ai.coach.help');
     }
 
     return null;
@@ -2469,7 +2512,8 @@ async function fetchShortAccurateOnlineAnswer(promptText, geminiKey) {
         .map(t => `${t.title} (${t.course || 'General'})`)
         .join('; ');
 
-    const sysInstruction = `You are Zenith AI inside FocusPulse. Answer the user's question directly, accurately, and concisely (1 to 3 sentences). Do NOT spam Pomodoro timers or task counts unless asked. Active user assignments: ${pendingTaskNames || 'None'}. Recent chat context:\n${recentHistory}`;
+    const responseLanguage = FPi18n.getCurrentLanguage();
+    const sysInstruction = `You are Zenith AI inside FocusPulse. Answer the user's question directly, accurately, and concisely (1 to 3 sentences). Do NOT spam Pomodoro timers or task counts unless asked. Active user assignments: ${pendingTaskNames || 'None'}. Recent chat context:\n${recentHistory}\n\n${FPi18n.translate('ai.system.language')}`;
 
     // 1. Try Google Gemini API if a valid AIza... key is configured
     if (/^AIza[0-9A-Za-z_-]{25,}$/.test(geminiKey)) {
@@ -2528,7 +2572,7 @@ async function fetchShortAccurateOnlineAnswer(promptText, geminiKey) {
     const normCheck = normalizeAiCommandText(promptText).toLowerCase();
     const isConversationalOrAppPhrase = /\b(?:i\s+need|help\s+me|hello\s+me|can\s+you|could\s+you|please|my|our|site|app|edit|change|add|create|make|delete|remove|update|switch|course|theme|habit|task|assignment|homework|answer|answers|setting|color|timer|pomodoro|water|streak)\b/.test(normCheck);
 
-    if (!isConversationalOrAppPhrase) {
+    if (responseLanguage === 'en' && !isConversationalOrAppPhrase) {
         try {
             const cleanQuery = promptText
                 .replace(/^(?:who\s+is|what\s+is|what\s+are|where\s+is|when\s+was|tell\s+me\s+about|define|explain)\s+(?:the\s+|a\s+|an\s+)?/i, '')
@@ -2566,16 +2610,16 @@ async function runCoreAiAnswerPipeline(promptText) {
     // 2. If not a built-in coaching command or cached fact, fetch a short, accurate answer online
     if (!replyText) {
         const history = document.getElementById('ai-chat-history');
-        const loadingId = 'ai-loading-' + Date.now();
+        const loadingId = 'ai-loading-' + (++aiRequestSequence);
         if (history) {
-            history.innerHTML += `
+            history.insertAdjacentHTML('beforeend', `
                 <div id="${loadingId}" class="flex gap-2">
                     <div class="w-6 h-6 rounded-lg bg-indigo-600/20 text-indigo-500 flex items-center justify-center shrink-0 mt-0.5" style="color:var(--v-accent)">
                         <i class="fa-solid fa-robot text-[10px]"></i>
                     </div>
-                    <div class="bg-white/70 dark:bg-white/10 border border-white/60 dark:border-white/10 p-2.5 rounded-2xl rounded-tl-none text-slate-600 dark:text-slate-300 text-[11px] font-semibold">Thinking...</div>
+                    <div class="bg-white/70 dark:bg-white/10 border border-white/60 dark:border-white/10 p-2.5 rounded-2xl rounded-tl-none text-slate-600 dark:text-slate-300 text-[11px] font-semibold" data-i18n="ai.ui.thinking">Thinking...</div>
                 </div>
-            `;
+            `);
             history.scrollTop = history.scrollHeight;
         }
 
@@ -2585,7 +2629,14 @@ async function runCoreAiAnswerPipeline(promptText) {
             ''
         ).trim();
 
+        // A reply belongs to the language used in its request. Retry once if the user switched mid-turn.
+        const requestedLanguage = FPi18n.getCurrentLanguage();
         replyText = await fetchShortAccurateOnlineAnswer(promptText, rawKey);
+        if (requestedLanguage !== FPi18n.getCurrentLanguage()) {
+            const retryLanguage = FPi18n.getCurrentLanguage();
+            replyText = await fetchShortAccurateOnlineAnswer(promptText, rawKey);
+            if (retryLanguage !== FPi18n.getCurrentLanguage()) replyText = FPi18n.translate('ai.ui.langChanged');
+        }
 
         const loadingEl = document.getElementById(loadingId);
         if (loadingEl) loadingEl.remove();
@@ -2601,7 +2652,7 @@ async function runCoreAiAnswerPipeline(promptText) {
             renderAiFlowPopup();
             return;
         }
-        replyText = `I can help solve your assignments, answer questions, or update your workspace! Try \`help me with my assignment\`, \`add 2 habits\`, \`edit my courses\`, \`change my theme\`, or \`change settings\`.`;
+        replyText = FPi18n.translate('ai.coach.offline');
     }
 
     appendAiChatBubble(replyText, false, 'general_qa');
@@ -2620,14 +2671,13 @@ function confirmAiAction() {
     pendingAiAction = null;
     activeAiFlow = null;
 
-    let confirmMsg = 'Action executed!';
+    let confirmMsg = FPi18n.message('ai.result.executed');
     try {
         if (act.type === 'add_basic_habits') {
             if (!Array.isArray(window.appState.habits)) window.appState.habits = [];
             let addedCount = 0;
             BASIC_HABITS_PRESETS.forEach((preset, idx) => {
-                const exists = window.appState.habits.some(h => h.name.toLowerCase() === preset.name.toLowerCase());
-                if (!exists) {
+                if (!hasAiHabitPreset(preset)) {
                     window.appState.habits.push({
                         id: 'h-basic-' + Date.now() + '-' + idx,
                         name: preset.name,
@@ -2641,10 +2691,9 @@ function confirmAiAction() {
                 }
             });
             if (addedCount === 0) {
-                window.appState.habits = generateSampleHabits();
-                confirmMsg = `✅ All 5 Core Basic Habits were refreshed in your Habit Flow Tracker!`;
+                confirmMsg = FPi18n.message('ai.result.corePresent');
             } else {
-                confirmMsg = `✅ Added ${addedCount} Basic Habit${addedCount > 1 ? 's' : ''} to your Habit Flow Tracker!`;
+                confirmMsg = FPi18n.message('ai.result.coreAdded', {count: addedCount});
             }
             if (typeof renderHabitsSection === 'function') renderHabitsSection();
         } else if (act.type === 'add_multiple_habits') {
@@ -2652,7 +2701,7 @@ function confirmAiAction() {
             const items = Array.isArray(act.items) ? act.items : [];
             const addedNames = [];
             items.forEach((item, idx) => {
-                const name = (item.name || '').trim();
+                const name = (aiPickedName(item) || '').trim();
                 if (!name) return;
                 window.appState.habits.unshift({
                     id: 'h-multi-' + Date.now() + '-' + idx,
@@ -2666,14 +2715,14 @@ function confirmAiAction() {
                 addedNames.push(`"${name}"`);
             });
             if (typeof renderHabitsSection === 'function') renderHabitsSection();
-            confirmMsg = `✅ Added ${addedNames.length} habit${addedNames.length > 1 ? 's' : ''} (${addedNames.join(', ')}) to your Habit Flow Tracker!`;
+            confirmMsg = FPi18n.message('ai.result.habitsAdded', {count: addedNames.length, names: addedNames.join(', ')});
         } else if (act.type === 'add_multiple_tasks') {
             if (!Array.isArray(window.appState.tasks)) window.appState.tasks = [];
             const items = Array.isArray(act.items) ? act.items : [];
             const defaultCourse = (window.appState.courses && window.appState.courses[0]) ? window.appState.courses[0].name : 'CS101';
             const addedNames = [];
             items.forEach((item, idx) => {
-                const title = (item.title || item.name || '').trim();
+                const title = (aiPickedName(item) || '').trim();
                 if (!title) return;
                 window.appState.tasks.unshift({
                     id: 't-multi-' + Date.now() + '-' + idx,
@@ -2682,19 +2731,19 @@ function confirmAiAction() {
                     subcategory: 'General',
                     course: item.course || defaultCourse,
                     dueDate: formatDateKey(new Date()),
-                    description: 'Added by Zenith AI Coach',
+                    description: FPi18n.translate('ai.preset.description'),
                     completed: false,
                     completedAt: null
                 });
                 addedNames.push(`"${title}"`);
             });
-            confirmMsg = `✅ Added ${addedNames.length} task${addedNames.length > 1 ? 's' : ''} (${addedNames.join(', ')}) to your Smart Task Tracker!`;
+            confirmMsg = FPi18n.message('ai.result.tasksAdded', {count: addedNames.length, names: addedNames.join(', ')});
         } else if (act.type === 'add_multiple_courses') {
             if (!Array.isArray(window.appState.courses)) window.appState.courses = [];
             const items = Array.isArray(act.items) ? act.items : [];
             const addedNames = [];
             items.forEach((item, idx) => {
-                const name = (item.name || '').trim();
+                const name = (aiPickedName(item) || '').trim();
                 if (!name) return;
                 const code = (item.code || name.replace(/[^a-zA-Z0-9]/g, '').slice(0, 2)).slice(0, 2).toUpperCase() || 'CR';
                 window.appState.courses.push({
@@ -2707,14 +2756,14 @@ function confirmAiAction() {
             });
             window.appState.user.subjects = window.appState.courses.map(c => c.name).join(', ');
             if (typeof renderCoursesSettingsManager === 'function') renderCoursesSettingsManager();
-            confirmMsg = `🎓 Added ${addedNames.length} course${addedNames.length > 1 ? 's' : ''} (${addedNames.join(', ')}) to your Active Courses!`;
+            confirmMsg = FPi18n.message('ai.result.coursesAdded', {count: addedNames.length, names: addedNames.join(', ')});
         } else if (act.type === 'append_study_notes') {
             const prevNotes = (window.appState.quickNotes || '').trim();
             const addition = (act.noteText || '').trim();
             window.appState.quickNotes = prevNotes ? `${prevNotes}\n\n${addition}` : addition;
             const notesArea = document.getElementById('quick-notes-area');
             if (notesArea) notesArea.value = window.appState.quickNotes;
-            confirmMsg = `📝 Saved solution to your **Quick Study Notes**!`;
+            confirmMsg = FPi18n.message('ai.result.notesSaved');
         } else if (act.type === 'mark_all_habits') {
             const todayKey = formatDateKey(new Date());
             (window.appState.habits || []).forEach(h => {
@@ -2722,12 +2771,13 @@ function confirmAiAction() {
                 h.logs[todayKey] = true;
             });
             if (typeof renderHabitsSection === 'function') renderHabitsSection();
-            confirmMsg = `🔥 Marked all ${(window.appState.habits || []).length} daily habits as completed for today!`;
+            confirmMsg = FPi18n.message('ai.result.allChecked', {count: (window.appState.habits || []).length});
         } else if (act.type === 'add_habit') {
             if (!Array.isArray(window.appState.habits)) window.appState.habits = [];
+            const name = aiPickedName(act);
             window.appState.habits.unshift({
                 id: 'h-' + Date.now(),
-                name: act.name,
+                name,
                 category: act.category || 'Productivity',
                 color: act.color || 'violet',
                 icon: act.icon || '⚡',
@@ -2735,7 +2785,7 @@ function confirmAiAction() {
                 logs: {}
             });
             if (typeof renderHabitsSection === 'function') renderHabitsSection();
-            confirmMsg = `✅ Added habit "${act.name}" to your Habit Flow Tracker!`;
+            confirmMsg = FPi18n.message('ai.result.habitAdded', {name});
         } else if (act.type === 'check_habit') {
             const qLower = (act.query || '').toLowerCase();
             const match = (window.appState.habits || []).find(h => h.name.toLowerCase().includes(qLower));
@@ -2743,9 +2793,9 @@ function confirmAiAction() {
                 if (!match.logs) match.logs = {};
                 match.logs[formatDateKey(new Date())] = true;
                 if (typeof renderHabitsSection === 'function') renderHabitsSection();
-                confirmMsg = `🔥 Checked off habit "${match.name}" for today!`;
+                confirmMsg = FPi18n.message('ai.result.habitChecked', {name: match.name});
             } else {
-                confirmMsg = `ℹ️ Could not find a habit matching "${act.query}".`;
+                confirmMsg = FPi18n.message('ai.result.noHabit', {query: act.query});
             }
         } else if (act.type === 'delete_habit') {
             const qLower = (act.query || '').toLowerCase();
@@ -2753,9 +2803,9 @@ function confirmAiAction() {
             if (match) {
                 window.appState.habits = window.appState.habits.filter(h => h.id !== match.id);
                 if (typeof renderHabitsSection === 'function') renderHabitsSection();
-                confirmMsg = `🗑️ Deleted habit "${match.name}".`;
+                confirmMsg = FPi18n.message('ai.result.habitDeleted', {name: match.name});
             } else {
-                confirmMsg = `ℹ️ Could not find a habit matching "${act.query}".`;
+                confirmMsg = FPi18n.message('ai.result.noHabit', {query: act.query});
             }
         } else if (act.type === 'add_course') {
             if (!Array.isArray(window.appState.courses)) window.appState.courses = [];
@@ -2768,7 +2818,7 @@ function confirmAiAction() {
             });
             window.appState.user.subjects = window.appState.courses.map(c => c.name).join(', ');
             if (typeof renderCoursesSettingsManager === 'function') renderCoursesSettingsManager();
-            confirmMsg = `🎓 Added course "${act.name}" [${code}] to your Active Courses!`;
+            confirmMsg = FPi18n.message('ai.result.courseAdded', {name: act.name, code});
         } else if (act.type === 'edit_course') {
             const courseObj = (window.appState.courses || []).find(c => c.id === act.courseId);
             if (courseObj) {
@@ -2788,7 +2838,7 @@ function confirmAiAction() {
                 window.appState.user.subjects = window.appState.courses.map(c => c.name).join(', ');
                 if (typeof renderCoursesSettingsManager === 'function') renderCoursesSettingsManager();
                 const code = (courseObj.code || courseObj.name.slice(0, 2)).slice(0, 2).toUpperCase();
-                confirmMsg = `✅ Updated course "${courseObj.name}" [${code}] (${getColorLabelByHex(courseObj.color)})!`;
+                confirmMsg = FPi18n.message('ai.result.courseUpdated', {name: courseObj.name, code, color: getColorLabelByHex(courseObj.color)});
             }
         } else if (act.type === 'delete_course') {
             const target = (window.appState.courses || []).find(c => c.id === act.courseId);
@@ -2796,7 +2846,7 @@ function confirmAiAction() {
                 window.appState.courses = window.appState.courses.filter(c => c.id !== act.courseId);
                 window.appState.user.subjects = window.appState.courses.map(c => c.name).join(', ');
                 if (typeof renderCoursesSettingsManager === 'function') renderCoursesSettingsManager();
-                confirmMsg = `🗑️ Removed course "${target.name}" from Active Courses.`;
+                confirmMsg = FPi18n.message('ai.result.courseDeleted', {name: target.name});
             }
         } else if (act.type === 'set_solid_theme') {
             if (typeof setSolidTheme === 'function') {
@@ -2805,7 +2855,7 @@ function confirmAiAction() {
                 window.appState.solidTheme = act.themeId;
                 applyThemeVariables();
             }
-            confirmMsg = `🎨 Switched theme to **${act.themeName || act.themeId}**!`;
+            confirmMsg = FPi18n.message('ai.result.theme', {theme: aiThemeMessage(act.themeName || act.themeId)});
         } else if (act.type === 'set_accent_color') {
             if (typeof setAccentColor === 'function') {
                 setAccentColor(act.hex);
@@ -2813,14 +2863,14 @@ function confirmAiAction() {
                 window.appState.accentColor = act.hex;
                 applyThemeVariables();
             }
-            confirmMsg = `🎨 Changed accent colour to **${act.label || act.hex}**!`;
+            confirmMsg = FPi18n.message('ai.result.accent', {color: aiColorMessage({hex: act.hex, label: act.label})});
         } else if (act.type === 'surface_mode') {
             if (typeof setSurfaceMode === 'function') setSurfaceMode(act.mode);
-            confirmMsg = `🎨 Switched surface mode to **${act.mode === 'light' ? 'White Mode' : 'Dark Mode'}**!`;
+            confirmMsg = FPi18n.message('ai.result.surface', {mode: FPi18n.message(act.mode === 'light' ? 'settings.whiteMode' : 'settings.darkMode')});
         } else if (act.type === 'set_liquid_glass') {
             window.appState.liquidEffect = Boolean(act.enabled);
             if (typeof applyLiquidGlass === 'function') applyLiquidGlass(window.appState.liquidEffect);
-            confirmMsg = `✨ ${window.appState.liquidEffect ? 'Enabled' : 'Disabled'} **Liquid Glass Mode**!`;
+            confirmMsg = FPi18n.message('ai.result.glass', {action: FPi18n.message(window.appState.liquidEffect ? 'ai.verb.Enabled' : 'ai.verb.Disabled')});
         } else if (act.type === 'add_task') {
             window.appState.tasks.unshift({
                 id: Date.now().toString(),
@@ -2829,29 +2879,29 @@ function confirmAiAction() {
                 subcategory: 'General',
                 course: (window.appState.courses && window.appState.courses[0]) ? window.appState.courses[0].name : 'CS101',
                 dueDate: formatDateKey(new Date()),
-                description: 'Added by Zenith AI Coach',
+                description: FPi18n.translate('ai.preset.description'),
                 completed: false,
                 completedAt: null
             });
-            confirmMsg = `✅ Added task "${act.title}" to your Smart Task Tracker!`;
+            confirmMsg = FPi18n.message('ai.result.taskAdded', {title: act.title});
         } else if (act.type === 'complete_task') {
             const qLower = (act.query || '').toLowerCase();
             const match = (window.appState.tasks || []).find(t => !t.completed && t.title.toLowerCase().includes(qLower)) || findTaskFromText(act.query);
             if (match) {
                 match.completed = true;
                 match.completedAt = Date.now();
-                confirmMsg = `✅ Marked task "${match.title}" as completed!`;
+                confirmMsg = FPi18n.message('ai.result.taskChecked', {title: match.title});
             } else {
-                confirmMsg = `ℹ️ Could not find a pending task matching "${act.query}".`;
+                confirmMsg = FPi18n.message('ai.result.noPendingTask', {query: act.query});
             }
         } else if (act.type === 'delete_task') {
             const qLower = (act.query || '').toLowerCase();
             const match = (window.appState.tasks || []).find(t => t.title.toLowerCase().includes(qLower));
             if (match) {
                 window.appState.tasks = window.appState.tasks.filter(t => t.id !== match.id);
-                confirmMsg = `🗑️ Deleted task "${match.title}".`;
+                confirmMsg = FPi18n.message('ai.result.taskDeleted', {title: match.title});
             } else {
-                confirmMsg = `ℹ️ Could not find a task matching "${act.query}".`;
+                confirmMsg = FPi18n.message('ai.result.noTask', {query: act.query});
             }
         } else if (act.type === 'add_plan') {
             window.appState.schedules.push({
@@ -2861,39 +2911,39 @@ function confirmAiAction() {
                 sessions: act.sessions || 4,
                 days: 'Mon, Tue, Wed, Thu, Fri'
             });
-            confirmMsg = `✅ Added study plan "${act.presetName}" to Active Plans!`;
+            confirmMsg = FPi18n.message('ai.result.plan', {name: act.presetName});
         } else if (act.type === 'start_timer') {
             if (typeof startTimer === 'function') startTimer();
-            confirmMsg = `⏱️ Started your ${window.appState.timerSettings.pomodoro || 25}m Deep Focus Pomodoro timer!`;
+            confirmMsg = FPi18n.message('ai.result.timerStart', {minutes: window.appState.timerSettings.pomodoro || 25});
         } else if (act.type === 'pause_timer') {
             if (typeof pauseTimer === 'function') pauseTimer();
-            confirmMsg = `⏸️ Paused your Pomodoro timer.`;
+            confirmMsg = FPi18n.message('ai.result.timerPause');
         } else if (act.type === 'set_pomo_preset') {
             if (typeof selectPomoPreset === 'function') {
                 selectPomoPreset(act.name, act.focus, act.short, act.long, act.count);
             } else {
                 window.appState.timerSettings = { pomodoro: act.focus, short: act.short, long: act.long, sessionsTotal: act.count };
             }
-            confirmMsg = `⏱️ Updated Pomodoro timer preset to **${act.name} (${act.focus}m / ${act.short}m)**!`;
+            confirmMsg = FPi18n.message('ai.result.preset', {name: aiTimerPreset(act.name), focus: act.focus, rest: act.short});
         } else if (act.type === 'set_pomo_minutes') {
             window.appState.timerSettings.pomodoro = act.minutes;
             if (!window.appState.timer.isRunning && window.appState.timer.mode === 'pomodoro') {
                 window.appState.timer.secondsLeft = act.minutes * 60;
             }
             if (typeof renderTimerDisplay === 'function') renderTimerDisplay();
-            confirmMsg = `⏱️ Set Pomodoro focus duration to **${act.minutes} minutes**!`;
+            confirmMsg = FPi18n.message('ai.result.focus', {minutes: act.minutes});
         } else if (act.type === 'reset_water') {
             window.appState.waterIntakeMl = 0;
-            confirmMsg = `✅ Reset daily hydration intake to 0 ml.`;
+            confirmMsg = FPi18n.message('ai.result.waterReset');
         } else if (act.type === 'log_water') {
             window.appState.waterIntakeMl = (window.appState.waterIntakeMl || 0) + (window.appState.glassSizeMl || 250);
-            confirmMsg = `💧 Logged +${window.appState.glassSizeMl || 250} ml of water!`;
+            confirmMsg = FPi18n.message('ai.result.waterLogged', {amount: window.appState.glassSizeMl || 250});
         } else if (act.type === 'set_water_goal') {
             window.appState.dailyWaterGoalMl = act.goalMl;
-            confirmMsg = `💧 Updated daily hydration goal to **${act.goalMl} ml**!`;
+            confirmMsg = FPi18n.message('ai.result.waterGoal', {goal: act.goalMl});
         } else if (act.type === 'set_glass_size') {
             window.appState.glassSizeMl = act.glassMl;
-            confirmMsg = `💧 Updated water glass size to **${act.glassMl} ml**!`;
+            confirmMsg = FPi18n.message('ai.result.glassSize', {size: act.glassMl});
         } else if (act.type === 'set_performance_mode') {
             if (typeof togglePerformanceMode === 'function') {
                 togglePerformanceMode(act.enabled);
@@ -2901,7 +2951,7 @@ function confirmAiAction() {
                 window.appState.performanceMode = Boolean(act.enabled);
                 applyThemeVariables();
             }
-            confirmMsg = `⚡ ${act.enabled ? 'Enabled' : 'Disabled'} **Performance Mode**!`;
+            confirmMsg = FPi18n.message('ai.result.performance', {action: FPi18n.message(act.enabled ? 'ai.verb.Enabled' : 'ai.verb.Disabled')});
         } else if (act.type === 'set_ui_scale') {
             if (typeof setUiScaleDirect === 'function') {
                 setUiScaleDirect(act.scale);
@@ -2909,34 +2959,34 @@ function confirmAiAction() {
                 window.appState.uiScale = act.scale;
                 applyThemeVariables();
             }
-            confirmMsg = `🔍 Updated UI Scale to **${100 + act.scale * 5}%**!`;
+            confirmMsg = FPi18n.message('ai.result.scale', {percent: 100 + act.scale * 5});
         } else if (act.type === 'set_sound_enabled') {
             window.appState.soundEnabled = Boolean(act.enabled);
-            confirmMsg = `🔊 ${act.enabled ? 'Enabled' : 'Muted'} sound effects!`;
+            confirmMsg = FPi18n.message('ai.result.sound', {action: FPi18n.message(act.enabled ? 'ai.verb.Enabled' : 'ai.verb.Muted')});
         } else if (act.type === 'set_notifications_enabled') {
             window.appState.notificationsEnabled = Boolean(act.enabled);
-            confirmMsg = `🔔 ${act.enabled ? 'Enabled' : 'Disabled'} notifications!`;
+            confirmMsg = FPi18n.message('ai.result.alerts', {action: FPi18n.message(act.enabled ? 'ai.verb.Enabled' : 'ai.verb.Disabled')});
         } else if (act.type === 'restore_missed_streak') {
             if (typeof restoreMissedStreak === 'function') {
                 restoreMissedStreak();
             }
-            confirmMsg = `🛡️ Applied your 1-per-week Restore Missed Streak safeguard!`;
+            confirmMsg = FPi18n.message('ai.result.streakRestore');
     } else if (act.type === 'set_streak_visibility') {
             window.appState.showStreak = Boolean(act.visible);
             if (typeof toggleStreakBadgeVisibility === 'function') toggleStreakBadgeVisibility(act.visible);
-            confirmMsg = `🔥 ${act.visible ? 'Showing' : 'Hid'} the top-bar Streak badge!`;
+            confirmMsg = FPi18n.message('ai.result.streakBadge', {action: FPi18n.message(act.visible ? 'ai.verb.Showing' : 'ai.verb.Hid')});
         } else if (act.type === 'set_profile_name') {
             window.appState.user.name = act.name;
             window.appState.user.isCustomName = true;
-            confirmMsg = `👤 Updated your display name to **${act.name}**!`;
+            confirmMsg = FPi18n.message('ai.result.profile', {name: act.name});
         }
 
         saveState(true);
         if (typeof window.updateUI === 'function') window.updateUI();
-        showNotification("Zenith AI Action", confirmMsg.replace(/\*\*/g, ''), "success");
+        showNotification(FPi18n.message('ai.ui.notice'), confirmMsg, 'success');
         appendAiChatBubble(confirmMsg, true);
     } catch (err) {
-        if (typeof window.showCasualError === 'function') window.showCasualError();
+        showNotification(FPi18n.message('ai.ui.notice'), FPi18n.message('ai.ui.failed'), 'warning');
     }
 }
 
@@ -2944,6 +2994,6 @@ function cancelAiAction() {
     hideAiInlinePopupTray();
     pendingAiAction = null;
     activeAiFlow = null;
-    appendAiChatBubble(`Cancelled — no changes were made.`);
-    showNotification("Action Cancelled", "No changes were applied.", "info");
+    appendAiChatBubble(FPi18n.message('ai.result.cancelled'));
+    showNotification(FPi18n.message('ai.ui.cancelled'), FPi18n.message('ai.ui.noChanges'), 'info');
 }

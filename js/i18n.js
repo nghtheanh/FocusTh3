@@ -128,7 +128,7 @@
         refreshLabels();
         document.addEventListener('invalid', event => {
             const input = event.target;
-            if (!input.closest('#view-section-tasks, #hydration-inline-settings, #habit-add-modal, #schedule-modal, #pomo-inline-settings, #fp-onboarding-shell, #view-section-account, #account-modal, #view-section-settings, #settings-modal')) return;
+            if (!input.closest('#section-ai, #view-section-tasks, #hydration-inline-settings, #habit-add-modal, #schedule-modal, #pomo-inline-settings, #fp-onboarding-shell, #view-section-account, #account-modal, #view-section-settings, #settings-modal')) return;
             const validity = input.validity;
             if (!validity || validity.customError) return;
             let key = 'validation.invalid';

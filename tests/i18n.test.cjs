@@ -111,6 +111,98 @@ function loadModuleUI(language) {
     return context;
 }
 
+function loadCoach(language) {
+    const context = loadModuleUI(language);
+    Object.assign(context, {AbortController, setTimeout, clearTimeout});
+    context.window.appState = {tasks: [], habits: [], courses: []};
+    vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/ai.js'), 'utf8'), context);
+    return context;
+}
+
+test('Zenith routes translated commands while preserving typed names and pending actions', () => {
+    const vi = loadCoach('vi');
+    const en = load('en').FPi18n;
+    const title = 'HỌC "adddd" <b> & AI';
+    const command = vi.parseAiActionCommand('Thêm công việc: ' + title);
+    assert.equal(command.type, 'add_task');
+    assert.equal(command.title, title);
+    assert.deepEqual(vi.window.appState.tasks, []);
+    for (const i18n of [en, vi.FPi18n]) {
+        assert.equal(i18n.resolve(command.summary), i18n.translate('ai.summary.newTask', {title}));
+        assert.ok(!i18n.messageHtml(command.summary).includes('<b>'));
+    }
+    assert.equal(vi.aiCommandInput('Thêm 2 thói quen'), 'add 2 habits');
+    for (const intent of ['courses', 'habits', 'theme', 'settings', 'plan', 'priority', 'exam', 'stuck', 'progress', 'tips', 'energy', 'help']) {
+        const key = 'ai.prompt.' + intent;
+        assert.equal(vi.aiCommandInput(vi.FPi18n.translate(key)), en.translate(key));
+    }
+});
+
+test('offline Zenith uses Vietnamese queries, school subjects and numeric formatting', () => {
+    const vi = loadCoach('vi');
+    const en = loadCoach('en');
+    assert.match(vi.lookupInstantFactAnswer('Tính 5 / 2'), /2,5/);
+    assert.match(en.lookupInstantFactAnswer('calculate 5 / 2'), /2\.5/);
+    assert.equal(vi.lookupInstantFactAnswer('Quang hợp là gì?'), vi.FPi18n.translate('ai.fact.photosynthesis'));
+    const task = {title: 'Tích phân của An', course: 'Toán'};
+    assert.equal(vi.buildAssignmentSolutionText(task), vi.FPi18n.translate('ai.study.calculus', {title: task.title, course: task.course}));
+    const habit = {id: 'h-basic-123-1', name: 'Read 20 Pages of Textbook'};
+    assert.equal(vi.FPi18n.resolve(vi.habitNameMessage(habit)), vi.FPi18n.translate('ai.preset.read'));
+    assert.equal(vi.habitNameMessage({...habit, name: 'My new name'}), 'My new name');
+    assert.equal(vi.habitNameMessage({...habit, id: 'custom'}), habit.name);
+});
+
+test('confirming the core habit set twice preserves existing habits, logs and translated names', () => {
+    const coach = loadCoach('vi');
+    const habits = coach.window.appState.habits;
+    const personal = {id: 'custom-1', name: 'My Habit', logs: {'2026-04-12': true}};
+    const selected = {id: 'custom-2', name: coach.FPi18n.translate('ai.preset.read'), logs: {}};
+    habits.push(personal, selected);
+    coach.document.getElementById = () => null;
+    coach.window.updateUI = () => {};
+    coach.saveState = () => {};
+    coach.renderHabitsSection = () => {};
+    let lastNotice;
+    coach.showNotification = (title, msg, type) => { lastNotice = {msg, type}; };
+    coach.handleAiAddAllBasicHabitsPick();
+    coach.confirmAiAction();
+    assert.equal(habits.length, 6);
+    assert.equal(lastNotice.type, 'success');
+    const snapshot = JSON.stringify(habits);
+    coach.handleAiAddAllBasicHabitsPick();
+    coach.confirmAiAction();
+    assert.equal(lastNotice.msg.key, 'ai.result.corePresent');
+    assert.equal(JSON.stringify(coach.window.appState.habits), snapshot);
+    assert.equal(habits[0], personal);
+    assert.equal(habits[1], selected);
+});
+
+test('both Zenith providers receive the active language and the original question', async () => {
+    const question = 'Giải thích từ “closure” trong JavaScript';
+    for (const language of ['vi', 'en']) {
+        const coach = loadCoach(language);
+        const instruction = coach.FPi18n.translate('ai.system.language');
+        const calls = [];
+        coach.fetch = async (url, options) => {
+            calls.push({url, body: JSON.parse(options.body)});
+            return {ok: true, json: async () => ({
+                candidates: [{content: {parts: [{text: 'Gemini reply'}]}}],
+                choices: [{message: {content: 'Pollinations reply'}}]
+            })};
+        };
+        const key = 'AIza' + '0'.repeat(26);
+        assert.equal(await coach.fetchShortAccurateOnlineAnswer(question, key), 'Gemini reply');
+        assert.equal(await coach.fetchShortAccurateOnlineAnswer(question, ''), 'Pollinations reply');
+        assert.ok(calls[0].url.endsWith('/gemini-2.5-flash:generateContent?key=' + key));
+        const prompt = calls[0].body.contents[0].parts[0].text;
+        assert.ok(prompt.includes(instruction) && prompt.endsWith(question));
+        assert.equal(calls[1].url, 'https://text.pollinations.ai/openai');
+        assert.equal(calls[1].body.model, 'openai');
+        assert.ok(calls[1].body.messages[0].content.includes(instruction));
+        assert.deepEqual(calls[1].body.messages.at(-1), {role: 'user', content: question});
+    }
+});
+
 test('only identified sample records translate a matching name', () => {
     const ui = loadModuleUI('vi');
     const title = "Plan today's top priorities";

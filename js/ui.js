@@ -514,6 +514,10 @@ function taskDescriptionMessage(task) {
 }
 
 function habitNameMessage(habit) {
+    const coreId = /^h-basic-\d+-(\d+)$/.exec(habit.id);
+    if (coreId && typeof BASIC_HABITS_PRESETS !== 'undefined') {
+        return sampleText(habit.name, BASIC_HABITS_PRESETS[Number(coreId[1])]?.nameKey);
+    }
     // Onboarding suggestion records carry an explicit flag. Manually created habits omit it.
     if (habit.isDefaultHabit === false && /^h-\d+-[a-z0-9]+$/.test(habit.id)) {
         const suggestion = QUICK_HABIT_SUGGESTIONS.find(item => item.name === habit.name && item.category === habit.category);
@@ -2029,7 +2033,7 @@ function addWorkspaceTodo() {
     const container = document.getElementById('workspace-todos');
     const div = document.createElement('div');
     div.className = 'flex items-center gap-2';
-    div.innerHTML = `<input type="checkbox" class="w-4 h-4 rounded text-amber-500 shrink-0"><input type="text" placeholder="Quick task..." class="flex-1 bg-white/50 dark:bg-[#050508] border border-white/60 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-white font-medium">`;
+    div.innerHTML = `<input type="checkbox" class="w-4 h-4 rounded text-amber-500 shrink-0"><input type="text" placeholder="Quick task..." data-i18n-placeholder="ai.ui.todoPlaceholder" class="flex-1 bg-white/50 dark:bg-[#050508] border border-white/60 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-white font-medium">`;
     container.appendChild(div);
 }
 

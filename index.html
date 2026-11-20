@@ -843,14 +843,14 @@
                                     </div>
                                     <div>
                                         <h3 class="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-                                            Zenith AI Coach
-                                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Online"></span>
+                                            <span data-i18n="ai.ui.title">Zenith AI Coach</span>
+                                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Online" data-i18n-title="ai.ui.online"></span>
                                         </h3>
-                                        <p class="text-[11px] text-slate-600 dark:text-slate-400 font-medium">Direct AI focus strategist & natural command assistant</p>
+                                        <p class="text-[11px] text-slate-600 dark:text-slate-400 font-medium"><span data-i18n="ai.ui.subtitle">Direct AI focus strategist & natural command assistant</span></p>
                                     </div>
                                 </div>
-                                <button onclick="toggleWorkspace()" id="btn-toggle-workspace" class="px-3 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-800 dark:text-amber-300 rounded-full text-xs font-bold transition flex items-center gap-1.5 border border-amber-500/30 shadow-sm" title="Slide-Out Workspace">
-                                    <i class="fa-solid fa-pen-ruler"></i> <span>Workspace</span>
+                                <button onclick="toggleWorkspace()" id="btn-toggle-workspace" class="px-3 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-800 dark:text-amber-300 rounded-full text-xs font-bold transition flex items-center gap-1.5 border border-amber-500/30 shadow-sm" title="Slide-Out Workspace" data-i18n-title="ai.ui.workspaceTip">
+                                    <i class="fa-solid fa-pen-ruler"></i> <span><span data-i18n="ai.ui.workspace">Workspace</span></span>
                                 </button>
                             </div>
                             
@@ -858,26 +858,26 @@
                                 <div class="flex gap-2.5">
                                     <div class="w-7 h-7 rounded-xl bg-indigo-600/20 text-indigo-500 flex items-center justify-center shrink-0 mt-0.5"><i class="fa-solid fa-robot text-xs"></i></div>
                                     <div class="bg-white/70 dark:bg-white/10 border border-white/60 dark:border-white/10 p-3.5 rounded-2xl rounded-tl-none text-slate-900 dark:text-white font-semibold leading-relaxed shadow-sm">
-                                        👋 Hello! I am Zenith AI. Ask me to plan your day, prioritize tasks, or use quick actions below!
+                                        <span data-i18n="ai.ui.hello">👋 Hello! I am Zenith AI. Ask me to plan your day, prioritize tasks, or use quick actions below!</span>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Quick Prompt Chips -->
                             <div class="flex items-center gap-1.5 overflow-x-auto py-2 shrink-0">
-                                <button type="button" onclick="sendQuickAiPrompt('edit my courses')" class="px-3 py-1.5 rounded-full bg-violet-500/15 hover:bg-violet-500/25 text-violet-700 dark:text-violet-300 text-[11px] font-bold whitespace-nowrap transition border border-violet-500/20">🎓 Edit Courses</button>
-                                <button type="button" onclick="sendQuickAiPrompt('add basic habits')" class="px-3 py-1.5 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold whitespace-nowrap transition border border-emerald-500/20">🔥 Add Basic Habits</button>
-                                <button type="button" onclick="sendQuickAiPrompt('change my theme')" class="px-3 py-1.5 rounded-full bg-fuchsia-500/15 hover:bg-fuchsia-500/25 text-fuchsia-700 dark:text-fuchsia-300 text-[11px] font-bold whitespace-nowrap transition border border-fuchsia-500/20">🎨 Change Theme</button>
-                                <button type="button" onclick="sendQuickAiPrompt('change settings')" class="px-3 py-1.5 rounded-full bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-700 dark:text-cyan-300 text-[11px] font-bold whitespace-nowrap transition border border-cyan-500/20">⚙️ Change Settings</button>
-                                <button type="button" onclick="sendQuickAiPrompt('Plan my day')" class="px-3 py-1.5 rounded-full bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-700 dark:text-indigo-300 text-[11px] font-bold whitespace-nowrap transition border border-indigo-500/20">📋 Plan my day</button>
-                                <button type="button" onclick="sendQuickAiPrompt('Prioritize tasks')" class="px-3 py-1.5 rounded-full bg-violet-500/15 hover:bg-violet-500/25 text-violet-700 dark:text-violet-300 text-[11px] font-bold whitespace-nowrap transition border border-violet-500/20">⚡ Prioritize tasks</button>
-                                <button type="button" onclick="sendQuickAiPrompt('Exam study strategy')" class="px-3 py-1.5 rounded-full bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-700 dark:text-cyan-300 text-[11px] font-bold whitespace-nowrap transition border border-cyan-500/20">🧠 Exam Strategy</button>
-                                <button type="button" onclick="sendQuickAiPrompt('I feel stuck and procrastinating')" class="px-3 py-1.5 rounded-full bg-rose-500/15 hover:bg-rose-500/25 text-rose-700 dark:text-rose-300 text-[11px] font-bold whitespace-nowrap transition border border-rose-500/20">🚀 Beat Procrastination</button>
-                                <button type="button" onclick="sendQuickAiPrompt('My progress report')" class="px-3 py-1.5 rounded-full bg-sky-500/15 hover:bg-sky-500/25 text-sky-700 dark:text-sky-300 text-[11px] font-bold whitespace-nowrap transition border border-sky-500/20">📊 My Progress</button>
-                                <button type="button" onclick="sendQuickAiPrompt('Habit tips')" class="px-3 py-1.5 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold whitespace-nowrap transition border border-emerald-500/20">🔥 Habit tips</button>
-                                <button type="button" onclick="sendQuickAiPrompt('Burnout & energy reset')" class="px-3 py-1.5 rounded-full bg-purple-500/15 hover:bg-purple-500/25 text-purple-700 dark:text-purple-300 text-[11px] font-bold whitespace-nowrap transition border border-purple-500/20">🌿 Burnout Reset</button>
-                                <button type="button" onclick="sendQuickAiPrompt('help')" class="px-3 py-1.5 rounded-full bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 text-[11px] font-bold whitespace-nowrap transition border border-amber-500/20">🛠️ AI Commands</button>
-                                <button type="button" onclick="sendQuickAiPrompt('add task: Complete Revision Notes')" class="px-3 py-1.5 rounded-full bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 text-[11px] font-bold whitespace-nowrap transition border border-amber-500/20">➕ Add Task</button>
+                                <button type="button" onclick="sendQuickAiPrompt(FPi18n.translate('ai.prompt.courses'))" class="px-3 py-1.5 rounded-full bg-violet-500/15 hover:bg-violet-500/25 text-violet-700 dark:text-violet-300 text-[11px] font-bold whitespace-nowrap transition border border-violet-500/20"><span data-i18n="ai.chip.courses">🎓 Edit Courses</span></button>
+                                <button type="button" onclick="sendQuickAiPrompt(FPi18n.translate('ai.prompt.habits'))" class="px-3 py-1.5 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold whitespace-nowrap transition border border-emerald-500/20"><span data-i18n="ai.chip.habits">🔥 Add Basic Habits</span></button>
+                                <button type="button" onclick="sendQuickAiPrompt(FPi18n.translate('ai.prompt.theme'))" class="px-3 py-1.5 rounded-full bg-fuchsia-500/15 hover:bg-fuchsia-500/25 text-fuchsia-700 dark:text-fuchsia-300 text-[11px] font-bold whitespace-nowrap transition border border-fuchsia-500/20"><span data-i18n="ai.chip.theme">🎨 Change Theme</span></button>
+                                <button type="button" onclick="sendQuickAiPrompt(FPi18n.translate('ai.prompt.settings'))" class="px-3 py-1.5 rounded-full bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-700 dark:text-cyan-300 text-[11px] font-bold whitespace-nowrap transition border border-cyan-500/20"><span data-i18n="ai.chip.settings">⚙️ Change Settings</span></button>
+                                <button type="button" onclick="sendQuickAiPrompt(FPi18n.translate('ai.prompt.plan'))" class="px-3 py-1.5 rounded-full bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-700 dark:text-indigo-300 text-[11px] font-bold whitespace-nowrap transition border border-indigo-500/20"><span data-i18n="ai.chip.plan">📋 Plan my day</span></button>
+                                <button type="button" onclick="sendQuickAiPrompt(FPi18n.translate('ai.prompt.priority'))" class="px-3 py-1.5 rounded-full bg-violet-500/15 hover:bg-violet-500/25 text-violet-700 dark:text-violet-300 text-[11px] font-bold whitespace-nowrap transition border border-violet-500/20"><span data-i18n="ai.chip.priority">⚡ Prioritize tasks</span></button>
+                                <button type="button" onclick="sendQuickAiPrompt(FPi18n.translate('ai.prompt.exam'))" class="px-3 py-1.5 rounded-full bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-700 dark:text-cyan-300 text-[11px] font-bold whitespace-nowrap transition border border-cyan-500/20"><span data-i18n="ai.chip.exam">🧠 Exam Strategy</span></button>
+                                <button type="button" onclick="sendQuickAiPrompt(FPi18n.translate('ai.prompt.stuck'))" class="px-3 py-1.5 rounded-full bg-rose-500/15 hover:bg-rose-500/25 text-rose-700 dark:text-rose-300 text-[11px] font-bold whitespace-nowrap transition border border-rose-500/20"><span data-i18n="ai.chip.stuck">🚀 Beat Procrastination</span></button>
+                                <button type="button" onclick="sendQuickAiPrompt(FPi18n.translate('ai.prompt.progress'))" class="px-3 py-1.5 rounded-full bg-sky-500/15 hover:bg-sky-500/25 text-sky-700 dark:text-sky-300 text-[11px] font-bold whitespace-nowrap transition border border-sky-500/20"><span data-i18n="ai.chip.progress">📊 My Progress</span></button>
+                                <button type="button" onclick="sendQuickAiPrompt(FPi18n.translate('ai.prompt.tips'))" class="px-3 py-1.5 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold whitespace-nowrap transition border border-emerald-500/20"><span data-i18n="ai.chip.tips">🔥 Habit tips</span></button>
+                                <button type="button" onclick="sendQuickAiPrompt(FPi18n.translate('ai.prompt.energy'))" class="px-3 py-1.5 rounded-full bg-purple-500/15 hover:bg-purple-500/25 text-purple-700 dark:text-purple-300 text-[11px] font-bold whitespace-nowrap transition border border-purple-500/20"><span data-i18n="ai.chip.energy">🌿 Burnout Reset</span></button>
+                                <button type="button" onclick="sendQuickAiPrompt(FPi18n.translate('ai.prompt.help'))" class="px-3 py-1.5 rounded-full bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 text-[11px] font-bold whitespace-nowrap transition border border-amber-500/20"><span data-i18n="ai.chip.help">🛠️ AI Commands</span></button>
+                                <button type="button" onclick="sendQuickAiPrompt(FPi18n.translate('ai.prompt.task'))" class="px-3 py-1.5 rounded-full bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 text-[11px] font-bold whitespace-nowrap transition border border-amber-500/20"><span data-i18n="ai.chip.task">➕ Add Task</span></button>
                             </div>
                         </div>
 
@@ -886,8 +886,8 @@
                             <div id="ai-inline-popup-tray" class="hidden mb-2.5 rounded-2xl border p-3 shadow-xl transition-all duration-200" style="background:var(--v-bg2);border-color:var(--v-bdr2);"></div>
 
                             <form onsubmit="handleAiChatSubmit(event)" class="flex gap-2 w-full">
-                                <input type="text" id="ai-chat-input" placeholder="Ask any question, or type 'edit my courses', 'add basic habits', 'change my theme'..." required class="flex-1 bg-white/70 dark:bg-[#050508] border border-white/60 dark:border-white/10 rounded-full px-4 py-3 text-xs text-slate-900 dark:text-white font-bold focus:outline-none focus:border-indigo-500 shadow-inner min-w-0">
-                                <button type="submit" class="v-accent-btn px-5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full text-xs font-bold transition shadow-md shrink-0"><i class="fa-solid fa-paper-plane"></i></button>
+                                <input type="text" id="ai-chat-input" placeholder="Ask any question, or type 'edit my courses', 'add basic habits', 'change my theme'..." data-i18n-placeholder="ai.ui.input" required class="flex-1 bg-white/70 dark:bg-[#050508] border border-white/60 dark:border-white/10 rounded-full px-4 py-3 text-xs text-slate-900 dark:text-white font-bold focus:outline-none focus:border-indigo-500 shadow-inner min-w-0">
+                                <button type="submit" aria-label="Send message" data-i18n-aria-label="ai.ui.send" class="v-accent-btn px-5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full text-xs font-bold transition shadow-md shrink-0"><i class="fa-solid fa-paper-plane"></i></button>
                             </form>
                         </div>
                     </div>
@@ -900,11 +900,11 @@
                                     <i class="fa-solid fa-brain"></i>
                                 </div>
                                 <div>
-                                    <h4 class="font-extrabold text-sm text-slate-900 dark:text-white">Quick Study Notes</h4>
-                                    <p class="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Jot down formulas, ideas, or AI takeaways</p>
+                                    <h4 class="font-extrabold text-sm text-slate-900 dark:text-white"><span data-i18n="ai.ui.notes">Quick Study Notes</span></h4>
+                                    <p class="text-[10px] text-slate-600 dark:text-slate-400 font-medium"><span data-i18n="ai.ui.notesHint">Jot down formulas, ideas, or AI takeaways</span></p>
                                 </div>
                             </div>
-                            <textarea id="quick-notes-area" class="flex-1 w-full bg-white/60 dark:bg-[#050508] border border-white/60 dark:border-white/10 rounded-2xl p-3.5 text-xs text-slate-900 dark:text-white font-medium focus:outline-none resize-none shadow-inner leading-relaxed min-h-[260px]" placeholder="Write session notes, key formulas, or brain-dump thoughts here..."></textarea>
+                            <textarea id="quick-notes-area" class="flex-1 w-full bg-white/60 dark:bg-[#050508] border border-white/60 dark:border-white/10 rounded-2xl p-3.5 text-xs text-slate-900 dark:text-white font-medium focus:outline-none resize-none shadow-inner leading-relaxed min-h-[260px]" placeholder="Write session notes, key formulas, or brain-dump thoughts here..." data-i18n-placeholder="ai.ui.notesPlaceholder"></textarea>
                         </div>
                     </div>
                 </div>
@@ -1906,12 +1906,12 @@
                 <i class="fa-solid fa-wand-magic-sparkles"></i>
             </div>
             <div>
-                <h3 class="font-bold text-sm text-slate-900 dark:text-white mb-2">Zenith AI Action Request</h3>
-                <p id="ai-confirm-text" class="text-xs text-slate-800 dark:text-slate-200 font-medium leading-relaxed">Zenith AI wants to execute an action on your dashboard.</p>
+                <h3 class="font-bold text-sm text-slate-900 dark:text-white mb-2"><span data-i18n="ai.ui.confirmTitle">Zenith AI Action Request</span></h3>
+                <p id="ai-confirm-text" class="text-xs text-slate-800 dark:text-slate-200 font-medium leading-relaxed"><span data-i18n="ai.ui.confirmHint">Zenith AI wants to execute an action on your dashboard.</span></p>
             </div>
             <div class="pt-2 flex gap-2">
-                <button type="button" onclick="cancelAiAction()" class="flex-1 py-2.5 bg-white/70 dark:bg-white/15 hover:bg-white text-slate-900 dark:text-white rounded-xl text-xs font-bold transition border border-white/40">No</button>
-                <button type="button" onclick="confirmAiAction()" class="v-accent-btn flex-1 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-xs font-bold transition shadow-md">Confirm</button>
+                <button type="button" onclick="cancelAiAction()" class="flex-1 py-2.5 bg-white/70 dark:bg-white/15 hover:bg-white text-slate-900 dark:text-white rounded-xl text-xs font-bold transition border border-white/40"><span data-i18n="ai.ui.no">No</span></button>
+                <button type="button" onclick="confirmAiAction()" class="v-accent-btn flex-1 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-xs font-bold transition shadow-md"><span data-i18n="ai.ui.confirm">Confirm</span></button>
             </div>
         </div>
     </div>
@@ -1923,7 +1923,7 @@
                 <div class="w-8 h-8 rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xs">
                     <i class="fa-solid fa-pen-ruler"></i>
                 </div>
-                <h3 class="font-bold text-sm text-slate-900 dark:text-white">Session Workspace</h3>
+                <h3 class="font-bold text-sm text-slate-900 dark:text-white"><span data-i18n="ai.ui.sessionWorkspace">Session Workspace</span></h3>
             </div>
             <button onclick="toggleWorkspace()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200/80 dark:bg-white/10 text-slate-700 hover:bg-slate-300 transition shadow-sm">
                 <i class="fa-solid fa-xmark text-base"></i>
@@ -1931,18 +1931,18 @@
         </div>
         <div class="flex-1 overflow-y-auto space-y-6 pr-1">
             <div class="space-y-2">
-                <h4 class="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2"><i class="fa-solid fa-list-check"></i> Session To-Do</h4>
+                <h4 class="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2"><i class="fa-solid fa-list-check"></i> <span data-i18n="ai.ui.todo">Session To-Do</span></h4>
                 <div id="workspace-todos" class="space-y-2">
                     <div class="flex items-center gap-2">
                         <input type="checkbox" class="w-4 h-4 rounded text-amber-500 shrink-0">
-                        <input type="text" placeholder="Quick task..." class="flex-1 bg-white/50 dark:bg-[#050508] border border-white/60 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-white font-medium">
+                        <input type="text" placeholder="Quick task..." data-i18n-placeholder="ai.ui.todoPlaceholder" class="flex-1 bg-white/50 dark:bg-[#050508] border border-white/60 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-white font-medium">
                     </div>
                 </div>
-                <button onclick="addWorkspaceTodo()" class="text-[10px] text-amber-600 dark:text-amber-400 font-semibold hover:underline mt-1">+ Add row</button>
+                <button onclick="addWorkspaceTodo()" class="text-[10px] text-amber-600 dark:text-amber-400 font-semibold hover:underline mt-1"><span data-i18n="ai.ui.addRow">+ Add row</span></button>
             </div>
             <div class="space-y-2 flex flex-col h-64">
-                <h4 class="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2"><i class="fa-solid fa-brain"></i> Scratchpad</h4>
-                <textarea class="flex-1 w-full bg-white/50 dark:bg-[#050508] border border-white/60 dark:border-white/10 rounded-xl p-3 text-xs text-slate-900 dark:text-white font-medium focus:outline-none resize-none shadow-inner leading-relaxed" placeholder="Jot down notes or calculations..."></textarea>
+                <h4 class="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2"><i class="fa-solid fa-brain"></i> <span data-i18n="ai.ui.scratchpad">Scratchpad</span></h4>
+                <textarea class="flex-1 w-full bg-white/50 dark:bg-[#050508] border border-white/60 dark:border-white/10 rounded-xl p-3 text-xs text-slate-900 dark:text-white font-medium focus:outline-none resize-none shadow-inner leading-relaxed" placeholder="Jot down notes or calculations..." data-i18n-placeholder="ai.ui.scratchHint"></textarea>
             </div>
         </div>
     </div>
