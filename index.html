@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>FocusPulse</title>
+    <title>Th34nh</title>
     <script src="js/locales/en.js"></script>
     <script src="js/locales/vi.js"></script>
     <script src="js/i18n.js"></script>
@@ -42,14 +42,14 @@
     <!-- ========================================================================= -->
     <!-- 1. ANIMATED STARTUP SCREEN — RUNS ON EVERY LAUNCH (~1.5s)                 -->
     <!-- ========================================================================= -->
-    <div id="fp-startup-overlay" onclick="skipStartupAnimationNow()" role="status" aria-live="polite" aria-label="FocusPulse Startup Intro" data-i18n-aria-label="startup.label">
+    <div id="fp-startup-overlay" onclick="skipStartupAnimationNow()" role="status" aria-live="polite" aria-label="Th34nh Startup Intro" data-i18n-aria-label="startup.label">
         <div class="fp-startup-ambient-glow"></div>
         <div class="fp-startup-lockup">
             <div class="fp-startup-logo-wrap fp-logo-box border" style="background:var(--v-accent);color:var(--v-accent-fg);border-color:rgba(255,255,255,0.22);">
-                <img src="assets/logo.png" alt="FocusPulse Logo" class="fp-logo-img w-full h-full object-contain p-2.5" data-i18n-alt="nav.focuspulseLogo">
+                <img src="assets/logo.png" alt="Th34nh Logo" class="fp-logo-img w-full h-full object-contain p-2.5" data-i18n-alt="nav.focuspulseLogo">
             </div>
             <div class="fp-startup-word-wrap">
-                <div class="fp-startup-title">FocusPulse</div>
+                <div class="fp-startup-title">Th34nh</div>
                 <div class="fp-startup-subtitle" data-i18n="startup.tagline">Your day, your way.</div>
             </div>
         </div>
@@ -61,15 +61,15 @@
     <!-- ========================================================================= -->
     <!-- 2. WELCOME, AUTHENTICATION & CASUAL 6-STEP ONBOARDING SHELL               -->
     <!-- ========================================================================= -->
-    <div id="fp-onboarding-shell" class="hidden" role="dialog" aria-modal="true" aria-label="FocusPulse Welcome and Personal Setup" data-i18n-aria-label="nav.focuspulseWelcomeAndPersonalSetup">
+    <div id="fp-onboarding-shell" class="hidden" role="dialog" aria-modal="true" aria-label="Th34nh Welcome and Personal Setup" data-i18n-aria-label="nav.focuspulseWelcomeAndPersonalSetup">
         <!-- Top Brand + Step Progress Header -->
         <div class="max-w-xl w-full mx-auto pt-1 pb-3 flex flex-col gap-2.5">
             <div class="flex flex-wrap items-center justify-between gap-2 px-1">
                 <div class="flex items-center gap-2.5">
                     <div class="fp-logo-box w-8 h-8 rounded-xl flex items-center justify-center shadow-md shrink-0 overflow-hidden border" style="background:var(--v-accent);color:var(--v-accent-fg);border-color:rgba(255,255,255,0.18);">
-                        <img src="assets/logo.png" alt="FocusPulse Logo" class="fp-logo-img w-full h-full object-contain p-1" data-i18n-alt="nav.focuspulseLogo">
+                        <img src="assets/logo.png" alt="Th34nh Logo" class="fp-logo-img w-full h-full object-contain p-1" data-i18n-alt="nav.focuspulseLogo">
                     </div>
-                    <span class="font-extrabold text-sm tracking-tight" style="color:var(--v-fg)">FocusPulse</span>
+                    <span class="font-extrabold text-sm tracking-tight" style="color:var(--v-fg)">Th34nh</span>
                 </div>
                 <label class="fp-language-field">
                     <span data-i18n="language.label">Language</span>
@@ -93,11 +93,11 @@
 
         <!-- Subtle Footer -->
         <div class="max-w-xl w-full mx-auto pt-3 text-center text-[11px] font-semibold" style="color:var(--v-fg3)">
-            <span>Foc-it • FocusPulse v1.0</span>
+            <span>Foc-it • Th34nh v1.0</span>
         </div>
     </div>
 
-        <!-- FocusPulse Custom Borderless Title Bar & Top Navigation (.v-topbar) -->
+        <!-- Th34nh Custom Borderless Title Bar & Top Navigation (.v-topbar) -->
     <header class="v-topbar sticky top-0 z-40 backdrop-blur-3xl bg-white/75 dark:bg-[#050508]/90 border-b border-white/50 dark:border-white/10 shadow-sm w-full select-none" data-tauri-drag-region>
         <div class="max-w-7xl w-full mx-auto pl-3 pr-3 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-2" data-tauri-drag-region>
             <!-- Left: Titlebar History Controls (< > ↻) + Brand + Active Section Crumb -->
@@ -120,12 +120,12 @@
                 <div class="flex items-center gap-2.5 cursor-pointer" onclick="switchAppView('home')">
                     <!-- UI Brand Logo (assets/logo.png — dynamically tinted by --v-accent) -->
                     <div class="fp-logo-box w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shadow-md shrink-0 overflow-hidden border" style="background:var(--v-accent);color:var(--v-accent-fg);border-color:rgba(255,255,255,0.18);">
-                        <img src="assets/logo.png" alt="FocusPulse Logo" class="fp-logo-img w-full h-full object-contain p-1" data-i18n-alt="nav.focuspulseLogo">
+                        <img src="assets/logo.png" alt="Th34nh Logo" class="fp-logo-img w-full h-full object-contain p-1" data-i18n-alt="nav.focuspulseLogo">
                     </div>
                     <div>
                         <h1 class="font-extrabold text-sm tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5">
-                            <span>FocusPulse</span>
-                            <span id="topbar-installed-version-badge" onclick="event.stopPropagation(); openBetaModal()" title="FocusPulse v1.0 Release & Features Overview" class="cursor-pointer text-[9px] px-2 py-0.5 rounded-full border font-bold" style="border-color:var(--v-bdr3);color:var(--v-fg2);" data-i18n-title="nav.releaseOverviewTooltip">v1.0</span>
+                            <span>Th34nh</span>
+                            <span id="topbar-installed-version-badge" onclick="event.stopPropagation(); openBetaModal()" title="Th34nh v1.0 Release & Features Overview" class="cursor-pointer text-[9px] px-2 py-0.5 rounded-full border font-bold" style="border-color:var(--v-bdr3);color:var(--v-fg2);" data-i18n-title="nav.releaseOverviewTooltip">v1.0</span>
                         </h1>
                     </div>
                 </div>
@@ -163,10 +163,10 @@
                     <i class="fa-solid fa-circle-question text-indigo-500" style="color:var(--v-accent)"></i>
                 </button>
 
-                <!-- Install FocusPulse Button (Visible on Web Version — FP-17) -->
-                <button id="fp-install-app-btn" type="button" onclick="openInstallAppModal()" class="fp-web-install-trigger v-accent-btn px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full text-xs font-extrabold transition inline-flex items-center gap-1.5 shadow-sm shrink-0" title="Download & Install FocusPulse for Windows or Android" aria-label="Install FocusPulse" data-i18n-title="nav.installTooltip" data-i18n-aria-label="nav.installFocuspulse">
+                <!-- Install Th34nh Button (Visible on Web Version — FP-17) -->
+                <button id="fp-install-app-btn" type="button" onclick="openInstallAppModal()" class="fp-web-install-trigger v-accent-btn px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full text-xs font-extrabold transition inline-flex items-center gap-1.5 shadow-sm shrink-0" title="Download & Install Th34nh for Windows or Android" aria-label="Install Th34nh" data-i18n-title="nav.installTooltip" data-i18n-aria-label="nav.installFocuspulse">
                     <i class="fa-solid fa-download text-[11px]"></i>
-                    <span data-i18n="nav.installFocuspulse">Install FocusPulse</span>
+                    <span data-i18n="nav.installFocuspulse">Install Th34nh</span>
                 </button>
 
                 <!-- Mobile Topbar Settings Button (Icon Only — Mobile View Only) -->
@@ -202,14 +202,14 @@
     </header>
 
     <!-- ========================================================================= -->
-    <!-- FocusPulse APP SHELL: LEFT SIDEBAR (.v-sidebar) + MAIN VIEWSTAGE              -->
+    <!-- Th34nh APP SHELL: LEFT SIDEBAR (.v-sidebar) + MAIN VIEWSTAGE              -->
     <!-- ========================================================================= -->
     <div id="main-focus-grid" class="flex-1 max-w-7xl w-full mx-auto pl-4 pr-5 sm:px-6 lg:px-8 py-5 flex flex-col lg:flex-row gap-6 items-start">
 
-        <!-- Left Navigation Sidebar (FocusPulse Desktop Style - Scroll-safe in windowed mode) -->
+        <!-- Left Navigation Sidebar (Th34nh Desktop Style - Scroll-safe in windowed mode) -->
         <aside class="v-sidebar hidden lg:flex flex-col justify-between w-56 shrink-0 glass-panel rounded-3xl p-3.5 sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto gap-5">
             <div class="space-y-1">
-                <!-- FocusPulse Eco Mode Badge (Shown when Low-Spec / Performance Mode is active) -->
+                <!-- Th34nh Eco Mode Badge (Shown when Low-Spec / Performance Mode is active) -->
                 <div id="sidebar-eco-badge" onclick="switchAppView('settings')" class="hidden cursor-pointer flex items-center justify-center gap-1.5 py-1.5 px-2.5 mb-2 rounded-lg text-[10px] font-extrabold uppercase tracking-wider border" style="background:#161616;border-color:#333333;color:var(--v-accent);" title="Low-Spec Eco Mode Active" data-i18n-title="nav.lowSpecEcoModeActive">
                     <i class="fa-solid fa-bolt"></i>
                     <span data-i18n="nav.ecoMode">Eco Mode</span>
@@ -264,7 +264,7 @@
                 </button>
             </div>
 
-            <!-- FocusPulse-Style Sidebar Active Courses / Playlists Section -->
+            <!-- Th34nh-Style Sidebar Active Courses / Playlists Section -->
             <div class="pt-3 border-t border-white/40 dark:border-white/10 space-y-2" style="border-color:var(--v-bdr)">
                 <div class="flex items-center justify-between px-3">
                     <span class="text-[10px] font-extrabold uppercase tracking-widest" style="color:var(--v-fg3)" data-i18n="nav.activeCourses">Active Courses</span>
@@ -297,7 +297,7 @@
                 <!-- Welcome Banner & Returning-User Greeting -->
                 <div class="glass-panel rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                        <p id="home-greeting-eyebrow" class="text-[11px] font-extrabold uppercase tracking-widest text-indigo-600 dark:text-indigo-400" style="color:var(--v-fg2)">FocusPulse Studio</p>
+                        <p id="home-greeting-eyebrow" class="text-[11px] font-extrabold uppercase tracking-widest text-indigo-600 dark:text-indigo-400" style="color:var(--v-fg2)">Th34nh Studio</p>
                         <h2 id="home-greeting-heading" class="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white mt-0.5">
                             <span data-i18n="home.welcome">Welcome back,</span> <span id="home-greeting-name" data-i18n="nav.scholar">Scholar</span>! 👋
                         </h2>
@@ -394,7 +394,7 @@
                     <div id="dashboard-next-habit-box" class="fp-selection-card glass-panel rounded-3xl p-4 sm:p-5 shadow-xl"></div>
                 </div>
 
-                <!-- 4 Interactive Snapshot Cards (FocusPulse Stat Card Style) -->
+                <!-- 4 Interactive Snapshot Cards (Th34nh Stat Card Style) -->
                 <div class="fp-auto-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div onclick="switchAppView('account')" class="glass-panel p-4 rounded-2xl cursor-pointer glass-panel-hover space-y-1.5">
                         <div class="flex items-center justify-between text-indigo-500 text-[11px] font-extrabold uppercase tracking-wider">
@@ -1121,12 +1121,12 @@
             </div>
 
             <!-- =============================================================== -->
-            <!-- SECTION 7: FocusPulse APPEARANCE, CUSTOM PALETTES & SETTINGS VIEW   -->
+            <!-- SECTION 7: Th34nh APPEARANCE, CUSTOM PALETTES & SETTINGS VIEW   -->
             <!-- =============================================================== -->
             <div id="view-section-settings" class="section-fade hidden space-y-6">
                 <div class="glass-panel rounded-3xl p-5 sm:p-7 shadow-2xl">
                     <div class="flex flex-col md:flex-row gap-6">
-                        <!-- FocusPulse Settings Left Sub-Navigation Rail -->
+                        <!-- Th34nh Settings Left Sub-Navigation Rail -->
                         <div class="w-full md:w-48 shrink-0 space-y-2 border-b md:border-b-0 md:border-r border-white/40 dark:border-white/10 pb-4 md:pb-0 md:pr-4" style="border-color:var(--v-bdr)">
                             <div class="text-[11px] font-extrabold uppercase tracking-widest px-3 py-1" style="color:var(--v-fg3)" data-i18n="settings.heading">Settings</div>
                             <label class="fp-language-field">
@@ -1172,14 +1172,14 @@
                             </div>
                         </div>
 
-                        <!-- FocusPulse Settings Main Content Area -->
+                        <!-- Th34nh Settings Main Content Area -->
                         <div class="flex-1 min-w-0 space-y-6">
 
-                            <!-- TAB 1: APPEARANCE, FocusPulse THEMES & CUSTOM PALETTES -->
+                            <!-- TAB 1: APPEARANCE, Th34nh THEMES & CUSTOM PALETTES -->
                             <div id="v-set-pane-appearance" class="space-y-5">
                                 <div>
                                     <h2 class="text-xl font-extrabold text-slate-900 dark:text-white"><span data-i18n="settings.appearanceCustomPalettes">Appearance & Custom Palettes</span></h2>
-                                    <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5"><span data-i18n="settings.appearanceIntro">When Liquid Glass is OFF, choose any FocusPulse high-contrast theme or custom hex palette. Toggle Liquid Glass ON for the original frosted glass site.</span></p>
+                                    <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5"><span data-i18n="settings.appearanceIntro">When Liquid Glass is OFF, choose any Th34nh high-contrast theme or custom hex palette. Toggle Liquid Glass ON for the original frosted glass site.</span></p>
                                 </div>
 
                                 <!-- Dual-Mode Status & Liquid Glass Master Switch Card -->
@@ -1210,7 +1210,7 @@
                                     <div id="liquid-mode-status-banner" class="text-xs p-3 rounded-xl border" style="border-color:var(--v-bdr2);background:var(--v-bg2);"></div>
                                 </div>
 
-                                <!-- FocusPulse Application Theme Card (3-Column Grid + Custom Theme Hex Picker) -->
+                                <!-- Th34nh Application Theme Card (3-Column Grid + Custom Theme Hex Picker) -->
                                 <div class="rounded-2xl border overflow-hidden" style="border-color:var(--v-bdr2);background:var(--v-bg0);">
                                     <div class="px-4 py-3 border-b flex items-center justify-between" style="border-color:var(--v-bdr);background:rgba(226,221,217,0.02)">
                                         <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-900 dark:text-white"><span data-i18n="settings.applicationThemeWhenLiquidIsOff">Application Theme (When Liquid is OFF)</span></h3>
@@ -1222,7 +1222,7 @@
                                         <!-- 3-Column Theme Grid populated by renderThemePalettes() -->
                                         <div id="fp-theme-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
 
-                                        <!-- FocusPulse Custom Theme Row -->
+                                        <!-- Th34nh Custom Theme Row -->
                                         <div id="fp-custom-theme-card" onclick="setSolidTheme('custom')" class="p-4 rounded-xl border cursor-pointer transition flex flex-col sm:flex-row sm:items-center justify-between gap-4" style="border-color:var(--v-bdr2);">
                                             <div class="flex items-center gap-3.5">
                                                 <div class="flex items-center gap-1.5">
@@ -1255,7 +1255,7 @@
                                     </div>
                                 </div>
 
-                                <!-- FocusPulse Accent Color Palette Card -->
+                                <!-- Th34nh Accent Color Palette Card -->
                                 <div class="rounded-2xl border overflow-hidden" style="border-color:var(--v-bdr2);background:var(--v-bg0);">
                                     <div class="px-4 py-3 border-b flex items-center justify-between" style="border-color:var(--v-bdr);background:rgba(226,221,217,0.02)">
                                         <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-900 dark:text-white"><span data-i18n="settings.accentColorCustomPalette">Accent Color & Custom Palette</span></h3>
@@ -1382,7 +1382,7 @@
                                         <div onclick="toggleExeRunAtStartup()" class="p-4 flex items-center justify-between gap-4 cursor-pointer transition hover:opacity-95" style="border-color:var(--v-bdr)">
                                             <div>
                                                 <p class="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white"><span data-i18n="settings.runAtStartup">Run at Startup</span></p>
-                                                <p class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5"><span data-i18n="settings.startupHint">Automatically launch FocusPulse when Windows starts up</span></p>
+                                                <p class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5"><span data-i18n="settings.startupHint">Automatically launch Th34nh when Windows starts up</span></p>
                                             </div>
                                             <div class="flex items-center gap-2 shrink-0" onclick="event.stopPropagation()">
                                                 <button type="button" id="exe-startup-switch-btn" role="switch" aria-checked="false" onclick="toggleExeRunAtStartup()" class="fp-toggle-switch shrink-0" title="Toggle Run at Startup" data-i18n-title="settings.toggleRunAtStartup">
@@ -1394,7 +1394,7 @@
                                         <div onclick="toggleExeCloseToTray()" class="p-4 flex items-center justify-between gap-4 cursor-pointer transition hover:opacity-95" style="border-color:var(--v-bdr)">
                                             <div>
                                                 <p class="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white"><span data-i18n="settings.moveToTrayOnClose">Move to Tray on Close</span></p>
-                                                <p class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5"><span data-i18n="settings.trayHint">Minimize FocusPulse to the system tray when closing the window so Pomodoro continues running</span></p>
+                                                <p class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5"><span data-i18n="settings.trayHint">Minimize Th34nh to the system tray when closing the window so Pomodoro continues running</span></p>
                                             </div>
                                             <div class="flex items-center gap-2 shrink-0" onclick="event.stopPropagation()">
                                                 <button type="button" id="exe-tray-switch-btn" role="switch" aria-checked="true" onclick="toggleExeCloseToTray()" class="fp-toggle-switch active shrink-0" title="Toggle Move to Tray on Close" data-i18n-title="settings.toggleMoveToTrayOnClose">
@@ -1552,7 +1552,7 @@
                             <div id="v-set-pane-storage" class="hidden space-y-4">
                                 <h3 class="text-base font-extrabold text-slate-900 dark:text-white"><span data-i18n="settings.storageJsonBackup">Storage & JSON Backup</span></h3>
                                 <div class="p-4 rounded-2xl border space-y-3 text-xs" style="border-color:var(--v-bdr2)">
-                                    <p class="opacity-80"><span data-i18n="settings.backupHint">Export your entire FocusPulse state (tasks, 7-day habit logs, courses, schedules, and custom custom palettes) to a portable JSON file or restore from a backup.</span></p>
+                                    <p class="opacity-80"><span data-i18n="settings.backupHint">Export your entire Th34nh state (tasks, 7-day habit logs, courses, schedules, and custom custom palettes) to a portable JSON file or restore from a backup.</span></p>
                                     <div class="flex flex-wrap gap-3">
                                         <button onclick="exportData()" class="v-accent-btn px-4 py-2.5 rounded-xl font-bold bg-indigo-600 text-white flex items-center gap-1.5"><i class="fa-solid fa-download"></i> <span data-i18n="settings.exportBackupJson">Export Backup JSON</span></button>
                                         <button onclick="document.getElementById('import-file-input').click()" class="px-4 py-2.5 rounded-xl font-bold border border-emerald-500/40 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5"><i class="fa-solid fa-upload"></i> <span data-i18n="settings.importBackupJson">Import Backup JSON</span></button>
@@ -1592,11 +1592,11 @@
                                 <!-- Release Banner -->
                                 <div class="p-5 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center gap-4" style="border-color:var(--v-bdr2);background:var(--v-bg0);">
                                     <div class="fp-logo-box w-14 h-14 rounded-2xl flex items-center justify-center shadow-md shrink-0 overflow-hidden border" style="background:var(--v-accent);color:var(--v-accent-fg);border-color:rgba(255,255,255,0.18);">
-                                        <img src="assets/logo.png" alt="FocusPulse Logo" class="fp-logo-img w-full h-full object-contain p-1.5" data-i18n-alt="nav.focuspulseLogo">
+                                        <img src="assets/logo.png" alt="Th34nh Logo" class="fp-logo-img w-full h-full object-contain p-1.5" data-i18n-alt="nav.focuspulseLogo">
                                     </div>
                                     <div class="space-y-2.5 flex-1">
                                         <div>
-                                            <h3 id="fp-banner-heading" class="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white"><span data-i18n="settings.focuspulseIsUpToDate">FocusPulse is up to date</span> <span class="text-emerald-500 font-black ml-1.5"><i class="fa-solid fa-circle-check"></i></span></h3>
+                                            <h3 id="fp-banner-heading" class="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white"><span data-i18n="settings.focuspulseIsUpToDate">Th34nh is up to date</span> <span class="text-emerald-500 font-black ml-1.5"><i class="fa-solid fa-circle-check"></i></span></h3>
                                             <p id="fp-banner-subtext" class="text-xs text-slate-600 dark:text-slate-400 mt-0.5"><span data-i18n="settings.installedVersionV100IsTheLatest">Installed version v1.0.0 is the latest release. You're running the newest build with all features active.</span></p>
                                         </div>
                                         <button type="button" id="fp-banner-download-btn" onclick="downloadLatestFocusPulseRelease()" class="v-accent-btn px-4 py-2 rounded-full text-xs font-extrabold inline-flex items-center gap-2 shadow-md transition hover:opacity-90">
@@ -1630,7 +1630,7 @@
                                     <div class="p-4 sm:p-5 flex items-center justify-between gap-4" style="border-color:var(--v-bdr)">
                                         <div>
                                             <h4 class="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white"><span data-i18n="settings.checkAutomaticallyOnStartup">Check Automatically on Startup</span></h4>
-                                            <p class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5"><span data-i18n="settings.automaticUpdateHint">Automatically check GitHub Releases for new versions when launching FocusPulse</span></p>
+                                            <p class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5"><span data-i18n="settings.automaticUpdateHint">Automatically check GitHub Releases for new versions when launching Th34nh</span></p>
                                         </div>
                                         <button type="button" id="auto-update-switch-btn" role="switch" aria-checked="true" onclick="toggleAutoUpdateOnStartup()" class="fp-toggle-switch active shrink-0" title="Toggle Startup Update Check" data-i18n-title="settings.toggleStartupUpdateCheck">
                                             <span class="fp-toggle-knob"></span>
@@ -1640,7 +1640,7 @@
                                     <div class="p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4" style="border-color:var(--v-bdr)">
                                         <div>
                                             <h4 class="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white"><span data-i18n="settings.manualUpdateCheck">Manual Update Check</span></h4>
-                                            <p class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5"><span data-i18n="settings.manualUpdateHint">Query GitHub for the latest version report of FocusPulse</span></p>
+                                            <p class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5"><span data-i18n="settings.manualUpdateHint">Query GitHub for the latest version report of Th34nh</span></p>
                                         </div>
                                         <button type="button" id="fp-manual-check-btn" onclick="triggerManualUpdateCheck()" class="v-accent-btn px-4 py-2 rounded-full text-xs font-extrabold inline-flex items-center gap-1.5 shadow-sm transition hover:opacity-90 shrink-0">
                                             <i class="fa-solid fa-arrows-rotate text-[11px]"></i>
@@ -1744,13 +1744,13 @@
                                                         <i class="fa-brands fa-github text-lg" style="color:var(--v-fg)"></i>
                                                     </div>
                                                     <div class="space-y-1">
-                                                        <p class="text-xs font-mono font-extrabold text-slate-900 dark:text-white">github.com/foc-it/foc-it/FocusPulse</p>
-                                                        <p class="text-[11px]" style="color:var(--v-fg2)"><span data-i18n="settings.repositoryHint">Explore source code, report issues, and download the latest FocusPulse releases on GitHub. Contact:</span> <a href="mailto:info.focit@gmail.com" class="font-bold underline">info.focit@gmail.com</a></p>
+                                                        <p class="text-xs font-mono font-extrabold text-slate-900 dark:text-white">github.com/nghtheanh/FocusTh3</p>
+                                                        <p class="text-[11px]" style="color:var(--v-fg2)"><span data-i18n="settings.repositoryHint">Source code for the Th34nh website. Original project contact:</span> <a href="mailto:info.focit@gmail.com" class="font-bold underline">info.focit@gmail.com</a></p>
                                                     </div>
                                                     <div class="pt-1">
-                                                        <button type="button" onclick="openFocItGitHub()" class="v-accent-btn w-full py-2.5 px-4 rounded-full text-xs font-extrabold inline-flex items-center justify-center gap-2 shadow-sm transition hover:opacity-90">
+                                                        <button type="button" onclick="window.openExternalUrl('https://github.com/nghtheanh/FocusTh3')" class="v-accent-btn w-full py-2.5 px-4 rounded-full text-xs font-extrabold inline-flex items-center justify-center gap-2 shadow-sm transition hover:opacity-90">
                                                             <i class="fa-brands fa-github"></i>
-                                                            <span data-i18n="settings.repositoryLink">Visit github.com/foc-it/foc-it/FocusPulse</span>
+                                                            <span data-i18n="settings.repositoryLink">Visit github.com/nghtheanh/FocusTh3</span>
                                                         </button>
                                                     </div>
                                                 </div>
@@ -1809,7 +1809,7 @@
 
     <!-- Footer -->
     <footer class="w-full text-center py-4 px-4 border-t border-white/40 dark:border-white/10 text-xs text-slate-700 dark:text-slate-300 font-semibold mt-auto flex flex-wrap items-center justify-center gap-2">
-        <span><span data-i18n="nav.focuspulseBy">FocusPulse by</span> <strong>Foc-It</strong></span>
+        <span><span data-i18n="nav.focuspulseBy">Th34nh by</span> <strong>Foc-It</strong></span>
         <span>•</span>
         <span class="inline-flex items-center gap-1 text-amber-500 font-extrabold"><i class="fa-solid fa-star"></i> <span data-i18n="nav.rate5StarOnGithub">Rate 5 star on GitHub:</span></span>
         <a href="https://github.com/foc-it" target="_blank" rel="noopener noreferrer" onclick="openFocItGitHub(); return false;" class="font-extrabold hover:underline" style="color:var(--v-accent)">github.com/foc-it</a>
@@ -1953,14 +1953,14 @@
             <div class="flex items-center justify-between pb-3 border-b border-white/40 dark:border-white/10">
                 <div class="flex items-center gap-2.5">
                     <span class="px-2.5 py-1 rounded-lg text-xs font-extrabold" style="background:var(--v-accent);color:var(--v-accent-fg)">v1.0</span>
-                    <h3 id="v1-release-modal-title" class="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white"><span data-i18n="help.releaseTitle">FocusPulse v1.0 — Official Release &amp; Features</span></h3>
+                    <h3 id="v1-release-modal-title" class="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white"><span data-i18n="help.releaseTitle">Th34nh v1.0 — Official Release &amp; Features</span></h3>
                 </div>
                 <button type="button" onclick="closeBetaModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200/80 dark:bg-white/10 text-slate-700 dark:text-slate-200" aria-label="Close Release Overview" data-i18n-aria-label="help.closeReleaseOverview"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
             <div class="space-y-3 text-xs text-slate-800 dark:text-slate-200 leading-relaxed">
                 <p class="font-semibold text-slate-600 dark:text-slate-300">
-                    <span data-i18n="help.releaseIntro">FocusPulse v1.0 provides a unified productivity and academic management environment. The core application modules are organized in the following order:</span>
+                    <span data-i18n="help.releaseIntro">Th34nh v1.0 provides a unified productivity and academic management environment. The core application modules are organized in the following order:</span>
                 </p>
 
                 <div class="space-y-2.5">
@@ -1996,7 +1996,7 @@
                         <span><span data-i18n="help.userFeedbackContinuousImprovement">User Feedback &amp; Continuous Improvement</span></span>
                     </h4>
                     <p class="text-[11px] text-slate-700 dark:text-slate-200 leading-relaxed">
-                        <span data-i18n="help.releaseFeedback">User feedback is our most valuable resource for improving FocusPulse. Please share your suggestions, feature requests, or issue reports via</span> <a href="https://github.com/foc-it/FocusPulse/discussions" target="_blank" rel="noopener noreferrer" class="font-bold underline" style="color:var(--v-accent)"><span data-i18n="help.githubDiscussions">GitHub Discussions</span></a> <span data-i18n="help.orByEmailAt">or by email at</span> <a href="mailto:info.focit@gmail.com" class="font-bold underline" style="color:var(--v-accent)">info.focit@gmail.com</a>.
+                        <span data-i18n="help.releaseFeedback">User feedback is our most valuable resource for improving Th34nh. Please share your suggestions, feature requests, or issue reports via</span> <a href="https://github.com/foc-it/FocusPulse/discussions" target="_blank" rel="noopener noreferrer" class="font-bold underline" style="color:var(--v-accent)"><span data-i18n="help.githubDiscussions">GitHub Discussions</span></a> <span data-i18n="help.orByEmailAt">or by email at</span> <a href="mailto:info.focit@gmail.com" class="font-bold underline" style="color:var(--v-accent)">info.focit@gmail.com</a>.
                     </p>
                 </div>
             </div>
@@ -2008,7 +2008,7 @@
     <div id="guide-modal" onclick="if(event.target === this) closeGuideModal()" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-labelledby="guide-modal-title">
         <div class="glass-panel max-w-lg w-full p-6 rounded-3xl shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between pb-3 border-b border-white/40 dark:border-white/10">
-                <h3 id="guide-modal-title" class="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white"><span data-i18n="help.focuspulseApplicationGuide">FocusPulse — Application Guide</span></h3>
+                <h3 id="guide-modal-title" class="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white"><span data-i18n="help.focuspulseApplicationGuide">Th34nh — Application Guide</span></h3>
                 <button type="button" onclick="closeGuideModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200/80 dark:bg-white/10 text-slate-700 dark:text-slate-200" aria-label="Close Application Guide" data-i18n-aria-label="help.closeApplicationGuide"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="space-y-3 text-xs text-slate-800 dark:text-slate-200 leading-relaxed">
@@ -2039,7 +2039,7 @@
                 <div class="p-3.5 rounded-2xl border border-indigo-500/30 bg-indigo-500/10 space-y-1">
                     <h4 class="font-extrabold text-slate-900 dark:text-white"><span data-i18n="help.userFeedback">User Feedback</span></h4>
                     <p class="text-[11px] text-slate-700 dark:text-slate-200">
-                        <span data-i18n="help.guideFeedback">Your feedback is essential to the continued development of FocusPulse. Submit suggestions or report issues via</span> <a href="https://github.com/foc-it/FocusPulse/discussions" target="_blank" rel="noopener noreferrer" class="font-bold underline" style="color:var(--v-accent)"><span data-i18n="help.githubDiscussions">GitHub Discussions</span></a> <span data-i18n="help.or">or</span> <a href="mailto:info.focit@gmail.com" class="font-bold underline" style="color:var(--v-accent)">info.focit@gmail.com</a>.
+                        <span data-i18n="help.guideFeedback">Your feedback is essential to the continued development of Th34nh. Submit suggestions or report issues via</span> <a href="https://github.com/foc-it/FocusPulse/discussions" target="_blank" rel="noopener noreferrer" class="font-bold underline" style="color:var(--v-accent)"><span data-i18n="help.githubDiscussions">GitHub Discussions</span></a> <span data-i18n="help.or">or</span> <a href="mailto:info.focit@gmail.com" class="font-bold underline" style="color:var(--v-accent)">info.focit@gmail.com</a>.
                     </p>
                 </div>
             </div>
@@ -2119,7 +2119,7 @@
         </div>
     </div>
 
-    <!-- Quick Settings & FocusPulse Palette Modal -->
+    <!-- Quick Settings & Th34nh Palette Modal -->
     <div id="settings-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 hidden">
         <div class="glass-panel max-w-lg w-full p-6 rounded-3xl shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between pb-3 border-b border-white/40 dark:border-white/10">
@@ -2142,7 +2142,7 @@
                     </div>
                 </div>
 
-                <!-- FocusPulse Theme Presets inside Modal -->
+                <!-- Th34nh Theme Presets inside Modal -->
                 <div class="space-y-2 pt-2 border-t border-white/20">
                     <label class="font-bold text-slate-700 dark:text-slate-300"><span data-i18n="settings.solidThemesActiveWhenLiquidIsOff">Solid Themes (Active when Liquid is OFF)</span></label>
                     <div id="modal-fp-theme-grid" class="fp-auto-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2"></div>
@@ -2155,7 +2155,7 @@
                     </div>
                 </div>
 
-                <!-- FocusPulse Accent Palettes inside Modal -->
+                <!-- Th34nh Accent Palettes inside Modal -->
                 <div class="space-y-2 pt-2 border-t border-white/20">
                     <label class="font-bold text-slate-700 dark:text-slate-300"><span data-i18n="settings.customAccentPalette">Custom Accent Palette</span></label>
                     <div class="flex items-center gap-2.5 flex-wrap">
@@ -2201,7 +2201,7 @@
                     <div onclick="toggleExeRunAtStartup()" class="flex items-center justify-between bg-white/40 dark:bg-white/5 p-3 rounded-xl border border-white/20 text-slate-800 dark:text-slate-200 font-medium cursor-pointer">
                         <div>
                             <span class="font-bold block" data-i18n="settings.runAtStartup">Run at Startup</span>
-                            <span class="text-[10px] opacity-75" data-i18n="settings.quickStartupHint">Launch FocusPulse automatically when Windows starts</span>
+                            <span class="text-[10px] opacity-75" data-i18n="settings.quickStartupHint">Launch Th34nh automatically when Windows starts</span>
                         </div>
                         <div onclick="event.stopPropagation()">
                             <button type="button" id="modal-exe-startup-switch-btn" role="switch" aria-checked="false" onclick="toggleExeRunAtStartup()" class="fp-toggle-switch shrink-0">
@@ -2297,8 +2297,8 @@
                         <i class="fa-solid fa-download text-base"></i>
                     </div>
                     <div>
-                        <h3 id="install-modal-title" class="font-extrabold text-base text-slate-900 dark:text-white"><span data-i18n="nav.installFocuspulse">Install FocusPulse</span></h3>
-                        <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400"><span data-i18n="install.officialBuildsFrom">Official builds from</span> <span class="font-mono font-bold">github.com/foc-it/FocusPulse</span></p>
+                        <h3 id="install-modal-title" class="font-extrabold text-base text-slate-900 dark:text-white"><span data-i18n="nav.installFocuspulse">Install Th34nh</span></h3>
+                        <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400"><span data-i18n="install.officialBuildsFrom">Windows and Android downloads from the original developer</span> <span class="font-mono font-bold">Foc-It</span></p>
                     </div>
                 </div>
                 <button type="button" onclick="closeInstallAppModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200/80 dark:bg-white/10 text-slate-700 dark:text-slate-200 hover:opacity-80" aria-label="Close Install Modal" data-i18n-aria-label="install.closeInstallModal">
@@ -2322,7 +2322,7 @@
                         <span id="install-win-status-badge" class="text-[10px] px-2 py-0.5 rounded-full font-extrabold bg-blue-500/15 text-blue-600 dark:text-blue-300 border border-blue-500/30">GitHub Releases</span>
                     </div>
                     <p class="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
-                        <span data-i18n="install.download">Download</span> <code class="px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/10 font-mono text-[10px]">FocusPulse_1.0.0_x64-setup.exe</code> <span data-i18n="install.windowsInstructions">from the official GitHub Releases section and run the setup wizard. Includes custom borderless frame, system tray, and startup launch.</span>
+                        <span data-i18n="install.download">Download</span> <code class="px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/10 font-mono text-[10px]">*.exe</code> <span data-i18n="install.windowsInstructions">from the official GitHub Releases section and run the setup wizard. Includes custom borderless frame, system tray, and startup launch.</span>
                     </p>
                     <button type="button" onclick="triggerInstallPlatformAction('windows')" class="v-accent-btn w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold flex items-center justify-center gap-2 shadow-sm transition">
                         <i class="fa-brands fa-windows"></i>
@@ -2346,11 +2346,11 @@
                         <span id="install-apk-status-badge" class="text-[10px] px-2 py-0.5 rounded-full font-extrabold bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30"><span data-i18n="install.signedApkRelease">Signed APK Release</span></span>
                     </div>
                     <p class="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
-                        <span data-i18n="install.downloadThe">Download the</span> <strong><span data-i18n="install.signed">signed</span></strong> <code class="px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/10 font-mono text-[10px]">FocusPulse_1.0.0_Android_Signed.apk</code> <span data-i18n="install.fromGithubReleases">from GitHub Releases.</span>
+                        <span data-i18n="install.downloadThe">Download the</span> <strong><span data-i18n="install.signed">signed</span></strong> <code class="px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/10 font-mono text-[10px]">*.apk</code> <span data-i18n="install.fromGithubReleases">from GitHub Releases.</span>
                     </p>
                     <div class="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-[11px] text-amber-800 dark:text-amber-200 flex items-start gap-2">
                         <i class="fa-solid fa-shield-halved text-amber-500 mt-0.5 shrink-0"></i>
-                        <span><strong><span data-i18n="install.androidSecurityNote">Android Security Note:</span></strong> <span data-i18n="install.androidPermissionIntro">Because FocusPulse is installed directly from GitHub Releases rather than Google Play, Android may ask you to allow</span> <em><span data-i18n="install.installUnknownApps">"Install unknown apps"</span></em> <span data-i18n="install.androidPermissionDetail">permission for your browser or file manager. Always download only the</span> <strong><span data-i18n="install.signed">signed</span></strong> <span data-i18n="install.releaseApk">release APK.</span></span>
+                        <span><strong><span data-i18n="install.androidSecurityNote">Android Security Note:</span></strong> <span data-i18n="install.androidPermissionIntro">When installing an APK from GitHub Releases, Android may ask you to allow</span> <em><span data-i18n="install.installUnknownApps">"Install unknown apps"</span></em> <span data-i18n="install.androidPermissionDetail">permission for your browser or file manager. Always download only the</span> <strong><span data-i18n="install.signed">signed</span></strong> <span data-i18n="install.releaseApk">release APK.</span></span>
                     </div>
                     <button type="button" onclick="triggerInstallPlatformAction('android')" class="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-2 shadow-sm transition">
                         <i class="fa-brands fa-android"></i>
@@ -2374,7 +2374,7 @@
                         <span class="text-[10px] px-2 py-0.5 rounded-full font-extrabold bg-violet-500/15 text-violet-600 dark:text-violet-300 border border-violet-500/30" data-i18n="install.readyNow">Ready Now</span>
                     </div>
                     <p class="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
-                        <span data-i18n="install.webInstructions">Continue using FocusPulse directly in your web browser with full offline local storage, or install it as a Progressive Web App (PWA) from your browser's address bar.</span>
+                        <span data-i18n="install.webInstructions">Continue using Th34nh directly in your web browser with full offline local storage, or install it as a Progressive Web App (PWA) from your browser's address bar.</span>
                     </p>
                     <button type="button" onclick="triggerInstallPlatformAction('web')" class="w-full py-2.5 px-4 rounded-xl border font-extrabold flex items-center justify-center gap-2 transition hover:opacity-90" style="border-color:var(--v-bdr3);background:var(--v-bg0);color:var(--v-fg)">
                         <i class="fa-solid fa-bolt" style="color:var(--v-accent)"></i>

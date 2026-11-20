@@ -1,7 +1,7 @@
 [package]
 name = "focuspulse"
 version = "1.0.0"
-description = "FocusPulse — Study, Tasks, Habits & Hydration Application by Foc-It"
+description = "Th34nh — Study, Tasks, Habits & Hydration Application by Foc-It"
 authors = ["azmee7 (Azmi)"]
 license = "Custom"
 edition = "2021"

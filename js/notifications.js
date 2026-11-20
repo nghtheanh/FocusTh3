@@ -1,5 +1,5 @@
 // ==========================================
-// FocusPulse - Notification, Reminder, Audio & Native OS Push Engine (notifications.js)
+// Th34nh - Notification, Reminder, Audio & Native OS Push Engine (notifications.js)
 // Supports Native Windows Toast (Tauri), Android/Web ServiceWorker Push & Background Catch-Up
 // ==========================================
 
@@ -197,7 +197,7 @@ function deliverNativeSystemNotification(title, message, type = 'info') {
 function showNotification(title, message = '', type = 'info', sendBrowserPush = false) {
     if (!message) {
         message = title;
-        title = 'FocusPulse';
+        title = 'Th34nh';
     }
 
     playNotificationChime(type);

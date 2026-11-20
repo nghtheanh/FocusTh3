@@ -1,7 +1,7 @@
 {
   "name": "focuspulse",
   "version": "1.0.0",
-  "description": "FocusPulse \u2014 Study, Tasks, Habits & Hydration Application by Foc-It",
+  "description": "Th34nh \u2014 Study, Tasks, Habits & Hydration Application by Foc-It",
   "main": "index.html",
   "scripts": {
     "dev": "vite",

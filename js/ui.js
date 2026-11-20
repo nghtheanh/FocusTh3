@@ -1,5 +1,5 @@
 // ==========================================
-// FocusPulse - UI, Theme, Dashboard 5s Next-Up Sliders & Task History Controller (ui.js)
+// Th34nh - UI, Theme, Dashboard 5s Next-Up Sliders & Task History Controller (ui.js)
 // ==========================================
 
 const motivationalQuotes = [
@@ -1828,7 +1828,7 @@ function rotateQuote() {
 
 function copyQuote(btn) {
     const quoteText = document.getElementById('motivation-quote-box').innerText;
-    const textToCopy = `${quoteText}\n-FocusPulse`;
+    const textToCopy = `${quoteText}\n-Th34nh`;
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(textToCopy).catch(() => {});
     } else {
@@ -2275,7 +2275,7 @@ function renderUpdatesAndCreditsUI() {
         }
     } else {
         if (bannerHeading) {
-            bannerHeading.innerHTML = `<span data-i18n="settings.focuspulseIsUpToDate">FocusPulse is up to date</span> <span class="text-emerald-500 font-black ml-1.5"><i class="fa-solid fa-circle-check"></i></span>`;
+            bannerHeading.innerHTML = `<span data-i18n="settings.focuspulseIsUpToDate">Th34nh is up to date</span> <span class="text-emerald-500 font-black ml-1.5"><i class="fa-solid fa-circle-check"></i></span>`;
         }
         if (bannerSubtext) {
             bannerSubtext.innerHTML = FPi18n.markup("updates.currentBody", { installedVer });
@@ -2535,7 +2535,7 @@ function triggerInstallPlatformAction(platform) {
 // =========================================================================
 // AUTOMATIC PLATFORM UI & MOBILE CONTAINER OVERFLOW ENGINE (FP-08, FP-09)
 // - Windows .exe (Tauri / WebView2 / Electron) -> desk-ui (shows window & history controls)
-// - Web Browser -> hides desktop window controls & < > ↻ history buttons, shows Install FocusPulse button
+// - Web Browser -> hides desktop window controls & < > ↻ history buttons, shows Install Th34nh button
 // - Android .apk / Mobile -> mobile-ui (single container per row, zero desktop controls)
 // =========================================================================
 function isNativeAndroidApkRuntime() {
@@ -2586,7 +2586,7 @@ function detectAndApplyPlatformUI() {
         }
     });
 
-    // Show the "Install FocusPulse" button in the topbar on Web (FP-17)
+    // Show the "Install Th34nh" button in the topbar on Web (FP-17)
     document.querySelectorAll('.fp-web-install-trigger').forEach(btn => {
         if (isWebBrowser) {
             btn.classList.remove('hidden');

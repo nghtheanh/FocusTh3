@@ -211,7 +211,7 @@ fn send_native_notification(app: AppHandle, title: String, body: String) -> Resu
                 $textNodes.Item(0).AppendChild($template.CreateTextNode('{}')) | Out-Null; \
                 $textNodes.Item(1).AppendChild($template.CreateTextNode('{}')) | Out-Null; \
                 $toast = [Windows.UI.Notifications.ToastNotification]::new($template); \
-                [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('FocusPulse').Show($toast);",
+                [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('Th34nh').Show($toast);",
                 safe_title, safe_body
             );
             let _ = std::process::Command::new("powershell")
@@ -244,19 +244,19 @@ fn setup_system_tray(app: &AppHandle) -> Result<(), String> {
     use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
     use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 
-    let open_item = MenuItem::with_id(app, "open", "Open FocusPulse", true, None::<&str>)
+    let open_item = MenuItem::with_id(app, "open", "Open Th34nh", true, None::<&str>)
         .map_err(|e| e.to_string())?;
     let timer_item = MenuItem::with_id(app, "toggle_timer", "Start / Pause Pomodoro", true, None::<&str>)
         .map_err(|e| e.to_string())?;
     let sep = PredefinedMenuItem::separator(app).map_err(|e| e.to_string())?;
-    let quit_item = MenuItem::with_id(app, "quit", "Quit FocusPulse", true, None::<&str>)
+    let quit_item = MenuItem::with_id(app, "quit", "Quit Th34nh", true, None::<&str>)
         .map_err(|e| e.to_string())?;
 
     let menu = Menu::with_items(app, &[&open_item, &timer_item, &sep, &quit_item])
         .map_err(|e| e.to_string())?;
 
     let mut builder = TrayIconBuilder::with_id("focuspulse-tray")
-        .tooltip("FocusPulse — Study, Tasks, Habits & Hydration")
+        .tooltip("Th34nh — Study, Tasks, Habits & Hydration")
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id.as_ref() {
@@ -335,5 +335,5 @@ pub fn run() {
             open_external_url
         ])
         .run(tauri::generate_context!())
-        .expect("error while running FocusPulse Tauri application");
+        .expect("error while running Th34nh Tauri application");
 }

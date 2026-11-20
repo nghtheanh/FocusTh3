@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 128 128">
+  <title>Th34nh</title>
+  <defs>
+    <linearGradient id="ink" x2="1" y2="1" gradientUnits="objectBoundingBox">
+      <stop stop-color="#6259eb"/>
+      <stop offset="1" stop-color="#30288a"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#ink)"/>
+  <g fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M27 47h28L38 63h5c18 0 17 23-3 23-6 0-11-2-15-6"/>
+    <path d="M88 43 66 72h34m-10-15v29"/>
+  </g>
+</svg>

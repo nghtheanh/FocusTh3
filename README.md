@@ -1,16 +1,23 @@
 <div align="center">
 
- <img src="assets/icon.png" width="110" alt="FocusPulse Icon" />
+ <img src="assets/icon.png" width="110" alt="Th34nh icon" />
 
 </div>
 
-# ⚡ FocusPulse
+# Th34nh
 
 <div align="center">
 
-<img src="assets/title.png" width="520" alt="FocusPulse" />
+<img src="assets/title.png" width="520" alt="Th34nh" />
 
 </div>
+
+[Open Th34nh](https://focus-th3.vercel.app/) · [Source code](https://github.com/nghtheanh/FocusTh3)
+
+Th34nh is a personal study and focus app in Vietnamese and English, based on the original work by Foc-It.
+
+<details>
+<summary>Original project documentation, downloads and credits</summary>
 
 ### 🎯 The deep-work suite you always wanted
 
@@ -262,3 +269,5 @@ Licensed under the **[FocusPulse Software License](LICENSE)**. For permission to
     </picture>
   </a>
 </div>
+
+</details>

@@ -1,5 +1,5 @@
 // ==========================================
-// FocusPulse - State, Theme, Avatar & Storage Engine (state.js)
+// Th34nh - State, Theme, Avatar & Storage Engine (state.js)
 // ==========================================
 
 function formatDateKey(date) {
@@ -663,7 +663,7 @@ function exportData() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `FocusPulse_Backup_${formatDateKey(new Date())}.json`;
+    a.download = `Th34nh_Backup_${formatDateKey(new Date())}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

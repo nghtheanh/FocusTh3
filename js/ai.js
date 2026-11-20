@@ -1,5 +1,5 @@
 // ==========================================
-// FocusPulse - Zenith AI Context-Aware Coach, Multi-Turn System Analyzer & Interactive Controller (ai.js)
+// Th34nh - Zenith AI Context-Aware Coach, Multi-Turn System Analyzer & Interactive Controller (ai.js)
 // Supports Conversational Memory, Multi-Item Collection ("add 2 habits"), Assignment Solutions,
 // Natural Language System Actions, and Inline Apply (Yes/No) Confirmation Above Input
 // ==========================================
@@ -2400,7 +2400,7 @@ function lookupInstantFactAnswer(promptText) {
         { match: /\bavl tree\b/, ans: FPi18n.translate('ai.fact.avl') },
         { match: /\brecursion\b/, ans: FPi18n.translate('ai.fact.recursion') },
         { match: /\bdifference between ram and rom\b/, ans: FPi18n.translate('ai.fact.memory') },
-        { match: /\bwho (?:created|made|developed|built) focuspulse\b|\bfoc it\b|\bazmee\b/, ans: FPi18n.translate('ai.fact.developer') }
+        { match: /\bwho (?:created|made|developed|built) (?:th34nh|focuspulse)\b|\bfoc it\b|\bazmee\b/, ans: FPi18n.translate('ai.fact.developer') }
     ];
     for (const item of quickFacts) {
         if (item.match.test(norm)) {
@@ -2411,7 +2411,7 @@ function lookupInstantFactAnswer(promptText) {
     return null;
 }
 
-// Built-in FocusPulse study & productivity coach responses (NO unsolicited Pomodoro/Task stat spamming!)
+// Built-in Th34nh study & productivity coach responses (NO unsolicited Pomodoro/Task stat spamming!)
 function generateSmartLocalAiResponse(promptText) {
     // 1. Check direct factual answers first
     const directFact = lookupInstantFactAnswer(promptText);
@@ -2513,7 +2513,7 @@ async function fetchShortAccurateOnlineAnswer(promptText, geminiKey) {
         .join('; ');
 
     const responseLanguage = FPi18n.getCurrentLanguage();
-    const sysInstruction = `You are Zenith AI inside FocusPulse. Answer the user's question directly, accurately, and concisely (1 to 3 sentences). Do NOT spam Pomodoro timers or task counts unless asked. Active user assignments: ${pendingTaskNames || 'None'}. Recent chat context:\n${recentHistory}\n\n${FPi18n.translate('ai.system.language')}`;
+    const sysInstruction = `You are Zenith AI inside Th34nh. Answer the user's question directly, accurately, and concisely (1 to 3 sentences). Do NOT spam Pomodoro timers or task counts unless asked. Active user assignments: ${pendingTaskNames || 'None'}. Recent chat context:\n${recentHistory}\n\n${FPi18n.translate('ai.system.language')}`;
 
     // 1. Try Google Gemini API if a valid AIza... key is configured
     if (/^AIza[0-9A-Za-z_-]{25,}$/.test(geminiKey)) {

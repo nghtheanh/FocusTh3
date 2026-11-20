@@ -1,5 +1,5 @@
 // ==========================================
-// FocusPulse - Main Timer & App Controller (script.js)
+// Th34nh - Main Timer & App Controller (script.js)
 // Screen-Off & Tray-Resilient Pomodoro Engine:
 // - Wall-Clock Target Timestamp (targetEndTimeMs)
 // - Inline Web Worker Background Ticker (immune to main-thread tab throttling)
@@ -81,7 +81,7 @@ function startPomodoroBackgroundKeepAlive() {
     // Acquire Screen Wake Lock if supported
     requestPomodoroWakeLock();
 
-    // Update MediaSession metadata so lock-screen / background audio controller knows FocusPulse is active
+    // Update MediaSession metadata so lock-screen / background audio controller knows Th34nh is active
     updatePomodoroMediaSession();
 }
 
@@ -266,7 +266,7 @@ function handlePomodoroTimeUp() {
         FPi18n.bind(title, finishedMode === 'pomodoro' ? 'timer.focusEndTitle' : 'timer.breakEndTitle');
         setTimeout(() => {
             delete title.dataset.i18n;
-            document.title = 'FocusPulse';
+            document.title = 'Th34nh';
         }, 12000);
     } catch (e) {}
 
