@@ -326,7 +326,7 @@ function renderSettingsTabs() {
         const pane = document.getElementById(`v-set-pane-${t}`);
         const isActive = (activeSettingsTab === t) && !settingsSearchQuery;
         if (btn) {
-            btn.className = isActive ? "v-nav-btn v-nav-btn--active text-xs" : "v-nav-btn text-xs";
+            btn.classList.toggle('v-nav-btn--active', isActive);
         }
         if (pane) {
             if (settingsSearchQuery) {

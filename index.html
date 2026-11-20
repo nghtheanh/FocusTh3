@@ -219,38 +219,38 @@
 
                 <button onclick="switchAppView('home')" id="side-nav-home" class="v-nav-btn v-nav-btn--active gap-3.5">
                     <i class="fa-solid fa-house text-sm w-5 text-center shrink-0"></i>
-                    <span class="truncate" data-i18n="nav.homeFocus">Home & Focus</span>
+                    <span data-i18n="nav.homeFocus">Home & Focus</span>
                 </button>
 
                 <button onclick="switchAppView('tasks')" id="side-nav-tasks" class="v-nav-btn justify-between">
                     <span class="flex items-center gap-3.5 min-w-0">
                         <i class="fa-solid fa-list-check text-sm w-5 text-center shrink-0"></i>
-                        <span class="truncate" data-i18n="nav.tasksFeed">Tasks Feed</span>
+                        <span data-i18n="nav.tasksFeed">Tasks Feed</span>
                     </span>
                     <span id="nav-badge-tasks" class="px-2 py-0.5 text-[10px] rounded-full bg-violet-500/20 text-violet-700 dark:text-violet-300 font-extrabold shrink-0">2</span>
                 </button>
 
                 <button onclick="switchAppView('habits')" id="side-nav-habits" class="v-nav-btn gap-3.5">
                     <i class="fa-solid fa-fire-flame-curved text-sm w-5 text-center shrink-0"></i>
-                    <span class="truncate" data-i18n="nav.habitFlow">Habit Flow</span>
+                    <span data-i18n="nav.habitFlow">Habit Flow</span>
                 </button>
 
                 <button onclick="switchAppView('plans')" id="side-nav-plans" class="v-nav-btn gap-3.5">
                     <i class="fa-solid fa-droplet text-sm w-5 text-center shrink-0"></i>
-                    <span class="truncate" data-i18n="nav.plansHydration">Plans & Hydration</span>
+                    <span data-i18n="nav.plansHydration">Plans & Hydration</span>
                 </button>
 
                 <button onclick="switchAppView('ai')" id="side-nav-ai" class="v-nav-btn justify-between">
                     <span class="flex items-center gap-3.5 min-w-0">
                         <i class="fa-solid fa-wand-magic-sparkles text-sm w-5 text-center shrink-0"></i>
-                        <span class="truncate" data-i18n="nav.zenithAiCoach">Zenith AI Coach</span>
+                        <span data-i18n="nav.zenithAiCoach">Zenith AI Coach</span>
                     </span>
                     <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
                 </button>
 
                 <button onclick="switchAppView('account')" id="side-nav-account" class="v-nav-btn gap-3.5">
                     <i class="fa-solid fa-chart-pie text-sm w-5 text-center shrink-0"></i>
-                    <span class="truncate" data-i18n="nav.accountStats">Account & Stats</span>
+                    <span data-i18n="nav.accountStats">Account & Stats</span>
                 </button>
 
                 <button onclick="switchAppView('settings')" id="side-nav-settings" class="v-nav-btn gap-3.5">
@@ -260,7 +260,7 @@
 
                 <button onclick="toggleWorkspace()" class="v-nav-btn gap-3.5">
                     <i class="fa-solid fa-pen-ruler text-sm w-5 text-center shrink-0"></i>
-                    <span class="truncate" data-i18n="nav.workspace">Workspace</span>
+                    <span data-i18n="nav.workspace">Workspace</span>
                 </button>
             </div>
 
@@ -281,7 +281,7 @@
                 </button>
                 <button onclick="openSettingsModal()" class="v-nav-btn gap-3 text-xs py-2">
                     <i class="fa-solid fa-gear w-5 text-center shrink-0" style="color:var(--v-accent)"></i>
-                    <span class="truncate" data-i18n="nav.quickSettings">Quick Settings</span>
+                    <span data-i18n="nav.quickSettings">Quick Settings</span>
                 </button>
             </div>
         </aside>
@@ -1137,7 +1137,7 @@
                                 <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-[11px]" style="color:var(--v-fg3)"></i>
                                 <input type="text" id="fp-settings-search" oninput="handleSettingsSearch(this.value)" placeholder="Find a setting..." data-i18n-placeholder="settings.searchPlaceholder" class="w-full rounded-full pl-8 pr-3 py-1.5 text-xs font-medium focus:outline-none">
                             </div>
-                            <div class="flex md:flex-col gap-1 overflow-x-auto pt-1">
+                            <div class="fp-settings-tabs flex md:flex-col gap-1 overflow-x-auto pt-1">
                                 <button onclick="switchSettingsTab('appearance')" id="v-set-tab-appearance" class="v-nav-btn v-nav-btn--active text-xs whitespace-nowrap">
                                     <i class="fa-solid fa-palette w-4 text-center"></i>
                                     <span data-i18n="settings.appearance">Appearance</span>

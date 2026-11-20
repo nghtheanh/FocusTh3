@@ -4,17 +4,40 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-function load(language) {
+function load(language, storage = {getItem: () => language}) {
     const context = vm.createContext({
-        window: {},
-        document: {documentElement: {}, addEventListener() {}},
-        localStorage: {getItem: () => language}
+        window: {dispatchEvent() {}},
+        document: {documentElement: {}, addEventListener() {}, querySelectorAll: () => []},
+        CustomEvent: class {},
+        localStorage: storage
     });
     for (const file of ['locales/en.js', 'locales/vi.js', 'i18n.js']) {
         vm.runInContext(fs.readFileSync(path.join(__dirname, '../js', file), 'utf8'), context);
     }
     return context.window;
 }
+
+test('language selection survives reopening and handles invalid or inaccessible storage', () => {
+    const values = new Map();
+    const storage = {getItem: key => values.get(key), setItem: (key, value) => values.set(key, value)};
+    const first = load(null, storage).FPi18n;
+    assert.equal(first.getCurrentLanguage(), 'en');
+    assert.ok(first.setLanguage('vi'));
+    assert.equal(load(null, storage).FPi18n.getCurrentLanguage(), 'vi');
+    assert.equal(first.setLanguage(['en']), false);
+    assert.equal(first.getCurrentLanguage(), 'vi');
+    for (const invalid of ['', 'unknown', '__proto__', '{"lang":"vi"}']) {
+        storage.setItem('focuspulse_locale', invalid);
+        const current = load(null, storage).FPi18n;
+        assert.equal(current.getCurrentLanguage(), 'en');
+        assert.equal(current.setLanguage(invalid), false);
+    }
+    function denied() { throw new Error('Storage unavailable'); }
+    const restricted = load(null, {getItem: denied, setItem: denied}).FPi18n;
+    assert.equal(restricted.getCurrentLanguage(), 'en');
+    assert.ok(restricted.setLanguage('vi'));
+    assert.equal(restricted.translate('language.label'), 'Ngôn ngữ');
+});
 
 test('English and Vietnamese cover the same keys and named parameters', () => {
     const {en, vi} = load('en').FocusPulseLocales;

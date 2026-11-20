@@ -99,7 +99,7 @@
     }
 
     function setLanguage(language) {
-        if (!hasOwn(catalogs, language)) return false;
+        if (typeof language !== 'string' || !hasOwn(catalogs, language)) return false;
         if (language === currentLanguage) return true;
         currentLanguage = language;
         document.documentElement.lang = language;

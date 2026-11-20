@@ -244,7 +244,7 @@ function showNotification(title, message = '', type = 'info', sendBrowserPush = 
                 <p class="text-xs font-bold text-slate-900 dark:text-white truncate">${FPi18n.messageHtml(title)}</p>
                 <p class="text-[11px] text-slate-700 dark:text-slate-300 font-medium leading-snug mt-0.5">${FPi18n.messageHtml(message)}</p>
             </div>
-            <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs p-0.5"><i class="fa-solid fa-xmark"></i></button>
+            <button type="button" ${FPi18n.attributeMarkup('aria-label', 'nav.close')} onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs p-0.5"><i class="fa-solid fa-xmark"></i></button>
         `;
         container.appendChild(toast);
         setTimeout(() => {

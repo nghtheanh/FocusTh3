@@ -2,9 +2,21 @@ import { defineConfig } from 'vite';
 import fs from 'fs';
 import path from 'path';
 
+function omitMissingOptionalAssets(html) {
+  const optionalTags = {
+    'css/tailwind.min.css': '<link rel="stylesheet" href="css/tailwind.min.css">',
+    'js/config.local.js': '<script src="js/config.local.js"></script>'
+  };
+  for (const [file, tag] of Object.entries(optionalTags)) {
+    if (!fs.existsSync(path.resolve(file))) html = html.replace(tag, '');
+  }
+  return html;
+}
+
 function copyStaticDirsAndAndroidIconsPlugin() {
   return {
     name: 'focuspulse-copy-static-dirs-and-icons',
+    transformIndexHtml: { order: 'pre', handler: omitMissingOptionalAssets },
     closeBundle() {
       const rootDir = process.cwd();
       const outDir = path.resolve(rootDir, 'dist');
@@ -30,7 +42,7 @@ function copyStaticDirsAndAndroidIconsPlugin() {
       const rootIndex = path.resolve(rootDir, 'index.html');
       const distIndex = path.resolve(outDir, 'index.html');
       if (fs.existsSync(rootIndex)) {
-        let htmlContent = fs.readFileSync(rootIndex, 'utf-8');
+        let htmlContent = omitMissingOptionalAssets(fs.readFileSync(rootIndex, 'utf-8'));
         // Ensure all href and src paths are relative (no root-slash /assets or /css)
         htmlContent = htmlContent.replace(/href="\/assets\//g, 'href="assets/');
         htmlContent = htmlContent.replace(/src="\/assets\//g, 'src="assets/');
